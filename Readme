@@ -1,0 +1,85 @@
+STSDB -- a simple time-series database
+
+=========================================================================
+    Data storage
+
+Data are stored in BerkleyDB files as a set of key-value pairs. Key is
+time in seconds (32 bit unsigned integer) or milliseconds (64 bit
+unsigned integer not smaller then 2^32). Time is counted from
+1970-01-01. Time format can be chousen when the database is created. All
+time values are converted to the correct format automatically.
+
+Value can carry some text or an array if numbers of arbitrary length.
+The data format can be chousen during the database creation. Possible
+variants are: TEXT, INT8, UINT8, INT16, UINT16, INT32, UINT32, INT64,
+UINT64, FLOAT, DOUBLE.
+
+All databases are stored in as separate files with .db extension. Name
+of file represents the name of the dataset. One can rename, copy, delete
+files if needed.
+
+The special field with key=(uint8_t)0 is used to store
+time format (1bute), data format (1 byte) and database description (text).
+
+=========================================================================
+    Command line interface to data
+
+stsdb -- command line interface to Simple Time Series Database
+Usage: stsdb [options] <command> <parameters>
+Options:
+  -d <path> -- database directory (default /var/lib/stsdb/
+  -h        -- write this help message and exit
+Comands:
+
+create <name> <time_fmt> <data_fmt> <description>
+    -- create a database
+Example:
+$ stsdb create pressure 1S DOUBLE "Measured pressure"
+
+delete <name>
+    -- delete a database file
+Example:
+$ stsdb delete pressure
+
+rename <old_name> <new_name>
+    -- rename a database file
+Example:
+$ stsdb rename pressure press
+
+set_descr <name> <description>
+    -- change database description
+Example:
+$ stsdb set_descr press "New description"
+
+info <name>
+    -- print database information
+Example:
+$ stsdb info pressure "New description"
+1S	DOUBLE	Measured pressure
+
+list
+    -- list all databases in the data folder
+Example:
+$ stsdb list
+press
+temperature
+level
+
+TODO:
+
+put <name> <time> <data> ...
+
+get <name> <time1> <time2> <dt> <func>
+
+access -- read/write data
+
+=========================================================================
+    Simple JSON interface
+
+The simple JSON interface can be used with grafana frontend to access
+data
+
+=========================================================================
+    Matlab interface
+
+=========================================================================
