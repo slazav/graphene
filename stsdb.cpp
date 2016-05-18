@@ -8,6 +8,8 @@
 #include <cerrno>
 #include <dirent.h>
 #include <sys/stat.h>
+#include <ctime>
+#include <sys/time.h>
 
 #include <map>
 #include <string>
@@ -49,6 +51,16 @@ class Pars{
             "         data format and description (if it is not empty)\n"
             "  list\n"
             "      -- list all databases in the data folder\n"
+            "  put <name> <time> <value1> ... <valueN>\n"
+            "      -- write data\n"
+            "  get_next <name>[:N] [<time1>]\n"
+            "      -- get next point after time1\n"
+            "  get_prev <name>[:N] [<time2>]\n"
+            "      -- get previous point before time2\n"
+            "  get_interp <name>[:N] <time>\n"
+            "      -- get interpolated point\n"
+            "  get_range <name>[:N] [<time1>] [<time2>] [<dt>]\n"
+            "      -- get all points in the time range\n"
     ;
     throw Err();
   }
@@ -72,6 +84,39 @@ class Pars{
 
 };
 
+/**********************************************************/
+// Current time in ms
+uint64_t
+prectime(){
+    struct timeval tv;
+    struct timezone tz;
+    gettimeofday(&tv,&tz);
+    return (uint64_t)tv.tv_usec/1000
+         + (uint64_t)tv.tv_sec*1000;
+}
+
+/**********************************************************/
+// Read timestamp from a string.
+// String "now" means current time.
+uint64_t
+str2time(const char *str) {
+  uint64_t t;
+  if (strcasecmp(str, "now")==0) t = prectime();
+  else t = atoll(str);
+  if (t==0)
+    throw Err() << "Bad timestamp: " << str;
+  return t;
+}
+
+/**********************************************************/
+// Extract column number from <name>:<N> string,
+// replace ':' with '\0' in the string.
+// Returns -1 if column number was not found.
+int get_col_num(char *str){
+  char * ci = rindex(str, ':');
+  if (ci!=NULL){ *ci='\0'; return atoi(ci+1); }
+  return -1;
+}
 
 /**********************************************************/
 int
@@ -86,6 +131,7 @@ main(int argc, char **argv) {
     string cmd(argv[0]);
 
     // create new database
+    // args: create <name> [<time_fmt>] [<data_fmt>] [<description>]
     if (cmd == "create"){
       if (argc<2) throw Err() << "database name expected";
       if (argc>5) throw Err() << "too many parameters";
@@ -100,6 +146,7 @@ main(int argc, char **argv) {
     }
 
     // delete a database
+    // args: delete <name>
     if (cmd == "delete"){
       if (argc<2) throw Err() << "database name expected";
       if (argc>2) throw Err() << "too many parameters";
@@ -110,6 +157,7 @@ main(int argc, char **argv) {
     }
 
     // rename a database
+    // args: rename <old_name> <new_name>
     if (cmd == "rename"){
       if (argc<3) throw Err() << "database old and new names expected";
       if (argc>3) throw Err() << "too many parameters";
@@ -126,6 +174,7 @@ main(int argc, char **argv) {
     }
 
     // change database description
+    // args: set_descr <name> <description>
     if (cmd == "set_descr"){
       if (argc<3) throw Err() << "database name and new description text expected";
       if (argc>3) throw Err() << "too many parameters";
@@ -137,6 +186,7 @@ main(int argc, char **argv) {
     }
 
     // print database info
+    // args: info <name>
     if (cmd == "info"){
       if (argc<2) throw Err() << "database name expected";
       if (argc>2) throw Err() << "too many parameters";
@@ -150,6 +200,7 @@ main(int argc, char **argv) {
     }
 
     // print database list
+    // args: list
     if (cmd == "list"){
       if (argc>1) throw Err() << "too many parameters";
       DIR *dir = opendir(p.dbpath.c_str());
@@ -162,6 +213,70 @@ main(int argc, char **argv) {
         if (p!=string::npos) cout << name.substr(0,p) << "\n";
       }
       closedir(dir);
+      return 0;
+    }
+
+    // write data
+    // args: put <name> <time> <value1> ...
+    if (cmd == "put"){
+      if (argc<4) throw Err() << "database name, timstamp and some values expected";
+      uint64_t t = str2time(argv[2]);
+      vector<string> dat;
+      for (int i=3; i<argc; i++)
+        dat.push_back(string(argv[i]));
+      // open database and write data
+      DBsts db(p.dbpath, argv[1], 0);
+      db.put(t, dat, db.read_info());
+      return 0;
+    }
+
+    // get next point after time1
+    // args: get_next <name>[:N] [<time1>]
+    if (cmd == "get_next"){
+      if (argc<2) throw Err() << "database name expected";
+      if (argc>3) throw Err() << "too many parameters";
+      int col = get_col_num(argv[1]); // column
+      uint64_t t = argc>2? str2time(argv[2]): 0;
+      DBsts db(p.dbpath, argv[1], DB_RDONLY);
+      db.get_next(t, col, db.read_info());
+      return 0;
+    }
+
+    // get previous point before time2
+    // args: get_prev <name>[:N] [<time2>]
+    if (cmd == "get_prev"){
+      if (argc<2) throw Err() << "database name expected";
+      if (argc>3) throw Err() << "too many parameters";
+      int col = get_col_num(argv[1]); // column
+      uint64_t t = argc>2? str2time(argv[2]): prectime();
+      DBsts db(p.dbpath, argv[1], DB_RDONLY);
+      db.get_prev(t, col, db.read_info());
+      return 0;
+    }
+
+    // get interpolated point for time
+    // args: get_interp <name>[:N] <time>
+    if (cmd == "get_interp"){
+      if (argc<3) throw Err() << "database name and time expected";
+      if (argc>3) throw Err() << "too many parameters";
+      int col = get_col_num(argv[1]); // column
+      uint64_t t = str2time(argv[2]);
+      DBsts db(p.dbpath, argv[1], DB_RDONLY);
+      db.get_interp(t, col, db.read_info());
+      return 0;
+    }
+
+    // get data range
+    // args: get_range <name>[:N] [<time1>] [<time2>] [<dt>]
+    if (cmd == "get_next"){
+      if (argc<2) throw Err() << "database name expected";
+      if (argc>5) throw Err() << "too many parameters";
+      int col = get_col_num(argv[1]); // column
+      uint64_t t1 = argc>2? str2time(argv[2]): 0;
+      uint64_t t2 = argc>3? str2time(argv[3]): prectime();
+      uint64_t dt = argc>4? str2time(argv[4]): 0;
+      DBsts db(p.dbpath, argv[1], DB_RDONLY);
+      db.get_range(t1,t2,dt, col, db.read_info());
       return 0;
     }
 

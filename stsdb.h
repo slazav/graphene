@@ -2,6 +2,7 @@
 #define DBsts_H
 
 #include <cassert>
+#include <cstdlib>
 #include <string>
 #include <vector>
 #include <sstream>
@@ -120,19 +121,30 @@ class DBsts{
     ret.size = sizeof(T);
     return ret;
   }
-// TODO -- 
-//  static DBT time2dbt(const DBhead fmt, const uint64_t t){
-//    if (fmt.key == TIME_MS)
-//      return DBsts::mk_dbt(t < 0xFFFFFFFF ? t*1000:t);
-//    else
-//      return DBsts::mk_dbt(t < 0xFFFFFFFF ? (uint32_t)t : (uint32_t)(t/1000));
-//  }
-//  static uint64_t dbt2time(const DBhead & fmt, const DBT & dbt){
-//    if (fmt.key == TIME_MS)
-//      return *(uint64_t *)dbt.data;
-//    else
-//      return *(uint32_t *)dbt.data;
-//  }
+  // DBT for timestamp depends on the format:
+  static DBT time2dbt(const DBhead fmt, const uint64_t t){
+    DBT ret = mk_dbt();
+    if (fmt.key == TIME_MS){
+      size_t n = sizeof(uint64_t);
+      ret.size  = n;
+      ret.data  = malloc(n);
+      ret.flags = DB_DBT_APPMALLOC;
+      if (ret.data == NULL) throw Err() << "Malloc error";
+      *(uint64_t *)ret.data = t < 0xFFFFFFFF ? t*1000:t;
+    }
+    else {
+      size_t n = sizeof(uint32_t);
+      ret.size  = n;
+      ret.data  = malloc(n);
+      ret.flags = DB_DBT_APPMALLOC;
+      if (ret.data == NULL) throw Err() << "Malloc error";
+      *(uint32_t *)ret.data = t < 0xFFFFFFFF ? t:t/1000;
+    }
+  }
+  static uint64_t dbt2time(const DBhead & fmt, const DBT * dbt){
+    if (fmt.key == TIME_MS) return *(uint64_t *)dbt->data;
+    else                    return *(uint32_t *)dbt->data;
+  }
 
   /************************************/
   /* database handler and memory management */
@@ -242,6 +254,145 @@ class DBsts{
     head.val = static_cast<DataFMT>(dfmt);
     head.descr = std::string((char*)v.data+2, (char*)v.data+v.size-1);
     return head;
+  }
+
+  /************************************/
+  // Put data to the database
+  // input: timestamp + vector of strings + db header
+  // The function can be run multiple times without reopening
+  // the database and rereading the header.
+  //
+  void put(const uint64_t t,
+           const std::vector<std::string> & dat,
+           const DBhead & head){
+
+    if (dat.size() < 1) throw Err() << "Some data expected";
+
+    DBT k = time2dbt(head, t);
+    DBT v = mk_dbt();
+
+    // text: join all data
+    if (head.val == DATA_TEXT){
+      std::string txt = dat[0];
+      for (int i=1; i<dat.size(); i++)
+        txt+= " " + dat[i];
+      v = mk_dbt(txt);
+    }
+    // numbers: allocate data array
+    else {
+      size_t buf_size = head.dsize()*dat.size();
+      void * buf = malloc(buf_size);
+      if (buf == NULL) throw Err() << "malloc error";
+      for (int i=0; i<dat.size(); i++){
+        std::istringstream s(dat[i]);
+        switch (head.val){
+          case DATA_INT8:   s >> ((int8_t   *)buf)[i]; break;
+          case DATA_UINT8:  s >> ((uint8_t  *)buf)[i]; break;
+          case DATA_INT16:  s >> ((int16_t  *)buf)[i]; break;
+          case DATA_UINT16: s >> ((uint16_t *)buf)[i]; break;
+          case DATA_INT32:  s >> ((int32_t  *)buf)[i]; break;
+          case DATA_UINT32: s >> ((uint32_t *)buf)[i]; break;
+          case DATA_INT64:  s >> ((int64_t  *)buf)[i]; break;
+          case DATA_UINT64: s >> ((uint64_t *)buf)[i]; break;
+          case DATA_FLOAT:  s >> ((float    *)buf)[i]; break;
+          case DATA_DOUBLE: s >> ((double   *)buf)[i]; break;
+          default: throw Err() << "Unexpected data format";
+        }
+      }
+      v.data  = buf;
+      v.size  = buf_size;
+      v.flags = DB_DBT_APPMALLOC;
+    }
+    int res = dbp->put(dbp, NULL, &k, &v, 0);
+    if (res != 0) throw Err() << name << ".db: " << db_strerror(res);
+  }
+
+  /************************************/
+  // print data value
+  //
+  void print_value(const DBhead & head, DBT *k, DBT *v, int col){
+    std::cout << dbt2time(head,k) << " ";
+
+    if (head.val==DATA_TEXT){
+      // TODO: write v->size chars!
+      std::cout << (char *)v->data << "\n";
+      return;
+    }
+/*
+    if (v->size % head.dsize() != 0)
+      throw Err() << name << ".db: broken database: wrong data length";
+    size_t cn = v->size/head.dsize(); // number of columns
+
+    if (col==-1 || head.val==DATA_TEXT){ // write all the data
+        switch (head.val){
+          case DATA_INT8:   s >> ((int8_t   *)buf)[i]; break;
+          case DATA_UINT8:  s >> ((uint8_t  *)buf)[i]; break;
+          case DATA_INT16:  s >> ((int16_t  *)buf)[i]; break;
+          case DATA_UINT16: s >> ((uint16_t *)buf)[i]; break;
+          case DATA_INT32:  s >> ((int32_t  *)buf)[i]; break;
+          case DATA_UINT32: s >> ((uint32_t *)buf)[i]; break;
+          case DATA_INT64:  s >> ((int64_t  *)buf)[i]; break;
+          case DATA_UINT64: s >> ((uint64_t *)buf)[i]; break;
+          case DATA_FLOAT:  s >> ((float    *)buf)[i]; break;
+          case DATA_DOUBLE: s >> ((double   *)buf)[i]; break;
+          default: throw Err() << "Unexpected data format";
+        }
+
+    }
+*/
+  }
+
+  /************************************/
+  // get data from the database
+  //
+  void get_next(const uint64_t t1,
+                const int col,
+                const DBhead & head){
+    /* Get a cursor */
+    DBC *curs;
+    dbp->cursor(dbp, NULL, &curs, 0);
+    if (curs==NULL) throw Err() << name << ".db: can't get a cursor";
+
+    DBT k = time2dbt(head, t1);
+    DBT v = mk_dbt();
+    int res = curs->c_get(curs, &k, &v, DB_SET_RANGE);
+    curs->close(curs);
+    if (res!=0) throw Err() << name << ".db: " << db_strerror(res);
+    print_value(head, &k, &v, col);
+  }
+
+  void get_prev(const uint64_t t2,
+                const int col,
+                const DBhead & head){
+    // TODO
+  }
+
+  void get_interp(const uint64_t t,
+                  const int col,
+           const DBhead & head){
+    // TODO
+  }
+
+  void get_range(const uint64_t t1,
+                 const uint64_t t2,
+                 const uint64_t dt,
+                 const int col,
+                 const DBhead & head){
+    /* Get a cursor */
+    DBC *curs;
+    dbp->cursor(dbp, NULL, &curs, 0);
+    if (curs==NULL) throw Err() << name << ".db: can't get a cursor";
+
+    DBT k = time2dbt(head, t1);
+    DBT v = mk_dbt();
+    int fl = DB_SET_RANGE; // first get t >= t1
+    while (curs->c_get(curs, &k, &v, fl)==0 &&
+           t2 >= dbt2time(head,&k)){
+      fl = DB_NEXT;
+      // TODO
+      // use v.data
+    }
+    curs->close(curs);
   }
 };
 

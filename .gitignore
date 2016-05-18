@@ -1,0 +1,3 @@
+*.o
+stsdb
+test_db
