@@ -1,5 +1,7 @@
 #!/bin/sh -u
 
+# test command line interface program ./stsdb
+
 function assert(){
   if [ "$1" != "$2" ]; then
     printf "ERROR:\n"
@@ -76,6 +78,38 @@ assert "$(./stsdb -d . set_descr a b c)" "Error: too many parameters"
 assert "$(./stsdb -d . set_descr test_x a)" "Error: test_x.db: No such file or directory"
 assert "$(./stsdb -d . set_descr test_1 "Test DB number 1")" ""
 assert "$(./stsdb -d . info test_1)" "S	DOUBLE	Test DB number 1"
+
+#TODO
+#1 S-DOUBLE DB test_1
+assert "$(./stsdb -d . put test_1 1234567890    0.1)" ""
+assert "$(./stsdb -d . put test_1 2234567890123 0.2)" ""
+# get_next
+assert "$(./stsdb -d . get_next test_1)"               "1234567890 0.1" # first
+assert "$(./stsdb -d . get_next test_1 0)"             "1234567890 0.1" # first
+assert "$(./stsdb -d . get_next test_1 1000000000)"    "1234567890 0.1"
+assert "$(./stsdb -d . get_next test_1 1000000000000)" "1234567890 0.1" # ms
+assert "$(./stsdb -d . get_next test_1 1234567890)"    "1234567890 0.1" # ==
+assert "$(./stsdb -d . get_next test_1 1234567895)"    "2234567890 0.2"
+assert "$(./stsdb -d . get_next test_1 1234567895000)" "2234567890 0.2" # ms
+assert "$(./stsdb -d . get_next test_1 now)"           "2234567890 0.2"
+assert "$(./stsdb -d . get_next test_1 NoW)"           "2234567890 0.2"
+assert "$(./stsdb -d . get_next test_1 2000000000124)" "2234567890 0.2"
+assert "$(./stsdb -d . get_next test_1 3000000000)"    ""
+assert "$(./stsdb -d . get_next test_1 3000000000000)" ""
+assert "$(./stsdb -d . get_next test_1 3384967290)"    ""
+assert "$(./stsdb -d . get_next test_1 1234567890000000)"    ""
+# get_prev
+assert "$(./stsdb -d . get_prev test_1)"               "2234567890 0.2" # last
+assert "$(./stsdb -d . get_prev test_1 1)"             ""
+assert "$(./stsdb -d . get_prev test_1 1234567890)"    "" # ==
+assert "$(./stsdb -d . get_prev test_1 2234567890123)" "1234567890 0.1" # ==
+assert "$(./stsdb -d . get_prev test_1 1234567895)"    "1234567890 0.1"
+assert "$(./stsdb -d . get_prev test_1 1234567895000)" "1234567890 0.1"
+assert "$(./stsdb -d . get_prev test_1 now)"           "1234567890 0.1"
+assert "$(./stsdb -d . get_prev test_1 3234567895)"    "2234567890 0.2"
+assert "$(./stsdb -d . get_prev test_1 3234567895000)" "2234567890 0.2"
+
+
 
 # remove all test databases
 rm -f test*.db

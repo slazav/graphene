@@ -9,6 +9,9 @@
 #include <cstring> /* memset */
 #include <db.h>
 
+// bercleydb:
+//  http://docs.oracle.com/cd/E17076_02/html/gsg/C/index.html
+//  https://web.stanford.edu/class/cs276a/projects/docs/berkeleydb/reftoc.html
 
 /***********************************************************/
 // Class for exceptions.
@@ -93,8 +96,156 @@ class DBhead {
 
   bool operator==(const DBhead &o) const{
     return o.key==key && o.val==val && o.descr==descr; }
+
+
+  // Pack timestamp according with time format.
+  // std::string is used as a convenient data storage, which
+  // can be easily converted into Berkleydb data.
+  // It is not a c-string!
+  // NOTE: if we store time in seconds, we can't use all the (64bit ms range)/1000
+  std::string pack_time(const uint64_t t) const{
+    if (key == TIME_MS){
+      std::string ret(sizeof(uint64_t), '\0');
+      *(uint64_t *)ret.data() = t < 0xFFFFFFFF ? t*1000:t;
+      return ret;
+    }
+    if (key == TIME_S){
+      std::string ret(sizeof(uint32_t), '\0');
+      if      (t<0xFFFFFFFFll)      *(uint32_t *)ret.data() = t;
+      else if (t<0xFFFFFFFFll*1000) *(uint32_t *)ret.data() = t/1000;
+      else                          *(uint32_t *)ret.data() = 0xFFFFFFFF;
+      return ret;
+    }
+    throw Err() << "Unexpected time format";
+  }
+  // same, but with string on input
+  std::string pack_time(const std::string & ts) const{
+    std::istringstream s(ts);
+    uint64_t t;
+    s >> t;
+    if (s.bad() || s.fail() || !s.eof())
+      throw Err() << "Not a timestamp: " << ts;
+    return pack_time(t);
+  }
+  // Unpack timestamp
+  uint64_t unpack_time(const std::string & s) const{
+    if (key == TIME_MS){
+      if (s.size()!=sizeof(uint64_t))
+        throw Err() << "Broken database: wrong timestamp size";
+      return *(uint64_t *)s.data();
+    }
+    if (key == TIME_S){
+      if (s.size()!=sizeof(uint32_t))
+        throw Err() << "Broken database: wrong timestamp size";
+      return *(uint32_t *)s.data();
+    }
+    throw Err() << "Unexpected time format";
+  }
+
+  // Pack data according with data format
+  // std::string is used as a convenient data storage, which
+  // can be easily converted into Berkleydb data.
+  // Output string is not a c-string!
+  std::string pack_data(const std::vector<std::string> & strs) const{
+    if (strs.size() < 1) throw Err() << "Some data expected";
+    std::string ret;
+    if (val == DATA_TEXT){ // text: join all data
+      ret = strs[0];
+      for (int i=1; i<strs.size(); i++)
+        ret+= " " + strs[i];
+    }
+    else {    // numbers
+      ret = std::string(dsize()*strs.size(), '\0');
+      for (int i=0; i<strs.size(); i++){
+        std::istringstream s(strs[i]);
+        switch (val){
+          case DATA_INT8:   s >> ((int8_t   *)ret.data())[i]; break;
+          case DATA_UINT8:  s >> ((uint8_t  *)ret.data())[i]; break;
+          case DATA_INT16:  s >> ((int16_t  *)ret.data())[i]; break;
+          case DATA_UINT16: s >> ((uint16_t *)ret.data())[i]; break;
+          case DATA_INT32:  s >> ((int32_t  *)ret.data())[i]; break;
+          case DATA_UINT32: s >> ((uint32_t *)ret.data())[i]; break;
+          case DATA_INT64:  s >> ((int64_t  *)ret.data())[i]; break;
+          case DATA_UINT64: s >> ((uint64_t *)ret.data())[i]; break;
+          case DATA_FLOAT:  s >> ((float    *)ret.data())[i]; break;
+          case DATA_DOUBLE: s >> ((double   *)ret.data())[i]; break;
+          default: throw Err() << "Unexpected data format";
+        }
+        if (s.bad() || s.fail() || !s.eof())
+          throw Err() << "Can't put value into "
+                      << datafmt2str(val) << " database: " << strs[i];
+      }
+    }
+    return ret;
+  }
+
+  // Unpack data
+  std::string unpack_data(const std::string & s, const int col=-1) const{
+    if (val == DATA_TEXT) return s;
+    if (s.size() % dsize() != 0)
+      throw Err() << "Broken database: wrong data length";
+    // number of columns
+    size_t cn = s.size()/dsize();
+    // column range we want to show:
+    size_t c1=0, c2=cn;
+    if (col!=-1) { c1=col; c2=col+1; }
+
+    std::ostringstream ostr;
+    for (size_t i=c1; i<c2; i++){
+      if (i>c1) ostr << ' ';
+      if (i>=cn) { return "NaN"; }
+      switch (val){
+        case DATA_INT8:   ostr << ((int8_t   *)s.data())[i]; break;
+        case DATA_UINT8:  ostr << ((uint8_t  *)s.data())[i]; break;
+        case DATA_INT16:  ostr << ((int16_t  *)s.data())[i]; break;
+        case DATA_UINT16: ostr << ((uint16_t *)s.data())[i]; break;
+        case DATA_INT32:  ostr << ((int32_t  *)s.data())[i]; break;
+        case DATA_UINT32: ostr << ((uint32_t *)s.data())[i]; break;
+        case DATA_INT64:  ostr << ((int64_t  *)s.data())[i]; break;
+        case DATA_UINT64: ostr << ((uint64_t *)s.data())[i]; break;
+        case DATA_FLOAT:  ostr << ((float    *)s.data())[i]; break;
+        case DATA_DOUBLE: ostr << ((double   *)s.data())[i]; break;
+        default: throw Err() << "Unexpected data format";
+      }
+    }
+    return ostr.str();
+  }
+
 };
 
+/***********************************************************/
+// Key compare function for the database
+// I compare all types of integers (64 and 32 bits are used for timestamps,
+// 8 bits are used for database information)
+// Shorter ints always smaller!
+// (THINKABOUT: do we want to mix 64 and 32 bit integers in one DB?)
+int cmpfunc(DB *dbp, const DBT *a, const DBT *b){
+  uint64_t v1,v2;
+  if (a->size == sizeof(uint64_t) && b->size == sizeof(uint64_t)){
+    v1 = *(uint64_t*)a->data;
+    v2 = *(uint64_t*)b->data; }
+  else
+  if (a->size == sizeof(uint32_t) && b->size == sizeof(uint32_t)){
+    v1 = *(uint32_t*)a->data;
+    v2 = *(uint32_t*)b->data; }
+  else
+  if (a->size == sizeof(uint16_t) && b->size == sizeof(uint16_t)){
+    v1 = *(uint16_t*)a->data;
+    v2 = *(uint16_t*)b->data; }
+  else
+  if (a->size == sizeof(uint8_t) && b->size == sizeof(uint8_t)){
+    v1 = *(uint8_t*)a->data;
+    v2 = *(uint8_t*)b->data; }
+  else {
+    v1 = a->size;
+    v2 = b->size;
+  }
+  if (v1>v2) return 1;
+  if (v2>v1) return -1;
+  return 0;
+}
+
+/***********************************************************/
 /***********************************************************/
 
 /* class for wrapping BerkleyDB */
@@ -111,7 +262,7 @@ class DBsts{
   static DBT mk_dbt(const std::string & str){
     DBT ret = mk_dbt();
     ret.data = (void *) str.data();
-    ret.size = str.length()+1;
+    ret.size = str.length();
     return ret;
   }
   template <typename T>
@@ -120,30 +271,6 @@ class DBsts{
     ret.data = (void *)v;
     ret.size = sizeof(T);
     return ret;
-  }
-  // DBT for timestamp depends on the format:
-  static DBT time2dbt(const DBhead fmt, const uint64_t t){
-    DBT ret = mk_dbt();
-    if (fmt.key == TIME_MS){
-      size_t n = sizeof(uint64_t);
-      ret.size  = n;
-      ret.data  = malloc(n);
-      ret.flags = DB_DBT_APPMALLOC;
-      if (ret.data == NULL) throw Err() << "Malloc error";
-      *(uint64_t *)ret.data = t < 0xFFFFFFFF ? t*1000:t;
-    }
-    else {
-      size_t n = sizeof(uint32_t);
-      ret.size  = n;
-      ret.data  = malloc(n);
-      ret.flags = DB_DBT_APPMALLOC;
-      if (ret.data == NULL) throw Err() << "Malloc error";
-      *(uint32_t *)ret.data = t < 0xFFFFFFFF ? t:t/1000;
-    }
-  }
-  static uint64_t dbt2time(const DBhead & fmt, const DBT * dbt){
-    if (fmt.key == TIME_MS) return *(uint64_t *)dbt->data;
-    else                    return *(uint32_t *)dbt->data;
   }
 
   /************************************/
@@ -200,6 +327,11 @@ class DBsts{
     if (ret != 0)
       throw Err() << name << ".db: " << db_strerror(ret);
 
+    /* set key compare function */
+    ret = dbp->set_bt_compare(dbp, cmpfunc);
+    if (ret != 0)
+      throw Err() << name << ".db: " << db_strerror(ret);
+
     /* Open the database */
     ret = dbp->open(dbp,           /* Pointer to the database */
                     NULL,          /* Txn pointer */
@@ -252,7 +384,7 @@ class DBsts{
       throw Err() << name << ".db: broken database, bad data format";
     head.key = static_cast<TimeFMT>(tfmt);
     head.val = static_cast<DataFMT>(dfmt);
-    head.descr = std::string((char*)v.data+2, (char*)v.data+v.size-1);
+    head.descr = std::string((char*)v.data+2, (char*)v.data+v.size);
     return head;
   }
 
@@ -265,44 +397,10 @@ class DBsts{
   void put(const uint64_t t,
            const std::vector<std::string> & dat,
            const DBhead & head){
-
-    if (dat.size() < 1) throw Err() << "Some data expected";
-
-    DBT k = time2dbt(head, t);
-    DBT v = mk_dbt();
-
-    // text: join all data
-    if (head.val == DATA_TEXT){
-      std::string txt = dat[0];
-      for (int i=1; i<dat.size(); i++)
-        txt+= " " + dat[i];
-      v = mk_dbt(txt);
-    }
-    // numbers: allocate data array
-    else {
-      size_t buf_size = head.dsize()*dat.size();
-      void * buf = malloc(buf_size);
-      if (buf == NULL) throw Err() << "malloc error";
-      for (int i=0; i<dat.size(); i++){
-        std::istringstream s(dat[i]);
-        switch (head.val){
-          case DATA_INT8:   s >> ((int8_t   *)buf)[i]; break;
-          case DATA_UINT8:  s >> ((uint8_t  *)buf)[i]; break;
-          case DATA_INT16:  s >> ((int16_t  *)buf)[i]; break;
-          case DATA_UINT16: s >> ((uint16_t *)buf)[i]; break;
-          case DATA_INT32:  s >> ((int32_t  *)buf)[i]; break;
-          case DATA_UINT32: s >> ((uint32_t *)buf)[i]; break;
-          case DATA_INT64:  s >> ((int64_t  *)buf)[i]; break;
-          case DATA_UINT64: s >> ((uint64_t *)buf)[i]; break;
-          case DATA_FLOAT:  s >> ((float    *)buf)[i]; break;
-          case DATA_DOUBLE: s >> ((double   *)buf)[i]; break;
-          default: throw Err() << "Unexpected data format";
-        }
-      }
-      v.data  = buf;
-      v.size  = buf_size;
-      v.flags = DB_DBT_APPMALLOC;
-    }
+    std::string ks = head.pack_time(t);
+    std::string vs = head.pack_data(dat);
+    DBT k = mk_dbt(ks);
+    DBT v = mk_dbt(vs);
     int res = dbp->put(dbp, NULL, &k, &v, 0);
     if (res != 0) throw Err() << name << ".db: " << db_strerror(res);
   }
@@ -311,41 +409,17 @@ class DBsts{
   // print data value
   //
   void print_value(const DBhead & head, DBT *k, DBT *v, int col){
-    std::cout << dbt2time(head,k) << " ";
-
-    if (head.val==DATA_TEXT){
-      // TODO: write v->size chars!
-      std::cout << (char *)v->data << "\n";
-      return;
-    }
-/*
-    if (v->size % head.dsize() != 0)
-      throw Err() << name << ".db: broken database: wrong data length";
-    size_t cn = v->size/head.dsize(); // number of columns
-
-    if (col==-1 || head.val==DATA_TEXT){ // write all the data
-        switch (head.val){
-          case DATA_INT8:   s >> ((int8_t   *)buf)[i]; break;
-          case DATA_UINT8:  s >> ((uint8_t  *)buf)[i]; break;
-          case DATA_INT16:  s >> ((int16_t  *)buf)[i]; break;
-          case DATA_UINT16: s >> ((uint16_t *)buf)[i]; break;
-          case DATA_INT32:  s >> ((int32_t  *)buf)[i]; break;
-          case DATA_UINT32: s >> ((uint32_t *)buf)[i]; break;
-          case DATA_INT64:  s >> ((int64_t  *)buf)[i]; break;
-          case DATA_UINT64: s >> ((uint64_t *)buf)[i]; break;
-          case DATA_FLOAT:  s >> ((float    *)buf)[i]; break;
-          case DATA_DOUBLE: s >> ((double   *)buf)[i]; break;
-          default: throw Err() << "Unexpected data format";
-        }
-
-    }
-*/
+    if (k->size!=sizeof(uint32_t) && k->size!=sizeof(uint64_t)) return;
+    std::string ks((char *)k->data, (char *)k->data+k->size);
+    std::string vs((char *)v->data, (char *)v->data+v->size);
+    std::cout << head.unpack_time(ks) << " "
+              << head.unpack_data(vs) << "\n";
   }
 
   /************************************/
-  // get data from the database
+  // get data from the database -- get_next
   //
-  void get_next(const uint64_t t1,
+  void get_next(uint64_t t1,
                 const int col,
                 const DBhead & head){
     /* Get a cursor */
@@ -353,26 +427,56 @@ class DBsts{
     dbp->cursor(dbp, NULL, &curs, 0);
     if (curs==NULL) throw Err() << name << ".db: can't get a cursor";
 
-    DBT k = time2dbt(head, t1);
+    std::string ks = head.pack_time(t1);
+    DBT k = mk_dbt(ks);
     DBT v = mk_dbt();
     int res = curs->c_get(curs, &k, &v, DB_SET_RANGE);
-    curs->close(curs);
+    if (res==DB_NOTFOUND) return;
     if (res!=0) throw Err() << name << ".db: " << db_strerror(res);
     print_value(head, &k, &v, col);
+    curs->close(curs);
   }
 
+  /************************************/
+  // get data from the database -- get_prev
+  //
   void get_prev(const uint64_t t2,
                 const int col,
                 const DBhead & head){
-    // TODO
+    /* Get a cursor */
+    DBC *curs;
+    dbp->cursor(dbp, NULL, &curs, 0);
+    if (curs==NULL) throw Err() << name << ".db: can't get a cursor";
+    std::string ks = head.pack_time(t2);
+    DBT k = mk_dbt(ks);
+    DBT v = mk_dbt();
+
+    int res = curs->c_get(curs, &k, &v, DB_SET_RANGE);
+    if (res!=0 && res!=DB_NOTFOUND)
+      throw Err() << name << ".db: " << db_strerror(res);
+    if (k.size<sizeof(int32_t)) return;
+
+    res = curs->c_get(curs, &k, &v, DB_PREV);
+    if (res==DB_NOTFOUND) return;
+    if (res!=0) throw Err() << name << ".db: " << db_strerror(res);
+    if (k.size<sizeof(int32_t)) return;
+
+    print_value(head, &k, &v, col);
+    curs->close(curs);
   }
 
+  /************************************/
+  // get data from the database -- get_interp
+  //
   void get_interp(const uint64_t t,
                   const int col,
            const DBhead & head){
     // TODO
   }
 
+  /************************************/
+  // get data from the database -- get_range
+  //
   void get_range(const uint64_t t1,
                  const uint64_t t2,
                  const uint64_t dt,
@@ -383,11 +487,14 @@ class DBsts{
     dbp->cursor(dbp, NULL, &curs, 0);
     if (curs==NULL) throw Err() << name << ".db: can't get a cursor";
 
-    DBT k = time2dbt(head, t1);
+    std::string ks = head.pack_time(t1);
+    DBT k = mk_dbt(ks);
     DBT v = mk_dbt();
     int fl = DB_SET_RANGE; // first get t >= t1
-    while (curs->c_get(curs, &k, &v, fl)==0 &&
-           t2 >= dbt2time(head,&k)){
+    while (curs->c_get(curs, &k, &v, fl)==0){
+      std::string s((char *)v.data, (char *)v.data+v.size);
+      if (t2 >= head.unpack_time(s)) break;
+
       fl = DB_NEXT;
       // TODO
       // use v.data

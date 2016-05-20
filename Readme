@@ -18,10 +18,26 @@ unsigned integer not smaller then 2^32). Time is counted from
 time values are converted to the correct format automatically.
 Duplicated time values are allowed.
 
+Timestamp examples:
+input                store and output
+t                    s (32 bit db)    ms (64 bit db)
+0 .. 2^32-1          t                1000*t   // input time in s
+2^32 .. 2^32*1000    t/1000           t        // input time in ms
+2^32*1000 .. 2^64-1  2^32-1           t        // truncated in 32 bit db
+
+THINKABOUT:
+  do we want to mix seconds and ms (32 and 64 bit keys) in one DB?
+  do we want to print only ms on output?
+  do we want not to mix s and ms at all?
+  do we want to print error if time is too large?
+
 Value can carry some text or an array if numbers of arbitrary length
 (data columns). The data format can be chosen during the database
 creation. Possible variants are: TEXT, INT8, UINT8, INT16, UINT16,
 INT32, UINT32, INT64, UINT64, FLOAT, DOUBLE.
+If a certain column is requested but data array is not long enough,
+a "NaN" value is printed.
+
 
 =========================================================================
     Command line interface to data
@@ -34,7 +50,7 @@ Usage: stsdb [options] <command> <parameters>
 -d <path> -- database directory (default /var/lib/stsdb/)
 -h        -- write this help message and exit
 
-    Commands:
+    Commands for manipulating databases:
 
 stsdb create <name> <time_fmt> <data_fmt> <description>  -- create a database
 stsdb delete <name>                  -- delete a database file
@@ -44,17 +60,24 @@ stsdb info <name>                    -- print database information
 stsdb list                           -- list all databases in the data folder
 
 -- TEST_NEEDED:
+    Command for adding data:
 stsdb put <name> <time> <value1> ... <valueN> -- write data point
 
+    Command for getting data:
+stsdb get_next <name>[:N] [<time1>] -- get next point with t>=time1
+stsdb get_prev <name>[:N] [<time2>] -- get previous point with t<time2
+TODO: t<=time2 ?
+
 -- TODO:
-stsdb get_next <name>[:N] [<time1>] -- get next point after time1
-stsdb get_prev <name>[:N] [<time2>] -- get previous point before time2
 stsdb get_interp <name>[:N] <time>  -- get interpolated point
 stsdb get_range  <name>[:N] [<time1>] [<time2>] [<dt>]
                                     -- get all points in the time range
 
 In get_* commands the database name can be followed by column number.
-Default value for time1 is 0, for time2 is NOW.
+Default value for time1 is 0, for time2 is infinity. Word "now" can be used
+to specify current time. If the database has no future timestamps,
+then commands "get_prev name" and "get_prev name now" are equivalent.
+
 
 stsdb access -- Interactively read/write data. Allows writing of
 multiple points without reopening the database. Allows making a simple

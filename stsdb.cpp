@@ -100,11 +100,11 @@ prectime(){
 // String "now" means current time.
 uint64_t
 str2time(const char *str) {
-  uint64_t t;
-  if (strcasecmp(str, "now")==0) t = prectime();
-  else t = atoll(str);
-  if (t==0)
-    throw Err() << "Bad timestamp: " << str;
+  if (strcasecmp(str, "now")==0) return prectime();
+  istringstream s(str);
+  uint64_t t;  s >> t;
+  if (s.bad() || s.fail() || !s.eof())
+  throw Err() << "Not a timestamp: " << str;
   return t;
 }
 
@@ -128,11 +128,11 @@ main(int argc, char **argv) {
     p.parse_cmdline_options(&argc, &argv);
 
     if (argc < 1) p.print_help();
-    string cmd(argv[0]);
+    const char * cmd = argv[0];
 
     // create new database
     // args: create <name> [<time_fmt>] [<data_fmt>] [<description>]
-    if (cmd == "create"){
+    if (strcasecmp(cmd, "create")==0){
       if (argc<2) throw Err() << "database name expected";
       if (argc>5) throw Err() << "too many parameters";
       string name(argv[1]);
@@ -147,7 +147,7 @@ main(int argc, char **argv) {
 
     // delete a database
     // args: delete <name>
-    if (cmd == "delete"){
+    if (strcasecmp(cmd, "delete")==0){
       if (argc<2) throw Err() << "database name expected";
       if (argc>2) throw Err() << "too many parameters";
       string name = string(argv[1]) + ".db";
@@ -158,7 +158,7 @@ main(int argc, char **argv) {
 
     // rename a database
     // args: rename <old_name> <new_name>
-    if (cmd == "rename"){
+    if (strcasecmp(cmd, "rename")==0){
       if (argc<3) throw Err() << "database old and new names expected";
       if (argc>3) throw Err() << "too many parameters";
       string name1 = p.dbpath + "/" + argv[1] + ".db";
@@ -175,7 +175,7 @@ main(int argc, char **argv) {
 
     // change database description
     // args: set_descr <name> <description>
-    if (cmd == "set_descr"){
+    if (strcasecmp(cmd, "set_descr")==0){
       if (argc<3) throw Err() << "database name and new description text expected";
       if (argc>3) throw Err() << "too many parameters";
       DBsts db(p.dbpath, argv[1], 0);
@@ -187,7 +187,7 @@ main(int argc, char **argv) {
 
     // print database info
     // args: info <name>
-    if (cmd == "info"){
+    if (strcasecmp(cmd, "info")==0){
       if (argc<2) throw Err() << "database name expected";
       if (argc>2) throw Err() << "too many parameters";
       DBsts db(p.dbpath, argv[1], DB_RDONLY);
@@ -201,7 +201,7 @@ main(int argc, char **argv) {
 
     // print database list
     // args: list
-    if (cmd == "list"){
+    if (strcasecmp(cmd, "list")==0){
       if (argc>1) throw Err() << "too many parameters";
       DIR *dir = opendir(p.dbpath.c_str());
       if (!dir) throw Err() << "can't open database directory: " << strerror(errno);
@@ -218,7 +218,7 @@ main(int argc, char **argv) {
 
     // write data
     // args: put <name> <time> <value1> ...
-    if (cmd == "put"){
+    if (strcasecmp(cmd, "put")==0){
       if (argc<4) throw Err() << "database name, timstamp and some values expected";
       uint64_t t = str2time(argv[2]);
       vector<string> dat;
@@ -232,7 +232,7 @@ main(int argc, char **argv) {
 
     // get next point after time1
     // args: get_next <name>[:N] [<time1>]
-    if (cmd == "get_next"){
+    if (strcasecmp(cmd, "get_next")==0){
       if (argc<2) throw Err() << "database name expected";
       if (argc>3) throw Err() << "too many parameters";
       int col = get_col_num(argv[1]); // column
@@ -244,11 +244,11 @@ main(int argc, char **argv) {
 
     // get previous point before time2
     // args: get_prev <name>[:N] [<time2>]
-    if (cmd == "get_prev"){
+    if (strcasecmp(cmd, "get_prev")==0){
       if (argc<2) throw Err() << "database name expected";
       if (argc>3) throw Err() << "too many parameters";
       int col = get_col_num(argv[1]); // column
-      uint64_t t = argc>2? str2time(argv[2]): prectime();
+      uint64_t t = argc>2? str2time(argv[2]): -1;
       DBsts db(p.dbpath, argv[1], DB_RDONLY);
       db.get_prev(t, col, db.read_info());
       return 0;
@@ -256,7 +256,7 @@ main(int argc, char **argv) {
 
     // get interpolated point for time
     // args: get_interp <name>[:N] <time>
-    if (cmd == "get_interp"){
+    if (strcasecmp(cmd, "get_interp")==0){
       if (argc<3) throw Err() << "database name and time expected";
       if (argc>3) throw Err() << "too many parameters";
       int col = get_col_num(argv[1]); // column
@@ -268,12 +268,12 @@ main(int argc, char **argv) {
 
     // get data range
     // args: get_range <name>[:N] [<time1>] [<time2>] [<dt>]
-    if (cmd == "get_next"){
+    if (strcasecmp(cmd, "get_next")==0){
       if (argc<2) throw Err() << "database name expected";
       if (argc>5) throw Err() << "too many parameters";
       int col = get_col_num(argv[1]); // column
       uint64_t t1 = argc>2? str2time(argv[2]): 0;
-      uint64_t t2 = argc>3? str2time(argv[3]): prectime();
+      uint64_t t2 = argc>3? str2time(argv[3]): -1;
       uint64_t dt = argc>4? str2time(argv[4]): 0;
       DBsts db(p.dbpath, argv[1], DB_RDONLY);
       db.get_range(t1,t2,dt, col, db.read_info());

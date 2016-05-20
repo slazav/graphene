@@ -13,17 +13,101 @@ int main() {
     ASSERT_EQ(DEFAULT_TIMEFMT, TIME_S);
     ASSERT_EQ(DEFAULT_DATAFMT, DATA_DOUBLE);
 
-    DBhead f1; // default constructor
-    ASSERT_EQ(f1.key, DEFAULT_TIMEFMT);
-    ASSERT_EQ(f1.val, DEFAULT_DATAFMT);
-    ASSERT_EQ(f1.dsize(), data_fmt_sizes[DEFAULT_DATAFMT]);
+    {
+      DBhead hh1; // default constructor
+      DBhead hh2(TIME_MS, DATA_INT16);
 
-    DBhead f2(TIME_MS, DATA_INT16);
-    ASSERT_EQ(f2.key, TIME_MS);
-    ASSERT_EQ(f2.val, DATA_INT16);
-    ASSERT_EQ(f2.dsize(), 2); // int16 -> 2 bytes
-    ASSERT_EQ(f2.dname(), "INT16");
-    ASSERT_EQ(f2.tname(), "MS");
+      ASSERT_EQ(hh1.key, DEFAULT_TIMEFMT);
+      ASSERT_EQ(hh1.val, DEFAULT_DATAFMT);
+      ASSERT_EQ(hh1.dsize(), data_fmt_sizes[DEFAULT_DATAFMT]);
+
+      ASSERT_EQ(hh2.key, TIME_MS);
+      ASSERT_EQ(hh2.val, DATA_INT16);
+      ASSERT_EQ(hh2.dsize(), 2); // int16 -> 2 bytes
+      ASSERT_EQ(hh2.dname(), "INT16");
+      ASSERT_EQ(hh2.tname(), "MS");
+    }
+
+    {
+      // pack/unpack timestamps
+      DBhead hh1(TIME_S, DATA_DOUBLE);
+      DBhead hh2(TIME_MS, DATA_INT16);
+
+      uint64_t ts  = 1463643547;    // s
+      uint64_t tms = ts*1000 + 823; // ms
+      string d1  = hh1.pack_time(ts);   // s->s
+      string d1a = hh1.pack_time(tms);  // ms->s
+      string d2  = hh2.pack_time(ts);   // s->ms
+      string d2a = hh2.pack_time(tms);  // ms->ms
+
+      ASSERT_EQ(d1.size(),  4);
+      ASSERT_EQ(d1a.size(), 4);
+      ASSERT_EQ(d2.size(),  8);
+      ASSERT_EQ(d2a.size(), 8);
+
+      ASSERT_EQ(hh1.unpack_time(d1),   ts);
+      ASSERT_EQ(hh1.unpack_time(d1a),  ts);
+      ASSERT_EQ(hh2.unpack_time(d2),   ts*1000); // data have been rounded
+      ASSERT_EQ(hh2.unpack_time(d2a),  tms);
+
+      ASSERT_EQ(hh1.unpack_time(hh1.pack_time(2234567890)), 2234567890);    // seconds
+      ASSERT_EQ(hh1.unpack_time(hh1.pack_time(2234567890123)), 2234567890); //ms
+      ASSERT_EQ(hh1.unpack_time(hh1.pack_time(0xFFFFFFFE)), 0xFFFFFFFE);    // how do we care about 2^31<t<2^32?
+      ASSERT_EQ(hh1.unpack_time(hh1.pack_time(0xFFFFFFFF)), 0xFFFFFFFF/1000); // s - ms boundary
+      ASSERT_EQ(hh1.unpack_time(hh1.pack_time(4294967295000)), 4294967295); // ms
+      ASSERT_EQ(hh1.unpack_time(hh1.pack_time(5294967295000)), 4294967295); // we keep seconds in 32 bit, larger values are truncated
+
+      ASSERT_EQ(hh2.unpack_time(hh2.pack_time(2234567890)), 2234567890000);    // seconds
+      ASSERT_EQ(hh2.unpack_time(hh2.pack_time(2234567890123)), 2234567890123); //ms
+      ASSERT_EQ(hh2.unpack_time(hh2.pack_time(4294967294)), 4294967294000);    // how do we care about 2^31<t<2^32?
+      ASSERT_EQ(hh2.unpack_time(hh2.pack_time(4294967295)), 4294967295);       // s - ms boundary
+      ASSERT_EQ(hh2.unpack_time(hh2.pack_time(4294967295000)), 4294967295000); // ms
+      ASSERT_EQ(hh2.unpack_time(hh2.pack_time(5294967295000)), 5294967295000); // we keep timestamp in 64 bit, no need to truncate
+    }
+
+    {
+      // pack/unpack data
+      DBhead hh1(TIME_S, DATA_INT32);
+      DBhead hh2(TIME_S, DATA_DOUBLE);
+      DBhead hh3(TIME_S, DATA_TEXT);
+
+      vector<string> v1,v2,v3;
+      v1.push_back("314");
+      v1.push_back("628");
+      v2.push_back("3.1415");
+      v2.push_back("6.2830");
+      v3.push_back("pi");
+      v3.push_back("2pi");
+
+      // store in integer DB
+      ASSERT_EQ(hh1.unpack_data(hh1.pack_data(v1)), "314 628");
+      ASSERT_EX(hh1.unpack_data(hh1.pack_data(v2)), "Can't put value into INT32 database: 3.1415");
+      ASSERT_EX(hh1.unpack_data(hh1.pack_data(v3)), "Can't put value into INT32 database: pi"); //!!!
+
+      // store in double DB
+      ASSERT_EQ(hh2.unpack_data(hh2.pack_data(v1)), "314 628");
+      ASSERT_EQ(hh2.unpack_data(hh2.pack_data(v2)), "3.1415 6.283");
+      ASSERT_EX(hh2.unpack_data(hh2.pack_data(v3)), "Can't put value into DOUBLE database: pi");
+
+      // store in text DB
+      ASSERT_EQ(hh3.unpack_data(hh3.pack_data(v1)), "314 628");
+      ASSERT_EQ(hh3.unpack_data(hh3.pack_data(v2)), "3.1415 6.2830");
+      ASSERT_EQ(hh3.unpack_data(hh3.pack_data(v3)), "pi 2pi");
+
+      // colums
+      ASSERT_EQ(hh1.unpack_data(hh1.pack_data(v1), 0), "314");
+      ASSERT_EQ(hh1.unpack_data(hh1.pack_data(v1), 1), "628");
+      ASSERT_EQ(hh1.unpack_data(hh1.pack_data(v1), 2), "NaN");
+
+      ASSERT_EQ(hh2.unpack_data(hh2.pack_data(v2), 0), "3.1415");
+      ASSERT_EQ(hh2.unpack_data(hh2.pack_data(v2), 1), "6.283");
+      ASSERT_EQ(hh2.unpack_data(hh2.pack_data(v2), 2), "NaN");
+
+      // column is ignored for the text database
+      ASSERT_EQ(hh3.unpack_data(hh3.pack_data(v2), 0), "3.1415 6.2830");
+      ASSERT_EQ(hh3.unpack_data(hh3.pack_data(v2), 1), "3.1415 6.2830");
+      ASSERT_EQ(hh3.unpack_data(hh3.pack_data(v2), 2), "3.1415 6.2830");
+    }
 
     // sizes and names
     ASSERT_EQ(data_fmt_sizes[DATA_TEXT],   1);
