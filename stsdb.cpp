@@ -136,12 +136,12 @@ main(int argc, char **argv) {
       if (argc<2) throw Err() << "database name expected";
       if (argc>5) throw Err() << "too many parameters";
       string name(argv[1]);
-      DBhead head(
-         argc<3 ? DEFAULT_TIMEFMT : DBhead::str2timefmt(argv[2]),
-         argc<4 ? DEFAULT_DATAFMT : DBhead::str2datafmt(argv[3]),
+      DBinfo info(
+         argc<3 ? DEFAULT_TIMEFMT : DBinfo::str2timefmt(argv[2]),
+         argc<4 ? DEFAULT_DATAFMT : DBinfo::str2datafmt(argv[3]),
          argc<5 ? "" : argv[4] );
       DBsts db(p.dbpath, name, DB_CREATE | DB_EXCL);
-      db.write_info(head);
+      db.write_info(info);
       return 0;
     }
 
@@ -179,9 +179,9 @@ main(int argc, char **argv) {
       if (argc<3) throw Err() << "database name and new description text expected";
       if (argc>3) throw Err() << "too many parameters";
       DBsts db(p.dbpath, argv[1], 0);
-      DBhead head = db.read_info();
-      head.descr = argv[2];
-      db.write_info(head);
+      DBinfo info = db.read_info();
+      info.descr = argv[2];
+      db.write_info(info);
       return 0;
     }
 
@@ -191,10 +191,10 @@ main(int argc, char **argv) {
       if (argc<2) throw Err() << "database name expected";
       if (argc>2) throw Err() << "too many parameters";
       DBsts db(p.dbpath, argv[1], DB_RDONLY);
-      DBhead head = db.read_info();
-      cout << DBhead::timefmt2str(head.key) << '\t'
-           << DBhead::datafmt2str(head.val);
-      if (head.descr!="") cout << '\t' << head.descr;
+      DBinfo info = db.read_info();
+      cout << DBinfo::timefmt2str(info.key) << '\t'
+           << DBinfo::datafmt2str(info.val);
+      if (info.descr!="") cout << '\t' << info.descr;
       cout << "\n";
       return 0;
     }
@@ -227,7 +227,7 @@ main(int argc, char **argv) {
         dat.push_back(string(argv[i]));
       // open database and write data
       DBsts db(p.dbpath, argv[1], 0);
-      db.put(t, dat, db.read_info());
+      db.put(t, dat);
       return 0;
     }
 
@@ -239,7 +239,7 @@ main(int argc, char **argv) {
       int col = get_col_num(argv[1]); // column
       uint64_t t = argc>2? str2time(argv[2]): 0;
       DBsts db(p.dbpath, argv[1], DB_RDONLY);
-      db.get_next(t, col, db.read_info());
+      db.get_next(t, col);
       return 0;
     }
 
@@ -251,7 +251,7 @@ main(int argc, char **argv) {
       int col = get_col_num(argv[1]); // column
       uint64_t t = argc>2? str2time(argv[2]): -1;
       DBsts db(p.dbpath, argv[1], DB_RDONLY);
-      db.get_prev(t, col, db.read_info());
+      db.get_prev(t, col);
       return 0;
     }
 
@@ -263,7 +263,7 @@ main(int argc, char **argv) {
       int col = get_col_num(argv[1]); // column
       uint64_t t = str2time(argv[2]);
       DBsts db(p.dbpath, argv[1], DB_RDONLY);
-      db.get_interp(t, col, db.read_info());
+      db.get_interp(t, col);
       return 0;
     }
 
@@ -277,9 +277,32 @@ main(int argc, char **argv) {
       uint64_t t2 = argc>3? str2time(argv[3]): -1;
       uint64_t dt = argc>4? str2time(argv[4]): 0;
       DBsts db(p.dbpath, argv[1], DB_RDONLY);
-      db.get_range(t1,t2,dt, col, db.read_info());
+      db.get_range(t1,t2,dt, col);
       return 0;
     }
+
+    // interactive mode: put/get data using stdin commands
+    // args: interactive
+/*
+    if (strcasecmp(cmd, "interactive")==0){
+      if (argc>1) throw Err() << "too many parameters";
+      while (!cin.eof()){
+        string line;
+        cin.getline(line);
+        istringstream lin(line)
+
+        map<string, DBsts> idb, odb;
+        // read command
+        std::string cmd;
+        lin >> cmd;
+        if (cmd == "put" || cmd == "PUT"){
+        }
+        if (cmd == "get_prev" || cmd == "get_prev"){
+        }
+
+      }
+    }
+*/
 
     throw Err() << "Unknown command";
 

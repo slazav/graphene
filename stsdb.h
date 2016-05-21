@@ -59,15 +59,15 @@ const static size_t data_fmt_sizes[LAST_DATAFMT+1] =
 
 /***********************************************************/
 
-// Class for the database header.
+// Class for the database information.
 // Key format is int32_t (time in seconds) or uint64_t (time in ms).
-class DBhead {
+class DBinfo {
   public:
   TimeFMT key;
   DataFMT val;
   std::string descr;
 
-  DBhead(const TimeFMT k = TIME_S,
+  DBinfo(const TimeFMT k = TIME_S,
       const DataFMT v = DATA_DOUBLE,
       const std::string &d = std::string())
         : key(k),val(v),descr(d) {}
@@ -94,7 +94,7 @@ class DBhead {
   static std::string datafmt2str(const DataFMT s){
     return data_fmt_names[s]; }
 
-  bool operator==(const DBhead &o) const{
+  bool operator==(const DBinfo &o) const{
     return o.key==key && o.val==val && o.descr==descr; }
 
 
@@ -286,10 +286,12 @@ class DBsts{
   }
 
   /************************************/
-  /* database handler and memory management */
+  /* data and memory management */
     DB *dbp;
-    std::string name;
-    int open_flags;
+    std::string name;    // database name
+    int open_flags;      // database open flags
+    DBinfo db_info;      // database information
+    bool info_is_actual; // is the info the same as in the file?
     int *refcounter;
 
     void copy(const DBsts & other){
@@ -297,6 +299,8 @@ class DBsts{
       name       = other.name;
       open_flags = other.open_flags;
       refcounter = other.refcounter;
+      db_info    = other.db_info;
+      info_is_actual = other.info_is_actual;
       (*refcounter)++;
       assert(*refcounter >0);
     }
@@ -329,6 +333,7 @@ class DBsts{
 
     refcounter   = new int;
     *refcounter  = 1;
+    info_is_actual = false;
 
     name = name_;
     open_flags = flags;
@@ -360,7 +365,8 @@ class DBsts{
   // Write database information.
   // key = (uint8_t)0 (1byte),
   // value = time_fmt (1byte) + data_fmt (1byte) + description
-  void write_info(const DBhead &head){
+  //
+  void write_info(const DBinfo &info){
     // remove the info entry if it exists
     uint8_t x=0;
     DBT k = mk_dbt(&x);
@@ -368,49 +374,52 @@ class DBsts{
     if (ret != 0 && ret != DB_NOTFOUND)
       throw Err() << name << ".db: " << db_strerror(ret);
     // write new data
-    std::string vs = std::string(1, (char)head.key)
-                   + std::string(1, (char)head.val)
-                   + head.descr;
+    std::string vs = std::string(1, (char)info.key)
+                   + std::string(1, (char)info.val)
+                   + info.descr;
     DBT v = mk_dbt(vs);
     ret = dbp->put(dbp, NULL, &k, &v, 0);
     if (ret != 0)
       throw Err() << name << ".db: " << db_strerror(ret);
+    db_info = info;
+    info_is_actual = true;
   }
 
   /************************************/
   // Get database information
   //
-  DBhead read_info(){
+  DBinfo read_info(){
+    if (info_is_actual) return db_info;
     uint8_t x=0;
     DBT k = mk_dbt(&x);
     DBT v = mk_dbt();
     int ret = dbp->get(dbp, NULL, &k, &v, 0);
     if (ret != 0)
      throw Err() << name << ".db: " << db_strerror(ret);
-    DBhead head;
     uint8_t tfmt = *(uint8_t*)v.data;
     uint8_t dfmt = *((uint8_t*)v.data+1);
     if (tfmt<0 || tfmt > LAST_TIMEFMT)
       throw Err() << name << ".db: broken database, bad time format";
     if (dfmt<0 || dfmt > LAST_DATAFMT)
       throw Err() << name << ".db: broken database, bad data format";
-    head.key = static_cast<TimeFMT>(tfmt);
-    head.val = static_cast<DataFMT>(dfmt);
-    head.descr = std::string((char*)v.data+2, (char*)v.data+v.size);
-    return head;
+    db_info.key = static_cast<TimeFMT>(tfmt);
+    db_info.val = static_cast<DataFMT>(dfmt);
+    db_info.descr = std::string((char*)v.data+2, (char*)v.data+v.size);
+    info_is_actual = true;
+    return db_info;
   }
 
   /************************************/
   // Put data to the database
-  // input: timestamp + vector of strings + db header
+  // input: timestamp + vector of strings
   // The function can be run multiple times without reopening
-  // the database and rereading the header.
+  // the database.
   //
   void put(const uint64_t t,
-           const std::vector<std::string> & dat,
-           const DBhead & head){
-    std::string ks = head.pack_time(t);
-    std::string vs = head.pack_data(dat);
+           const std::vector<std::string> & dat){
+    DBinfo info = read_info();
+    std::string ks = info.pack_time(t);
+    std::string vs = info.pack_data(dat);
     DBT k = mk_dbt(ks);
     DBT v = mk_dbt(vs);
     int res = dbp->put(dbp, NULL, &k, &v, 0);
@@ -420,32 +429,34 @@ class DBsts{
   /************************************/
   // print data value
   //
-  void print_value(const DBhead & head, DBT *k, DBT *v, int col){
+  void print_value(DBT *k, DBT *v, int col){
+    DBinfo info = read_info();
     // check for correct key size (do not parse DB info)
     if (k->size!=sizeof(uint32_t) && k->size!=sizeof(uint64_t)) return;
     // convert DBT to strings
     std::string ks((char *)k->data, (char *)k->data+k->size);
     std::string vs((char *)v->data, (char *)v->data+v->size);
     // unpack and print values
-    std::cout << head.unpack_time(ks) << " "
-              << head.unpack_data(vs) << "\n";
+    std::cout << info.unpack_time(ks) << " "
+              << info.unpack_data(vs) << "\n";
   }
 
   /************************************/
   // interpolate and print data
   //
-  void print_interp(const DBhead & head, const uint64_t t0,
+  void print_interp(const uint64_t t0,
                     const std::string & k1, const std::string & k2,
                     const std::string & v1, const std::string & v2, int col){
+    DBinfo info = read_info();
     // check for correct key size (do not parse DB info)
     if (k1.size()!=sizeof(uint32_t) && k1.size()!=sizeof(uint64_t)) return;
     if (k2.size()!=sizeof(uint32_t) && k2.size()!=sizeof(uint64_t)) return;
     // unpack time
-    uint64_t t1 = head.unpack_time(k1);
-    uint64_t t2 = head.unpack_time(k2);
+    uint64_t t1 = info.unpack_time(k1);
+    uint64_t t2 = info.unpack_time(k2);
     // unpack data
-    std::istringstream strv1(head.unpack_data(v1));
-    std::istringstream strv2(head.unpack_data(v2));
+    std::istringstream strv1(info.unpack_data(v1));
+    std::istringstream strv2(info.unpack_data(v2));
     // calculate point weight
     uint64_t dt1 = std::max(t1,t0)-std::min(t1,t0);
     uint64_t dt2 = std::max(t2,t0)-std::min(t2,t0);
@@ -465,35 +476,33 @@ class DBsts{
   /************************************/
   // get data from the database -- get_next
   //
-  void get_next(uint64_t t1,
-                const int col,
-                const DBhead & head){
+  void get_next(uint64_t t1, const int col){
+    DBinfo info = read_info();
     /* Get a cursor */
     DBC *curs;
     dbp->cursor(dbp, NULL, &curs, 0);
     if (curs==NULL) throw Err() << name << ".db: can't get a cursor";
 
-    std::string ks = head.pack_time(t1);
+    std::string ks = info.pack_time(t1);
     DBT k = mk_dbt(ks);
     DBT v = mk_dbt();
     int res = curs->c_get(curs, &k, &v, DB_SET_RANGE);
     if (res==DB_NOTFOUND) { curs->close(curs); return; }
     if (res!=0) throw Err() << name << ".db: " << db_strerror(res);
-    print_value(head, &k, &v, col);
+    print_value(&k, &v, col);
     curs->close(curs);
   }
 
   /************************************/
   // get data from the database -- get_prev
   //
-  void get_prev(const uint64_t t2,
-                const int col,
-                const DBhead & head){
+  void get_prev(const uint64_t t2, const int col){
+    DBinfo info = read_info();
     /* Get a cursor */
     DBC *curs;
     dbp->cursor(dbp, NULL, &curs, 0);
     if (curs==NULL) throw Err() << name << ".db: can't get a cursor";
-    std::string ks = head.pack_time(t2);
+    std::string ks = info.pack_time(t2);
     DBT k = mk_dbt(ks);
     DBT v = mk_dbt();
 
@@ -503,16 +512,16 @@ class DBsts{
 
     // unpack time
     std::string s((char *)k.data, (char *)k.data+k.size);
-    uint64_t tn = head.unpack_time(s);
+    uint64_t tn = info.unpack_time(s);
 
     // if needed, get previous record:
-    if (tn > head.norm_time(t2) || res==DB_NOTFOUND){
+    if (tn > info.norm_time(t2) || res==DB_NOTFOUND){
       res = curs->c_get(curs, &k, &v, DB_PREV);
       if (res==DB_NOTFOUND) { curs->close(curs); return; }
       if (res!=0) throw Err() << name << ".db: " << db_strerror(res);
     }
 
-    print_value(head, &k, &v, col);
+    print_value(&k, &v, col);
     curs->close(curs);
   }
 
@@ -520,13 +529,13 @@ class DBsts{
   // get data from the database -- get_interp
   //
   void get_interp(const uint64_t t,
-                  const int col,
-           const DBhead & head){
+                  const int col){
+    DBinfo info = read_info();
     /* Get a cursor */
     DBC *curs;
     dbp->cursor(dbp, NULL, &curs, 0);
     if (curs==NULL) throw Err() << name << ".db: can't get a cursor";
-    std::string ks = head.pack_time(t);
+    std::string ks = info.pack_time(t);
     DBT k = mk_dbt(ks);
     DBT v = mk_dbt();
 
@@ -536,8 +545,8 @@ class DBsts{
 
     std::string ks1((char *)k.data, (char *)k.data+k.size);
     std::string vs1((char *)v.data, (char *)v.data+v.size);
-    if (head.unpack_time(ks1) == head.norm_time(t)){
-      print_value(head, &k, &v, col);
+    if (info.unpack_time(ks1) == info.norm_time(t)){
+      print_value(&k, &v, col);
     }
     else {
       res = curs->c_get(curs, &k, &v, DB_PREV);
@@ -545,7 +554,7 @@ class DBsts{
       if (res!=0) throw Err() << name << ".db: " << db_strerror(res);
       std::string ks2((char *)k.data, (char *)k.data+k.size);
       std::string vs2((char *)v.data, (char *)v.data+v.size);
-      print_interp(head, head.norm_time(t), ks1, ks2, vs1, vs2, col);
+      print_interp(info.norm_time(t), ks1, ks2, vs1, vs2, col);
     }
     curs->close(curs);
   }
@@ -561,18 +570,16 @@ class DBsts{
   // (order is not too important, but we prefer the 1nd case):
   // use DB_SET_RANGE with dt shift, if the point didn't
   // change - use DB_NEXT.
-  void get_range(const uint64_t t1,
-                 const uint64_t t2,
-                 const uint64_t dt,
-                 const int col,
-                 const DBhead & head){
+  void get_range(const uint64_t t1, const uint64_t t2,
+                 const uint64_t dt, const int col){
+
+    DBinfo info = read_info();
     /* Get a cursor */
     DBC *curs;
     dbp->cursor(dbp, NULL, &curs, 0);
     if (curs==NULL) throw Err() << name << ".db: can't get a cursor";
 
-
-    std::string ks = head.pack_time(t1);
+    std::string ks = info.pack_time(t1);
     DBT k = mk_dbt(ks);
     DBT v = mk_dbt();
     uint64_t tl = -1; // last printed value
@@ -585,12 +592,12 @@ class DBsts{
 
       // unpack new time value and check the range
       std::string s((char *)k.data, (char *)k.data+k.size);
-      uint64_t tn = head.unpack_time(s);
-      if (tn > head.norm_time(t2) ) break;
+      uint64_t tn = info.unpack_time(s);
+      if (tn > info.norm_time(t2) ) break;
 
       // if we want every point, switch to DB_NEXT and repeat
       if (dt<=1){
-        print_value(head, &k, &v, col);
+        print_value(&k, &v, col);
         fl=DB_NEXT;
         continue;
       }
@@ -604,15 +611,15 @@ class DBsts{
         if (res!=0) throw Err() << name << ".db: " << db_strerror(res);
         // unpack new time value and check the range
         std::string s((char *)k.data, (char *)k.data+k.size);
-        tn = head.unpack_time(s);
-        if (tn > head.norm_time(t2) ) break;
+        tn = info.unpack_time(s);
+        if (tn > info.norm_time(t2) ) break;
       }
 
-      print_value(head, &k, &v, col);
+      print_value(&k, &v, col);
       tl=tn; // update last printed value
 
       // add dt to the key for the next loop:
-      std::string sp = head.pack_time(tl+dt);
+      std::string sp = info.pack_time(tl+dt);
       memcpy(k.data,sp.data(),k.size);
     }
     curs->close(curs);

@@ -14,8 +14,8 @@ int main() {
     ASSERT_EQ(DEFAULT_DATAFMT, DATA_DOUBLE);
 
     {
-      DBhead hh1; // default constructor
-      DBhead hh2(TIME_MS, DATA_INT16);
+      DBinfo hh1; // default constructor
+      DBinfo hh2(TIME_MS, DATA_INT16);
 
       ASSERT_EQ(hh1.key, DEFAULT_TIMEFMT);
       ASSERT_EQ(hh1.val, DEFAULT_DATAFMT);
@@ -30,8 +30,8 @@ int main() {
 
     {
       // pack/unpack timestamps
-      DBhead hh1(TIME_S, DATA_DOUBLE);
-      DBhead hh2(TIME_MS, DATA_INT16);
+      DBinfo hh1(TIME_S, DATA_DOUBLE);
+      DBinfo hh2(TIME_MS, DATA_INT16);
 
       uint64_t ts  = 1463643547;    // s
       uint64_t tms = ts*1000 + 823; // ms
@@ -67,9 +67,9 @@ int main() {
 
     {
       // pack/unpack data
-      DBhead hh1(TIME_S, DATA_INT32);
-      DBhead hh2(TIME_S, DATA_DOUBLE);
-      DBhead hh3(TIME_S, DATA_TEXT);
+      DBinfo hh1(TIME_S, DATA_INT32);
+      DBinfo hh2(TIME_S, DATA_DOUBLE);
+      DBinfo hh3(TIME_S, DATA_TEXT);
 
       vector<string> v1,v2,v3;
       v1.push_back("314");
@@ -137,26 +137,26 @@ int main() {
     ASSERT_EQ(time_fmt_names[TIME_S],   "S"  );
     ASSERT_EQ(time_fmt_names[TIME_MS],  "MS" );
 
-    ASSERT_EQ(DATA_TEXT,   DBhead::str2datafmt("TEXT"  ));
-    ASSERT_EQ(DATA_INT8,   DBhead::str2datafmt("INT8"  ));
-    ASSERT_EQ(DATA_UINT8,  DBhead::str2datafmt("UINT8" ));
-    ASSERT_EQ(DATA_INT16,  DBhead::str2datafmt("INT16" ));
-    ASSERT_EQ(DATA_UINT16, DBhead::str2datafmt("UINT16"));
-    ASSERT_EQ(DATA_INT32,  DBhead::str2datafmt("INT32" ));
-    ASSERT_EQ(DATA_UINT32, DBhead::str2datafmt("UINT32"));
-    ASSERT_EQ(DATA_INT64,  DBhead::str2datafmt("INT64" ));
-    ASSERT_EQ(DATA_UINT64, DBhead::str2datafmt("UINT64"));
-    ASSERT_EQ(DATA_FLOAT,  DBhead::str2datafmt("FLOAT" ));
-    ASSERT_EQ(DATA_DOUBLE, DBhead::str2datafmt("DOUBLE"));
-    ASSERT_EX(DBhead::str2datafmt("X"), "Unknown data format: X");
+    ASSERT_EQ(DATA_TEXT,   DBinfo::str2datafmt("TEXT"  ));
+    ASSERT_EQ(DATA_INT8,   DBinfo::str2datafmt("INT8"  ));
+    ASSERT_EQ(DATA_UINT8,  DBinfo::str2datafmt("UINT8" ));
+    ASSERT_EQ(DATA_INT16,  DBinfo::str2datafmt("INT16" ));
+    ASSERT_EQ(DATA_UINT16, DBinfo::str2datafmt("UINT16"));
+    ASSERT_EQ(DATA_INT32,  DBinfo::str2datafmt("INT32" ));
+    ASSERT_EQ(DATA_UINT32, DBinfo::str2datafmt("UINT32"));
+    ASSERT_EQ(DATA_INT64,  DBinfo::str2datafmt("INT64" ));
+    ASSERT_EQ(DATA_UINT64, DBinfo::str2datafmt("UINT64"));
+    ASSERT_EQ(DATA_FLOAT,  DBinfo::str2datafmt("FLOAT" ));
+    ASSERT_EQ(DATA_DOUBLE, DBinfo::str2datafmt("DOUBLE"));
+    ASSERT_EX(DBinfo::str2datafmt("X"), "Unknown data format: X");
 
-    ASSERT_EQ(TIME_S,   DBhead::str2timefmt("S"));
-    ASSERT_EQ(TIME_MS,  DBhead::str2timefmt("MS"));
-    ASSERT_EX(DBhead::str2timefmt("X"), "Unknown time format: X");
+    ASSERT_EQ(TIME_S,   DBinfo::str2timefmt("S"));
+    ASSERT_EQ(TIME_MS,  DBinfo::str2timefmt("MS"));
+    ASSERT_EX(DBinfo::str2timefmt("X"), "Unknown time format: X");
 /***************************************************************/
     // creating database, writing/reading data format
-    DBhead hh1(TIME_MS, DATA_INT16, "AAA");
-    DBhead hh2;
+    DBinfo hh1(TIME_MS, DATA_INT16, "AAA");
+    DBinfo hh2;
     {
       DBsts db(".", "test", DB_CREATE | DB_TRUNCATE);
       db.write_info(hh1);
