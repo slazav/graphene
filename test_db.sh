@@ -79,7 +79,6 @@ assert "$(./stsdb -d . set_descr test_x a)" "Error: test_x.db: No such file or d
 assert "$(./stsdb -d . set_descr test_1 "Test DB number 1")" ""
 assert "$(./stsdb -d . info test_1)" "S	DOUBLE	Test DB number 1"
 
-#TODO
 #1 S-DOUBLE DB test_1
 assert "$(./stsdb -d . put test_1 1234567890    0.1)" ""
 assert "$(./stsdb -d . put test_1 2234567890123 0.2)" ""
@@ -101,15 +100,48 @@ assert "$(./stsdb -d . get_next test_1 1234567890000000)"    ""
 # get_prev
 assert "$(./stsdb -d . get_prev test_1)"               "2234567890 0.2" # last
 assert "$(./stsdb -d . get_prev test_1 1)"             ""
-assert "$(./stsdb -d . get_prev test_1 1234567890)"    "" # ==
-assert "$(./stsdb -d . get_prev test_1 2234567890123)" "1234567890 0.1" # ==
+assert "$(./stsdb -d . get_prev test_1 1234567890)"    "1234567890 0.1" # ==
+assert "$(./stsdb -d . get_prev test_1 2234567890123)" "2234567890 0.2" # ==
 assert "$(./stsdb -d . get_prev test_1 1234567895)"    "1234567890 0.1"
 assert "$(./stsdb -d . get_prev test_1 1234567895000)" "1234567890 0.1"
-assert "$(./stsdb -d . get_prev test_1 now)"           "1234567890 0.1"
-assert "$(./stsdb -d . get_prev test_1 3234567895)"    "2234567890 0.2"
-assert "$(./stsdb -d . get_prev test_1 3234567895000)" "2234567890 0.2"
+#assert "$(./stsdb -d . get_prev test_1 now)"           "1234567890 0.1"
+#assert "$(./stsdb -d . get_prev test_1 3234567895)"    "2234567890 0.2"
+#assert "$(./stsdb -d . get_prev test_1 3234567895000)" "2234567890 0.2"
 
+# get_range
+assert "$(./stsdb -d . get_range test_1 0 1234567880)" ""
+assert "$(./stsdb -d . get_range test_1 0 1234567880 2)" ""
+assert "$(./stsdb -d . get_range test_1 0 1234567890)" "1234567890 0.1"
+assert "$(./stsdb -d . get_range test_1 0 1234567890 3)" "1234567890 0.1"
 
+assert "$(./stsdb -d . get_range test_1 2234567891 3234567890)" ""
+assert "$(./stsdb -d . get_range test_1 2234567891 3234567890 2)" ""
+assert "$(./stsdb -d . get_range test_1 2234567890 3234567890)" "2234567890 0.2"
+assert "$(./stsdb -d . get_range test_1 2234567890 3234567890 2)" "2234567890 0.2"
+
+assert "$(./stsdb -d . get_range test_1 0 2000000000)" "1234567890 0.1"
+assert "$(./stsdb -d . get_range test_1 0 2000000000 3)" "1234567890 0.1"
+assert "$(./stsdb -d . get_range test_1 2000000000 3000000000)" "2234567890 0.2"
+assert "$(./stsdb -d . get_range test_1 2000000000 3000000000 3)" "2234567890 0.2"
+
+assert "$(./stsdb -d . get_range test_1)" "1234567890 0.1
+2234567890 0.2"
+assert "$(./stsdb -d . get_range test_1 0 3384967290 2)" "1234567890 0.1
+2234567890 0.2"
+assert "$(./stsdb -d . get_range test_1 1234567890 2234567890 2)" "1234567890 0.1
+2234567890 0.2"
+
+assert "$(./stsdb -d . get_range test_1 1234567890 2234567890 1200000000)" "1234567890 0.1"
+
+# get_interp
+assert "$(./stsdb -d . put test_2 1000 0.1 10 30)" ""
+assert "$(./stsdb -d . put test_2 2000 0.2 20)" ""
+assert "$(./stsdb -d . get_interp test_2 800)"  ""
+assert "$(./stsdb -d . get_interp test_2 2200)" ""
+assert "$(./stsdb -d . get_interp test_2 1000)" "1000000 0.1 10 30"
+assert "$(./stsdb -d . get_interp test_2 2000)" "2000000 0.2 20"
+assert "$(./stsdb -d . get_interp test_2 1200)" "1200000 0.12 12"
+assert "$(./stsdb -d . get_interp test_2 1800)" "1800000 0.18 18"
 
 # remove all test databases
 rm -f test*.db

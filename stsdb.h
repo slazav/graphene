@@ -98,26 +98,38 @@ class DBhead {
     return o.key==key && o.val==val && o.descr==descr; }
 
 
+  // convert time to the database format
+  // for TIME_S value is limited by 2^32-1.
+  uint64_t norm_time(const uint64_t t) const{
+    if (key == TIME_MS){
+      return t < 0xFFFFFFFF ? t*1000:t;
+    }
+    if (key == TIME_S){
+      if      (t<0xFFFFFFFFll)      return t;
+      else if (t<0xFFFFFFFFll*1000) return t/1000;
+      else                          return 0xFFFFFFFF;
+    }
+    throw Err() << "Unexpected time format";
+  }
+
   // Pack timestamp according with time format.
   // std::string is used as a convenient data storage, which
   // can be easily converted into Berkleydb data.
   // It is not a c-string!
-  // NOTE: if we store time in seconds, we can't use all the (64bit ms range)/1000
   std::string pack_time(const uint64_t t) const{
     if (key == TIME_MS){
       std::string ret(sizeof(uint64_t), '\0');
-      *(uint64_t *)ret.data() = t < 0xFFFFFFFF ? t*1000:t;
+      *(uint64_t *)ret.data() = norm_time(t);
       return ret;
     }
     if (key == TIME_S){
       std::string ret(sizeof(uint32_t), '\0');
-      if      (t<0xFFFFFFFFll)      *(uint32_t *)ret.data() = t;
-      else if (t<0xFFFFFFFFll*1000) *(uint32_t *)ret.data() = t/1000;
-      else                          *(uint32_t *)ret.data() = 0xFFFFFFFF;
+      *(uint32_t *)ret.data() = (uint32_t)norm_time(t);
       return ret;
     }
     throw Err() << "Unexpected time format";
   }
+
   // same, but with string on input
   std::string pack_time(const std::string & ts) const{
     std::istringstream s(ts);
@@ -409,11 +421,45 @@ class DBsts{
   // print data value
   //
   void print_value(const DBhead & head, DBT *k, DBT *v, int col){
+    // check for correct key size (do not parse DB info)
     if (k->size!=sizeof(uint32_t) && k->size!=sizeof(uint64_t)) return;
+    // convert DBT to strings
     std::string ks((char *)k->data, (char *)k->data+k->size);
     std::string vs((char *)v->data, (char *)v->data+v->size);
+    // unpack and print values
     std::cout << head.unpack_time(ks) << " "
               << head.unpack_data(vs) << "\n";
+  }
+
+  /************************************/
+  // interpolate and print data
+  //
+  void print_interp(const DBhead & head, const uint64_t t0,
+                    const std::string & k1, const std::string & k2,
+                    const std::string & v1, const std::string & v2, int col){
+    // check for correct key size (do not parse DB info)
+    if (k1.size()!=sizeof(uint32_t) && k1.size()!=sizeof(uint64_t)) return;
+    if (k2.size()!=sizeof(uint32_t) && k2.size()!=sizeof(uint64_t)) return;
+    // unpack time
+    uint64_t t1 = head.unpack_time(k1);
+    uint64_t t2 = head.unpack_time(k2);
+    // unpack data
+    std::istringstream strv1(head.unpack_data(v1));
+    std::istringstream strv2(head.unpack_data(v2));
+    // calculate point weight
+    uint64_t dt1 = std::max(t1,t0)-std::min(t1,t0);
+    uint64_t dt2 = std::max(t2,t0)-std::min(t2,t0);
+    double k = (double)dt2/(dt1+dt2);
+
+    // print values
+    std::cout << t0;
+    while (!strv1.eof() && !strv2.eof()){
+      double dv1, dv2;
+      strv1 >> dv1;
+      strv2 >> dv2;
+      std::cout << " " << (dv1*k + dv2*(1-k));
+    }
+    std::cout << "\n";
   }
 
   /************************************/
@@ -431,7 +477,7 @@ class DBsts{
     DBT k = mk_dbt(ks);
     DBT v = mk_dbt();
     int res = curs->c_get(curs, &k, &v, DB_SET_RANGE);
-    if (res==DB_NOTFOUND) return;
+    if (res==DB_NOTFOUND) { curs->close(curs); return; }
     if (res!=0) throw Err() << name << ".db: " << db_strerror(res);
     print_value(head, &k, &v, col);
     curs->close(curs);
@@ -454,12 +500,17 @@ class DBsts{
     int res = curs->c_get(curs, &k, &v, DB_SET_RANGE);
     if (res!=0 && res!=DB_NOTFOUND)
       throw Err() << name << ".db: " << db_strerror(res);
-    if (k.size<sizeof(int32_t)) return;
 
-    res = curs->c_get(curs, &k, &v, DB_PREV);
-    if (res==DB_NOTFOUND) return;
-    if (res!=0) throw Err() << name << ".db: " << db_strerror(res);
-    if (k.size<sizeof(int32_t)) return;
+    // unpack time
+    std::string s((char *)k.data, (char *)k.data+k.size);
+    uint64_t tn = head.unpack_time(s);
+
+    // if needed, get previous record:
+    if (tn > head.norm_time(t2) || res==DB_NOTFOUND){
+      res = curs->c_get(curs, &k, &v, DB_PREV);
+      if (res==DB_NOTFOUND) { curs->close(curs); return; }
+      if (res!=0) throw Err() << name << ".db: " << db_strerror(res);
+    }
 
     print_value(head, &k, &v, col);
     curs->close(curs);
@@ -471,12 +522,45 @@ class DBsts{
   void get_interp(const uint64_t t,
                   const int col,
            const DBhead & head){
-    // TODO
+    /* Get a cursor */
+    DBC *curs;
+    dbp->cursor(dbp, NULL, &curs, 0);
+    if (curs==NULL) throw Err() << name << ".db: can't get a cursor";
+    std::string ks = head.pack_time(t);
+    DBT k = mk_dbt(ks);
+    DBT v = mk_dbt();
+
+    int res = curs->c_get(curs, &k, &v, DB_SET_RANGE);
+    if (res==DB_NOTFOUND) { curs->close(curs); return; }
+    if (res!=0) throw Err() << name << ".db: " << db_strerror(res);
+
+    std::string ks1((char *)k.data, (char *)k.data+k.size);
+    std::string vs1((char *)v.data, (char *)v.data+v.size);
+    if (head.unpack_time(ks1) == head.norm_time(t)){
+      print_value(head, &k, &v, col);
+    }
+    else {
+      res = curs->c_get(curs, &k, &v, DB_PREV);
+      if (res==DB_NOTFOUND) { curs->close(curs); return; }
+      if (res!=0) throw Err() << name << ".db: " << db_strerror(res);
+      std::string ks2((char *)k.data, (char *)k.data+k.size);
+      std::string vs2((char *)v.data, (char *)v.data+v.size);
+      print_interp(head, head.norm_time(t), ks1, ks2, vs1, vs2, col);
+    }
+    curs->close(curs);
   }
 
   /************************************/
   // get data from the database -- get_range
   //
+  // There can be two different cases: distance between
+  // data points << dt or >> dt.
+  // In the first case it is better to use DB_SET_RANGE,
+  // in the second one -- DB_NEXT.
+  // To work fast in both cases we use both methods
+  // (order is not too important, but we prefer the 1nd case):
+  // use DB_SET_RANGE with dt shift, if the point didn't
+  // change - use DB_NEXT.
   void get_range(const uint64_t t1,
                  const uint64_t t2,
                  const uint64_t dt,
@@ -487,17 +571,49 @@ class DBsts{
     dbp->cursor(dbp, NULL, &curs, 0);
     if (curs==NULL) throw Err() << name << ".db: can't get a cursor";
 
+
     std::string ks = head.pack_time(t1);
     DBT k = mk_dbt(ks);
     DBT v = mk_dbt();
-    int fl = DB_SET_RANGE; // first get t >= t1
-    while (curs->c_get(curs, &k, &v, fl)==0){
-      std::string s((char *)v.data, (char *)v.data+v.size);
-      if (t2 >= head.unpack_time(s)) break;
+    uint64_t tl = -1; // last printed value
 
-      fl = DB_NEXT;
-      // TODO
-      // use v.data
+    int fl = DB_SET_RANGE; // first get t >= t1
+    while (1){
+      int res = curs->c_get(curs, &k, &v, fl);
+      if (res==DB_NOTFOUND) break;
+      if (res!=0) throw Err() << name << ".db: " << db_strerror(res);
+
+      // unpack new time value and check the range
+      std::string s((char *)k.data, (char *)k.data+k.size);
+      uint64_t tn = head.unpack_time(s);
+      if (tn > head.norm_time(t2) ) break;
+
+      // if we want every point, switch to DB_NEXT and repeat
+      if (dt<=1){
+        print_value(head, &k, &v, col);
+        fl=DB_NEXT;
+        continue;
+      }
+
+      // If dt >=1 we continue using fl=DB_SET_RANGE.
+      // If new value the same as old
+      if (tl==tn){
+        // get next value
+        res = curs->c_get(curs, &k, &v, DB_NEXT);
+        if (res==DB_NOTFOUND) break;
+        if (res!=0) throw Err() << name << ".db: " << db_strerror(res);
+        // unpack new time value and check the range
+        std::string s((char *)k.data, (char *)k.data+k.size);
+        tn = head.unpack_time(s);
+        if (tn > head.norm_time(t2) ) break;
+      }
+
+      print_value(head, &k, &v, col);
+      tl=tn; // update last printed value
+
+      // add dt to the key for the next loop:
+      std::string sp = head.pack_time(tl+dt);
+      memcpy(k.data,sp.data(),k.size);
     }
     curs->close(curs);
   }

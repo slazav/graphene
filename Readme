@@ -36,7 +36,7 @@ Value can carry some text or an array if numbers of arbitrary length
 creation. Possible variants are: TEXT, INT8, UINT8, INT16, UINT16,
 INT32, UINT32, INT64, UINT64, FLOAT, DOUBLE.
 If a certain column is requested but data array is not long enough,
-a "NaN" value is printed.
+a "NaN" value is returned.
 
 
 =========================================================================
@@ -52,26 +52,28 @@ Usage: stsdb [options] <command> <parameters>
 
     Commands for manipulating databases:
 
-stsdb create <name> <time_fmt> <data_fmt> <description>  -- create a database
+stsdb create <name> [<time_fmt>] [<data_fmt>] [<description>]  -- create a database
 stsdb delete <name>                  -- delete a database file
 stsdb rename <old_name> <new_name>   -- rename a database file
 stsdb set_descr <name> <description> -- change database description
 stsdb info <name>                    -- print database information
-stsdb list                           -- list all databases in the data folder
+stsdb list                           -- list all databases in the data directory
 
--- TEST_NEEDED:
+Delete and rename commands just do simple file operations.
+A database can not be renamed if destination file exists.
+
     Command for adding data:
+
 stsdb put <name> <time> <value1> ... <valueN> -- write data point
 
-    Command for getting data:
-stsdb get_next <name>[:N] [<time1>] -- get next point with t>=time1
-stsdb get_prev <name>[:N] [<time2>] -- get previous point with t<time2
-TODO: t<=time2 ?
+    Commands for getting data:
 
--- TODO:
+stsdb get_next <name>[:N] [<time1>] -- get next point with t>=time1
+stsdb get_prev <name>[:N] [<time2>] -- get previous point with t<=time2
 stsdb get_interp <name>[:N] <time>  -- get interpolated point
 stsdb get_range  <name>[:N] [<time1>] [<time2>] [<dt>]
                                     -- get all points in the time range
+                                       if dt>1 then filter data
 
 In get_* commands the database name can be followed by column number.
 Default value for time1 is 0, for time2 is infinity. Word "now" can be used
@@ -79,27 +81,24 @@ to specify current time. If the database has no future timestamps,
 then commands "get_prev name" and "get_prev name now" are equivalent.
 
 
+TODO:
 stsdb access -- Interactively read/write data. Allows writing of
 multiple points without reopening the database. Allows making a simple
-server using xinetd.
+server with xinetd.
 
     Examples:
 
-$ stsdb create pressure 1S DOUBLE "Measured pressure"
+$ stsdb -d . create pressure 1MS INT16 "Some text"
+$ stsdb -d . delete pressure
 
-$ stsdb delete pressure
+$ stsdb -d . create pressure 1S DOUBLE "Some text"
+$ stsdb -d . rename pressure press
+$ stsdb -d . set_descr press "Measured pressure"
 
-$ stsdb rename pressure press
-
-$ stsdb set_descr press "New description"
-
-$ stsdb info pressure "New description"
+$ stsdb -d . info press
 1S	DOUBLE	Measured pressure
-
-$ stsdb list
+$ stsdb -d . list
 press
-temperature
-level
 
 =========================================================================
     Simple JSON interface

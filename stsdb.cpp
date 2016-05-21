@@ -210,7 +210,8 @@ main(int argc, char **argv) {
       while ((ent = readdir (dir)) != NULL) {
         string name(ent->d_name);
         size_t p = name.find(".db");
-        if (p!=string::npos) cout << name.substr(0,p) << "\n";
+        if (name.size()>3 && p == name.size()-3)
+          cout << name.substr(0,p) << "\n";
       }
       closedir(dir);
       return 0;
@@ -268,7 +269,7 @@ main(int argc, char **argv) {
 
     // get data range
     // args: get_range <name>[:N] [<time1>] [<time2>] [<dt>]
-    if (strcasecmp(cmd, "get_next")==0){
+    if (strcasecmp(cmd, "get_range")==0){
       if (argc<2) throw Err() << "database name expected";
       if (argc>5) throw Err() << "too many parameters";
       int col = get_col_num(argv[1]); // column
