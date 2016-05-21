@@ -38,7 +38,7 @@ class Pars{
             "  -d <path> -- database directory (default " << p.dbpath << "\n"
             "  -h        -- write this help message and exit\n"
             "Comands:\n"
-            "  create <name> <time_fmt> <data_fmt> <description>\n"
+            "  create <name> <data_fmt> <description>\n"
             "      -- create a database\n"
             "  delete <name>\n"
             "      -- delete a database\n"
@@ -60,7 +60,7 @@ class Pars{
             "  get_interp <name>[:N] <time>\n"
             "      -- get interpolated point\n"
             "  get_range <name>[:N] [<time1>] [<time2>] [<dt>]\n"
-            "      -- get all points in the time range\n"
+            "      -- get points in the time range\n"
     ;
     throw Err();
   }
@@ -89,8 +89,7 @@ class Pars{
 uint64_t
 prectime(){
     struct timeval tv;
-    struct timezone tz;
-    gettimeofday(&tv,&tz);
+    gettimeofday(&tv,NULL);
     return (uint64_t)tv.tv_usec/1000
          + (uint64_t)tv.tv_sec*1000;
 }
@@ -131,15 +130,14 @@ main(int argc, char **argv) {
     const char * cmd = argv[0];
 
     // create new database
-    // args: create <name> [<time_fmt>] [<data_fmt>] [<description>]
+    // args: create <name> [<data_fmt>] [<description>]
     if (strcasecmp(cmd, "create")==0){
       if (argc<2) throw Err() << "database name expected";
-      if (argc>5) throw Err() << "too many parameters";
+      if (argc>4) throw Err() << "too many parameters";
       string name(argv[1]);
       DBinfo info(
-         argc<3 ? DEFAULT_TIMEFMT : DBinfo::str2timefmt(argv[2]),
-         argc<4 ? DEFAULT_DATAFMT : DBinfo::str2datafmt(argv[3]),
-         argc<5 ? "" : argv[4] );
+         argc<3 ? DEFAULT_DATAFMT : DBinfo::str2datafmt(argv[2]),
+         argc<4 ? "" : argv[3] );
       DBsts db(p.dbpath, name, DB_CREATE | DB_EXCL);
       db.write_info(info);
       return 0;
@@ -192,8 +190,7 @@ main(int argc, char **argv) {
       if (argc>2) throw Err() << "too many parameters";
       DBsts db(p.dbpath, argv[1], DB_RDONLY);
       DBinfo info = db.read_info();
-      cout << DBinfo::timefmt2str(info.key) << '\t'
-           << DBinfo::datafmt2str(info.val);
+      cout << DBinfo::datafmt2str(info.val);
       if (info.descr!="") cout << '\t' << info.descr;
       cout << "\n";
       return 0;
@@ -297,7 +294,7 @@ main(int argc, char **argv) {
         lin >> cmd;
         if (cmd == "put" || cmd == "PUT"){
         }
-        if (cmd == "get_prev" || cmd == "get_prev"){
+        if (cmd == "get_prev" || cmd == "GET_PREV"){
         }
 
       }

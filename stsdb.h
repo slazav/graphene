@@ -29,23 +29,17 @@ class Err {
 
 /***********************************************************/
 
-// Enums for the database format
-enum TimeFMT { TIME_S, TIME_MS};
+// Enum for the data format
 enum DataFMT { DATA_TEXT,
          DATA_INT8, DATA_UINT8, DATA_INT16, DATA_UINT16,
          DATA_INT32, DATA_UINT32, DATA_INT64, DATA_UINT64,
          DATA_FLOAT, DATA_DOUBLE};
 
-/// default values for database format
-const TimeFMT DEFAULT_TIMEFMT = TIME_S;
+/// default value
 const DataFMT DEFAULT_DATAFMT = DATA_DOUBLE;
 
 // last values -- for loops and array dimensions
-const TimeFMT LAST_TIMEFMT = TIME_MS;
 const DataFMT LAST_DATAFMT = DATA_DOUBLE;
-
-// string names of time formats:
-const std::string time_fmt_names[LAST_TIMEFMT+1] = {"S", "MS"};
 
 // string names of data formats
 const std::string data_fmt_names[LAST_DATAFMT+1] =
@@ -60,74 +54,40 @@ const static size_t data_fmt_sizes[LAST_DATAFMT+1] =
 /***********************************************************/
 
 // Class for the database information.
-// Key format is int32_t (time in seconds) or uint64_t (time in ms).
 class DBinfo {
   public:
-  TimeFMT key;
   DataFMT val;
   std::string descr;
 
-  DBinfo(const TimeFMT k = TIME_S,
-      const DataFMT v = DATA_DOUBLE,
-      const std::string &d = std::string())
-        : key(k),val(v),descr(d) {}
+  DBinfo(const DataFMT v = DATA_DOUBLE,
+         const std::string &d = std::string())
+            : val(v),descr(d) {}
 
-  // return size of the data field, names of data and time formats
+  // return size and name of the data format
   size_t dsize() const { return data_fmt_sizes[val]; }
   std::string dname() const { return data_fmt_names[val]; }
-  std::string tname() const { return time_fmt_names[key]; }
 
-  // convert strings into enum members
-  static TimeFMT str2timefmt(const std::string & s){
-    for (int i = 0; i<=LAST_TIMEFMT; i++)
-      if (s == time_fmt_names[i]) return static_cast<TimeFMT>(i);
-    throw Err() << "Unknown time format: " << s;
-  }
+  // convert string into enum member
   static DataFMT str2datafmt(const std::string & s){
     for (int i = 0; i<=LAST_DATAFMT; i++)
       if (s == data_fmt_names[i]) return static_cast<DataFMT>(i);
     throw Err() << "Unknown data format: " << s;
   }
   // ...and back
-  static std::string timefmt2str(const TimeFMT s){
-    return time_fmt_names[s]; }
   static std::string datafmt2str(const DataFMT s){
     return data_fmt_names[s]; }
 
   bool operator==(const DBinfo &o) const{
-    return o.key==key && o.val==val && o.descr==descr; }
-
-
-  // convert time to the database format
-  // for TIME_S value is limited by 2^32-1.
-  uint64_t norm_time(const uint64_t t) const{
-    if (key == TIME_MS){
-      return t < 0xFFFFFFFF ? t*1000:t;
-    }
-    if (key == TIME_S){
-      if      (t<0xFFFFFFFFll)      return t;
-      else if (t<0xFFFFFFFFll*1000) return t/1000;
-      else                          return 0xFFFFFFFF;
-    }
-    throw Err() << "Unexpected time format";
-  }
+    return o.val==val && o.descr==descr; }
 
   // Pack timestamp according with time format.
   // std::string is used as a convenient data storage, which
   // can be easily converted into Berkleydb data.
   // It is not a c-string!
   std::string pack_time(const uint64_t t) const{
-    if (key == TIME_MS){
-      std::string ret(sizeof(uint64_t), '\0');
-      *(uint64_t *)ret.data() = norm_time(t);
-      return ret;
-    }
-    if (key == TIME_S){
-      std::string ret(sizeof(uint32_t), '\0');
-      *(uint32_t *)ret.data() = (uint32_t)norm_time(t);
-      return ret;
-    }
-    throw Err() << "Unexpected time format";
+    std::string ret(sizeof(uint64_t), '\0');
+    *(uint64_t *)ret.data() = t;
+    return ret;
   }
 
   // same, but with string on input
@@ -141,17 +101,9 @@ class DBinfo {
   }
   // Unpack timestamp
   uint64_t unpack_time(const std::string & s) const{
-    if (key == TIME_MS){
-      if (s.size()!=sizeof(uint64_t))
-        throw Err() << "Broken database: wrong timestamp size";
-      return *(uint64_t *)s.data();
-    }
-    if (key == TIME_S){
-      if (s.size()!=sizeof(uint32_t))
-        throw Err() << "Broken database: wrong timestamp size";
-      return *(uint32_t *)s.data();
-    }
-    throw Err() << "Unexpected time format";
+    if (s.size()!=sizeof(uint64_t))
+      throw Err() << "Broken database: wrong timestamp size";
+    return *(uint64_t *)s.data();
   }
 
   // Pack data according with data format
@@ -364,7 +316,7 @@ class DBsts{
   /************************************/
   // Write database information.
   // key = (uint8_t)0 (1byte),
-  // value = time_fmt (1byte) + data_fmt (1byte) + description
+  // value = data_fmt (1byte) + description
   //
   void write_info(const DBinfo &info){
     // remove the info entry if it exists
@@ -374,8 +326,7 @@ class DBsts{
     if (ret != 0 && ret != DB_NOTFOUND)
       throw Err() << name << ".db: " << db_strerror(ret);
     // write new data
-    std::string vs = std::string(1, (char)info.key)
-                   + std::string(1, (char)info.val)
+    std::string vs = std::string(1, (char)info.val)
                    + info.descr;
     DBT v = mk_dbt(vs);
     ret = dbp->put(dbp, NULL, &k, &v, 0);
@@ -396,15 +347,11 @@ class DBsts{
     int ret = dbp->get(dbp, NULL, &k, &v, 0);
     if (ret != 0)
      throw Err() << name << ".db: " << db_strerror(ret);
-    uint8_t tfmt = *(uint8_t*)v.data;
-    uint8_t dfmt = *((uint8_t*)v.data+1);
-    if (tfmt<0 || tfmt > LAST_TIMEFMT)
-      throw Err() << name << ".db: broken database, bad time format";
+    uint8_t dfmt = *((uint8_t*)v.data);
     if (dfmt<0 || dfmt > LAST_DATAFMT)
-      throw Err() << name << ".db: broken database, bad data format";
-    db_info.key = static_cast<TimeFMT>(tfmt);
+      throw Err() << name << ".db: broken database, bad data format in the header";
     db_info.val = static_cast<DataFMT>(dfmt);
-    db_info.descr = std::string((char*)v.data+2, (char*)v.data+v.size);
+    db_info.descr = std::string((char*)v.data+1, (char*)v.data+v.size);
     info_is_actual = true;
     return db_info;
   }
@@ -432,7 +379,7 @@ class DBsts{
   void print_value(DBT *k, DBT *v, int col){
     DBinfo info = read_info();
     // check for correct key size (do not parse DB info)
-    if (k->size!=sizeof(uint32_t) && k->size!=sizeof(uint64_t)) return;
+    if (k->size!=sizeof(uint64_t)) return;
     // convert DBT to strings
     std::string ks((char *)k->data, (char *)k->data+k->size);
     std::string vs((char *)v->data, (char *)v->data+v->size);
@@ -449,8 +396,8 @@ class DBsts{
                     const std::string & v1, const std::string & v2, int col){
     DBinfo info = read_info();
     // check for correct key size (do not parse DB info)
-    if (k1.size()!=sizeof(uint32_t) && k1.size()!=sizeof(uint64_t)) return;
-    if (k2.size()!=sizeof(uint32_t) && k2.size()!=sizeof(uint64_t)) return;
+    if (k1.size()!=sizeof(uint64_t)) return;
+    if (k2.size()!=sizeof(uint64_t)) return;
     // unpack time
     uint64_t t1 = info.unpack_time(k1);
     uint64_t t2 = info.unpack_time(k2);
@@ -515,7 +462,7 @@ class DBsts{
     uint64_t tn = info.unpack_time(s);
 
     // if needed, get previous record:
-    if (tn > info.norm_time(t2) || res==DB_NOTFOUND){
+    if (tn > t2 || res==DB_NOTFOUND){
       res = curs->c_get(curs, &k, &v, DB_PREV);
       if (res==DB_NOTFOUND) { curs->close(curs); return; }
       if (res!=0) throw Err() << name << ".db: " << db_strerror(res);
@@ -545,7 +492,7 @@ class DBsts{
 
     std::string ks1((char *)k.data, (char *)k.data+k.size);
     std::string vs1((char *)v.data, (char *)v.data+v.size);
-    if (info.unpack_time(ks1) == info.norm_time(t)){
+    if (info.unpack_time(ks1) == t){
       print_value(&k, &v, col);
     }
     else {
@@ -554,7 +501,7 @@ class DBsts{
       if (res!=0) throw Err() << name << ".db: " << db_strerror(res);
       std::string ks2((char *)k.data, (char *)k.data+k.size);
       std::string vs2((char *)v.data, (char *)v.data+v.size);
-      print_interp(info.norm_time(t), ks1, ks2, vs1, vs2, col);
+      print_interp(t, ks1, ks2, vs1, vs2, col);
     }
     curs->close(curs);
   }
@@ -593,7 +540,7 @@ class DBsts{
       // unpack new time value and check the range
       std::string s((char *)k.data, (char *)k.data+k.size);
       uint64_t tn = info.unpack_time(s);
-      if (tn > info.norm_time(t2) ) break;
+      if (tn > t2 ) break;
 
       // if we want every point, switch to DB_NEXT and repeat
       if (dt<=1){
@@ -612,7 +559,7 @@ class DBsts{
         // unpack new time value and check the range
         std::string s((char *)k.data, (char *)k.data+k.size);
         tn = info.unpack_time(s);
-        if (tn > info.norm_time(t2) ) break;
+        if (tn > t2 ) break;
       }
 
       print_value(&k, &v, col);
