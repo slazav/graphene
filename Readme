@@ -8,8 +8,9 @@ E-mail: Vladislav Zavjalov <slazav@altlinux.org>
     Data storage
 
 Each dataset is a separate BerkleyDB file with .db extension, located in
-a database directory (default /var/lib/stsdb/). Name of file represents
-the name of the dataset. 
+a database directory (default /var/lib/stsdb). Name of file represents
+the name of the dataset. Name may contain path, but "." and
+".." path components are always removed.
 
 Data are stored as a set of sorted key-value pairs. Key is time in
 milliseconds (64 bit unsigned integer), counted from 1970-01-01 UTC.
@@ -42,6 +43,7 @@ stsdb rename <old_name> <new_name>   -- rename a database file
 stsdb set_descr <name> <description> -- change database description
 stsdb info <name>                    -- print database information
 stsdb list                           -- list all databases in the data directory
+
 
 Delete and rename commands just do simple file operations.
 A database can not be renamed only if destination file exists.

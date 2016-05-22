@@ -13,6 +13,14 @@ int main() {
     // FMT object, data and time formats
     ASSERT_EQ(DEFAULT_DATAFMT, DATA_DOUBLE);
 
+    /*{  // norm_name moved to stsdb.c 
+      ASSERT_EQ(norm_name("abc"), "abc");
+      ASSERT_EQ(norm_name("abc/"), "abc/");
+      ASSERT_EQ(norm_name("a/b/c"), "a/b/c");
+      ASSERT_EQ(norm_name("/a/b/c"), "a/b/c");
+      ASSERT_EQ(norm_name("a/./b/..//.c//c./c"), "a/b/.c/c./c");
+    } */
+
     {
       DBinfo hh1; // default constructor
       DBinfo hh2(DATA_INT16);

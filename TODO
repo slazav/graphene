@@ -1,7 +1,5 @@
 Critical:
 -- Handle \n in TEXT data properly
--- Safe databese names needed. Allow subpaths, do not allow ../, or
-   absolute paths
 
 Important:
 -- "access" command
