@@ -479,6 +479,8 @@ class DBsts{
   void get_interp(const uint64_t t,
                   const int col){
     DBinfo info = read_info();
+    if (info.val==DATA_TEXT)
+      throw Err() << "Can not do interpolation of TEXT data";
     /* Get a cursor */
     DBC *curs;
     dbp->cursor(dbp, NULL, &curs, 0);

@@ -152,5 +152,55 @@ assert "$(./stsdb -d . get_range test_2:0)" "1000 1
 assert "$(./stsdb -d . get_range test_2:3)" "1000 NaN
 2000 NaN"
 
+
+#1 TEXT db
+assert "$(./stsdb -d . create test_4 TEXT)" ""
+
+assert "$(./stsdb -d . put test_4 1000 text1)" ""
+assert "$(./stsdb -d . put test_4 2000 text2)" ""
+# get_next
+assert "$(./stsdb -d . get_next test_4)"      "1000 text1" # first
+assert "$(./stsdb -d . get_next test_4 0)"    "1000 text1"
+assert "$(./stsdb -d . get_next test_4 1000)" "1000 text1" # ==
+assert "$(./stsdb -d . get_next test_4 1500)" "2000 text2"
+assert "$(./stsdb -d . get_next test_4 2000)" "2000 text2"
+assert "$(./stsdb -d . get_next test_4 2001)" ""
+assert "$(./stsdb -d . get_next test_4 1234567890000000)"    ""
+
+# get_prev
+assert "$(./stsdb -d . get_prev test_4)"      "2000 text2" # last
+assert "$(./stsdb -d . get_prev test_4 0)"    ""
+assert "$(./stsdb -d . get_prev test_4 1000)" "1000 text1" # ==
+assert "$(./stsdb -d . get_prev test_4 2000)" "2000 text2" # ==
+assert "$(./stsdb -d . get_prev test_4 1500)" "1000 text1"
+assert "$(./stsdb -d . get_prev test_4 2001)" "2000 text2"
+
+# get_range
+assert "$(./stsdb -d . get_range test_4 0 999)" ""
+assert "$(./stsdb -d . get_range test_4 0 999 2)" ""
+assert "$(./stsdb -d . get_range test_4 0 1000)"   "1000 text1"
+assert "$(./stsdb -d . get_range test_4 0 1000 3)" "1000 text1"
+
+assert "$(./stsdb -d . get_range test_4 2001 3000)" ""
+assert "$(./stsdb -d . get_range test_4 2001 3000 2)" ""
+assert "$(./stsdb -d . get_range test_4 2000 3000)" "2000 text2"
+assert "$(./stsdb -d . get_range test_4 2000 3000 2)" "2000 text2"
+
+assert "$(./stsdb -d . get_range test_4)" "1000 text1
+2000 text2"
+assert "$(./stsdb -d . get_range test_4 1000 2000)" "1000 text1
+2000 text2"
+assert "$(./stsdb -d . get_range test_4 1000 2000 1000)" "1000 text1
+2000 text2"
+assert "$(./stsdb -d . get_range test_4 1000 2000 1001)" "1000 text1"
+
+# get_interp
+assert "$(./stsdb -d . get_interp test_4 1000)" "Error: Can not do interpolation of TEXT data"
+assert "$(./stsdb -d . get_interp test_4 1500)" "Error: Can not do interpolation of TEXT data"
+assert "$(./stsdb -d . get_interp test_4 2200)" "Error: Can not do interpolation of TEXT data"
+
+# columns are not important
+assert "$(./stsdb -d . get_next test_4:5)" "1000 text1"
+
 # remove all test databases
 rm -f test*.db
