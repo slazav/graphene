@@ -1,6 +1,3 @@
-Critical:
--- Handle \n in TEXT data properly
-
 Important:
 -- "access" command
 -- simple json output - for Grafana backend
@@ -12,3 +9,4 @@ Improvements:
 -- delete point/range
 -- now_s and now_ms?
 -- control double format on output?
+-- allow linebreaks in text data

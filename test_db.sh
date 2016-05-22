@@ -157,23 +157,24 @@ assert "$(./stsdb -d . get_range test_2:3)" "1000 NaN
 assert "$(./stsdb -d . create test_4 TEXT)" ""
 
 assert "$(./stsdb -d . put test_4 1000 text1)" ""
-assert "$(./stsdb -d . put test_4 2000 text2)" ""
+assert "$(./stsdb -d . put test_4 2000 "text2
+2")" "" # line break will be converted to space
 # get_next
 assert "$(./stsdb -d . get_next test_4)"      "1000 text1" # first
 assert "$(./stsdb -d . get_next test_4 0)"    "1000 text1"
 assert "$(./stsdb -d . get_next test_4 1000)" "1000 text1" # ==
-assert "$(./stsdb -d . get_next test_4 1500)" "2000 text2"
-assert "$(./stsdb -d . get_next test_4 2000)" "2000 text2"
+assert "$(./stsdb -d . get_next test_4 1500)" "2000 text2 2"
+assert "$(./stsdb -d . get_next test_4 2000)" "2000 text2 2"
 assert "$(./stsdb -d . get_next test_4 2001)" ""
 assert "$(./stsdb -d . get_next test_4 1234567890000000)"    ""
 
 # get_prev
-assert "$(./stsdb -d . get_prev test_4)"      "2000 text2" # last
+assert "$(./stsdb -d . get_prev test_4)"      "2000 text2 2" # last
 assert "$(./stsdb -d . get_prev test_4 0)"    ""
 assert "$(./stsdb -d . get_prev test_4 1000)" "1000 text1" # ==
-assert "$(./stsdb -d . get_prev test_4 2000)" "2000 text2" # ==
+assert "$(./stsdb -d . get_prev test_4 2000)" "2000 text2 2" # ==
 assert "$(./stsdb -d . get_prev test_4 1500)" "1000 text1"
-assert "$(./stsdb -d . get_prev test_4 2001)" "2000 text2"
+assert "$(./stsdb -d . get_prev test_4 2001)" "2000 text2 2"
 
 # get_range
 assert "$(./stsdb -d . get_range test_4 0 999)" ""
@@ -183,15 +184,15 @@ assert "$(./stsdb -d . get_range test_4 0 1000 3)" "1000 text1"
 
 assert "$(./stsdb -d . get_range test_4 2001 3000)" ""
 assert "$(./stsdb -d . get_range test_4 2001 3000 2)" ""
-assert "$(./stsdb -d . get_range test_4 2000 3000)" "2000 text2"
-assert "$(./stsdb -d . get_range test_4 2000 3000 2)" "2000 text2"
+assert "$(./stsdb -d . get_range test_4 2000 3000)" "2000 text2 2"
+assert "$(./stsdb -d . get_range test_4 2000 3000 2)" "2000 text2 2"
 
 assert "$(./stsdb -d . get_range test_4)" "1000 text1
-2000 text2"
+2000 text2 2"
 assert "$(./stsdb -d . get_range test_4 1000 2000)" "1000 text1
-2000 text2"
+2000 text2 2"
 assert "$(./stsdb -d . get_range test_4 1000 2000 1000)" "1000 text1
-2000 text2"
+2000 text2 2"
 assert "$(./stsdb -d . get_range test_4 1000 2000 1001)" "1000 text1"
 
 # get_interp

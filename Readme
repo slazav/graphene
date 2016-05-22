@@ -44,7 +44,6 @@ stsdb set_descr <name> <description> -- change database description
 stsdb info <name>                    -- print database information
 stsdb list                           -- list all databases in the data directory
 
-
 Delete and rename commands just do simple file operations.
 A database can not be renamed only if destination file exists.
 
@@ -64,9 +63,12 @@ to specify current time. If the database has no future timestamps,
 then commands "get_prev name" and "get_prev name now" are equivalent.
 
 If a certain column is requested but data array is not long enough,
-a "NaN" value is returned.
+a "NaN" value is returned. Columns are ignored for text data.
 
-get_interp always print float values, even for integer data.
+get_interp does not work with text data. It always prints float values,
+even for integer data.
+
+Text values are printed with linebreaks converted to spaces.
 
 TODO:
 stsdb access -- Interactively read/write data. Allows writing of

@@ -145,7 +145,13 @@ class DBinfo {
 
   // Unpack data
   std::string unpack_data(const std::string & s, const int col=-1) const{
-    if (val == DATA_TEXT) return s;
+    if (val == DATA_TEXT){
+      // remove linebreaks
+      int i;
+      std::string ret=s;
+      while ((i=ret.find('\n'))!=std::string::npos) ret[i] = ' ';
+      return ret;
+    }
     if (s.size() % dsize() != 0)
       throw Err() << "Broken database: wrong data length";
     // number of columns
