@@ -1,14 +1,9 @@
-TODO:
-  -- text line breaks on input and output
-  -- control double format on output?
-  -- "access" command
-  -- simple json output - for Grafana backend
-  -- duplicated time values in get_prev/get_next?
-  -- user information
-  -- delete point/range
-
 =========================================================================
 STSDB -- a simple time-series database
+
+Source code: https://github.com/slazav/stsdb
+E-mail: Vladislav Zavjalov <slazav@altlinux.org>
+
 =========================================================================
     Data storage
 
@@ -23,8 +18,8 @@ numbers of arbitrary length (data columns) or some text. The data format
 can be chosen during the database creation. Possible variants are: TEXT,
 INT8, UINT8, INT16, UINT16, INT32, UINT32, INT64, UINT64, FLOAT, DOUBLE.
 
-Records with 1-byte keys are reserved for database information.
-It contains the data format and database description.
+Records with 1-byte keys are reserved for database information,
+for example the data format and database description.
 Records with 2-byte keys are reserved for arbitrary user data.
 1- and 2-bytes records are not affected by regular get/put commands.
 

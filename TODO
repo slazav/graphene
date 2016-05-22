@@ -1,0 +1,16 @@
+Critical:
+-- Handle \n in TEXT data properly
+-- Safe databese names needed. Allow subpaths, do not allow ../, or
+   absolute paths
+
+Important:
+-- "access" command
+-- simple json output - for Grafana backend
+-- Think about duplicated times. Now you can add it, but
+   read only first point
+
+Improvements:
+-- user information
+-- delete point/range
+-- now_s and now_ms?
+-- control double format on output?
