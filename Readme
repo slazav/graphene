@@ -1,30 +1,31 @@
 TODO:
   -- text line breaks on input and output
-  -- double format on output?
-  -- access command
-  -- simple json output
+  -- control double format on output?
+  -- "access" command
+  -- simple json output - for Grafana backend
+  -- duplicated time values in get_prev/get_next?
+  -- user database
 
 =========================================================================
 STSDB -- a simple time-series database
 =========================================================================
     Data storage
 
-A dataset is a separate BerkleyDB file with .db extension, located in a
-database directory (default /var/lib/stsdb/). Name of file represents
-the name of the dataset. Information about data format and
-a description text is stored somewhere in the database when one is
-created. One can change description text via stsdb command line
-interface.
+Each dataset is a separate BerkleyDB file with .db extension, located in
+a database directory (default /var/lib/stsdb/). Name of file represents
+the name of the dataset. 
 
-Data are stored in databases as a set of sorted key-value pairs. Key is
-time in milliseconds (64 bit unsigned integer), counted from 1970-01-01
-UTC. Duplicated time values are allowed.
+Data are stored as a set of sorted key-value pairs. Key is time in
+milliseconds (64 bit unsigned integer), counted from 1970-01-01 UTC.
+Duplicated time values are allowed. Value can contain an array if
+numbers of arbitrary length (data columns) or some text. The data format
+can be chosen during the database creation. Possible variants are: TEXT,
+INT8, UINT8, INT16, UINT16, INT32, UINT32, INT64, UINT64, FLOAT, DOUBLE.
 
-Value can carry some text or an array if numbers of arbitrary length
-(data columns). The data format can be chosen during the database
-creation. Possible variants are: TEXT, INT8, UINT8, INT16, UINT16,
-INT32, UINT32, INT64, UINT64, FLOAT, DOUBLE.
-
+Records with 1-byte keys are reserved for database information.
+It contains the data format and database description.
+Records with 2-byte keys are reserved for arbitrary user data.
+1- and 2-bytes records are not affected by regular get/put commands.
 
 =========================================================================
     Command line interface to data
@@ -47,14 +48,11 @@ stsdb info <name>                    -- print database information
 stsdb list                           -- list all databases in the data directory
 
 Delete and rename commands just do simple file operations.
-A database can not be renamed if destination file exists.
+A database can not be renamed only if destination file exists.
 
-    Command for adding data:
+    Commands for reading and writing data:
 
 stsdb put <name> <time> <value1> ... <valueN> -- write data point
-
-    Commands for getting data:
-
 stsdb get_next <name>[:N] [<time1>] -- get next point with t>=time1
 stsdb get_prev <name>[:N] [<time2>] -- get previous point with t<=time2
 stsdb get_interp <name>[:N] <time>  -- get interpolated point
@@ -90,6 +88,20 @@ $ stsdb -d . info press
 DOUBLE	Measured pressure
 $ stsdb -d . list
 press
+
+$ stsdb -d . put press now 0.1
+$ stsdb -d . put press now 0.2
+$ stsdb -d . put press now 0.3
+$ stsdb -d . get_prev press
+1463896007505 0.3
+$ stsdb -d . get_next press
+1463896007487 0.1
+$ stsdb -d . get_range press
+1463896007487 0.1
+1463896007494 0.2
+1463896007505 0.3
+$ stsdb -d . delete press
+
 
 =========================================================================
     Simple JSON interface
