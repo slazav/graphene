@@ -376,7 +376,7 @@ class DBsts{
   /************************************/
   // print data value
   //
-  void print_value(DBT *k, DBT *v, int col){
+  void print_value(DBT *k, DBT *v, const int col){
     DBinfo info = read_info();
     // check for correct key size (do not parse DB info)
     if (k->size!=sizeof(uint64_t)) return;
@@ -385,7 +385,7 @@ class DBsts{
     std::string vs((char *)v->data, (char *)v->data+v->size);
     // unpack and print values
     std::cout << info.unpack_time(ks) << " "
-              << info.unpack_data(vs) << "\n";
+              << info.unpack_data(vs, col) << "\n";
   }
 
   /************************************/
@@ -393,7 +393,8 @@ class DBsts{
   //
   void print_interp(const uint64_t t0,
                     const std::string & k1, const std::string & k2,
-                    const std::string & v1, const std::string & v2, int col){
+                    const std::string & v1, const std::string & v2,
+                    const int col){
     DBinfo info = read_info();
     // check for correct key size (do not parse DB info)
     if (k1.size()!=sizeof(uint64_t)) return;
@@ -402,9 +403,9 @@ class DBsts{
     uint64_t t1 = info.unpack_time(k1);
     uint64_t t2 = info.unpack_time(k2);
     // unpack data
-    std::istringstream strv1(info.unpack_data(v1));
-    std::istringstream strv2(info.unpack_data(v2));
-    // calculate point weight
+    std::istringstream strv1(info.unpack_data(v1, col));
+    std::istringstream strv2(info.unpack_data(v2, col));
+    // calculate first point weight
     uint64_t dt1 = std::max(t1,t0)-std::min(t1,t0);
     uint64_t dt2 = std::max(t2,t0)-std::min(t2,t0);
     double k = (double)dt2/(dt1+dt2);

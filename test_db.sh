@@ -93,6 +93,7 @@ assert "$(./stsdb -d . get_next test_1 NoW)"           "2234567890123 0.2"
 assert "$(./stsdb -d . get_next test_1 2000000000124)" "2234567890123 0.2"
 assert "$(./stsdb -d . get_next test_1 3000000000000)" ""
 assert "$(./stsdb -d . get_next test_1 1234567890000000)"    ""
+
 # get_prev
 assert "$(./stsdb -d . get_prev test_1)"               "2234567890123 0.2" # last
 assert "$(./stsdb -d . get_prev test_1 0)"             ""
@@ -136,6 +137,20 @@ assert "$(./stsdb -d . get_interp test_2 1000)" "1000 1 10 30"
 assert "$(./stsdb -d . get_interp test_2 2000)" "2000 2 20"
 assert "$(./stsdb -d . get_interp test_2 1200)" "1200 1.2 12"
 assert "$(./stsdb -d . get_interp test_2 1800)" "1800 1.8 18"
+
+# columns
+assert "$(./stsdb -d . get_next test_2:0)" "1000 1"
+assert "$(./stsdb -d . get_next test_2:1)" "1000 10"
+assert "$(./stsdb -d . get_next test_2:3)" "1000 NaN"
+assert "$(./stsdb -d . get_prev test_2:0)" "2000 2"
+assert "$(./stsdb -d . get_prev test_2:1)" "2000 20"
+assert "$(./stsdb -d . get_prev test_2:3)" "2000 NaN"
+
+assert "$(./stsdb -d . get_range test_2:0)" "1000 1
+2000 2"
+
+assert "$(./stsdb -d . get_range test_2:3)" "1000 NaN
+2000 NaN"
 
 # remove all test databases
 rm -f test*.db
