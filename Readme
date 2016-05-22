@@ -4,7 +4,8 @@ TODO:
   -- "access" command
   -- simple json output - for Grafana backend
   -- duplicated time values in get_prev/get_next?
-  -- user database
+  -- user information
+  -- delete point/range
 
 =========================================================================
 STSDB -- a simple time-series database
@@ -77,30 +78,7 @@ server with xinetd.
 
     Examples:
 
-$ stsdb -d . create pressure INT16 "Some text"
-$ stsdb -d . delete pressure
-
-$ stsdb -d . create pressure DOUBLE "Some text"
-$ stsdb -d . rename pressure press
-$ stsdb -d . set_descr press "Measured pressure"
-
-$ stsdb -d . info press
-DOUBLE	Measured pressure
-$ stsdb -d . list
-press
-
-$ stsdb -d . put press now 0.1
-$ stsdb -d . put press now 0.2
-$ stsdb -d . put press now 0.3
-$ stsdb -d . get_prev press
-1463896007505 0.3
-$ stsdb -d . get_next press
-1463896007487 0.1
-$ stsdb -d . get_range press
-1463896007487 0.1
-1463896007494 0.2
-1463896007505 0.3
-$ stsdb -d . delete press
+See examples/ folder in the database distriution
 
 
 =========================================================================
