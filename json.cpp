@@ -1,5 +1,9 @@
 /*  JSON interface to the Simple time series database.
-    See stsdb_json.h for more information.
+    See json.h for more information.
+
+  simple-json-datasource documentation:
+  https://github.com/grafana/simple-json-datasource
+
 */
 
 #include <string>
@@ -9,6 +13,7 @@
 #include <cstring>
 #include <stdint.h>
 #include "jsonxx/jsonxx.h"
+#include "db.h"
 
 using namespace std;
 
@@ -48,7 +53,15 @@ uint64_t convert_time(const string & tstr){
   tt.tm_yday  = 0;   /* day in the year */
   tt.tm_isdst = 0;   /* daylight saving time */
   uint64_t ret = atoi(tstr.c_str() + 20); /* milliseconds */
-  time_t     t = mktime(&tt);
+
+  char *tz;
+  tz = getenv("TZ");
+  setenv("TZ", "", 1);
+  tzset();
+  time_t t = mktime(&tt);
+  if (tz) setenv("TZ", tz, 1);
+  else    unsetenv("TZ");
+  tzset();
   if (t<0) return 0;
   ret += 1000*(uint64_t)t;
   return ret;
@@ -68,6 +81,25 @@ uint64_t convert_interval(const string & tstr){
   if (strcmp(e,"h")==0)  return 3600*1000*ret;
   if (strcmp(e,"d")==0)  return 24*3600*1000*ret;
   return 0;
+}
+
+/***************************************************************************/
+// process_data_func callback, for using with get_* functions from db.h
+
+static Json json_buffer;
+
+void add_to_buffer(DBT *k, DBT *v, const int col,
+                   const DBinfo & info){
+  // check for correct key size (do not parse DB info)
+  if (k->size!=sizeof(uint64_t)) return;
+  // convert DBT to strings
+  std::string ks((char *)k->data, (char *)k->data+k->size);
+  std::string vs((char *)v->data, (char *)v->data+v->size);
+  // unpack and print values
+  Json jpt = Json::array();
+  jpt.append(info.unpack_data_d(vs, col));
+  jpt.append((json_int_t)info.unpack_time(ks));
+  json_buffer.append(jpt);
 }
 
 /***************************************************************************/
@@ -109,22 +141,31 @@ Json json_query(const string & dbpath, const Json & ji){
   /* parse targets and run command */
   Json out = Json::array();
   for (int i=0; i<ji["targets"].size(); i++){
+
+    // extract normalized db name and column number
+    std::string dbname = ji["targets"][i]["target"].as_string();
+    size_t cp = dbname.rfind(':');
+    int col = -1;
+    if (cp!=std::string::npos){
+      col = atoi(dbname.substr(cp+1,-1).c_str());
+      dbname = norm_name(dbname.substr(0,cp));
+    }
+
+    json_buffer=Json::array();
+    DBsts db(dbpath, dbname, DB_RDONLY);
+    db.get_range(t1,t2,dt, col, add_to_buffer);
+
     Json jt = Json::object();
     jt.set("target", ji["targets"][i]["target"]);
-    jt.set("datapoints", Json::array());
-
-for (uint64_t k=t1; k<t2; k+=dt){
-   Json pt = Json::array();
-   pt.append(json_int_t(10));
-   pt.append(json_int_t(k));
-   jt["datapoints"].append(pt);
-}
-
+    jt.set("datapoints", json_buffer);
     out.append(jt);
+  fprintf(stderr, "N0: %ld\n", json_buffer.size());
   }
 
-  fprintf(stderr, "T1: %ld\n", t1);
-  fprintf(stderr, "T2: %ld\n", t2);
+  time_t t1a = t1/1000;
+  time_t t2a = t2/1000;
+  fprintf(stderr, "T1: %s\n", ctime(&t1a));
+  fprintf(stderr, "T2: %s\n", ctime(&t2a));
   fprintf(stderr, "dT: %ld\n", dt);
   fprintf(stderr, "N:  %ld\n", (t2-t1)/dt);
   fprintf(stderr, "M:  %ld\n", maxpt);

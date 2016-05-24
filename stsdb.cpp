@@ -117,22 +117,6 @@ int get_col_num(char *str){
   return -1;
 }
 
-/***********************************************************/
-// Normilize db name. Remove starting /,
-// remove . and .. path components.
-//
-std::string norm_name(const std::string & name){
-  std::string ret = "";
-  int p1=0, p2=0;
-  while ((p2 = name.find('/', p1))!=std::string::npos){
-    std::string v=name.substr(p1,p2-p1);
-    if (v != ".." && v != "." && v != "")
-      ret += v + "/";
-    p1=p2+1;
-  }
-  return ret + name.substr(p1, name.length()-p1);
-}
-
 /**********************************************************/
 int
 main(int argc, char **argv) {
