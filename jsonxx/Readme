@@ -1,0 +1,180 @@
+Simple C++ wrapper for jansson library.
+
+Jansson is a C library for working with json data:
+   documentation: http://jansson.readthedocs.org/en/latest/
+   code:          https://github.com/akheron/jansson
+
+This is a simpla C++ wrapper for it.
+Another wrapper can be found here:
+  https://github.com/bvakili-evault/janssonxx
+
+============================================================
+
+Json::Err -- error class for exceptions:
+
+  // Usage:
+
+    try{
+      throw Json::Err() << "text message";
+      // or work with jsonxx wrapper...
+    } catch(Json::Err e) {
+      std::cerr << e.str();  // string representation
+      std::cout << e.json(); // json object with error_type and error_message fieds
+    }
+
+============================================================
+
+class Json { // class for the json data.
+
+  // Creating json objects:
+
+    Json();                       // "null" object
+    Json(const char * v);         // string object
+    Json(const std::string & v);  // string object
+    Json(const bool v);           // true or false object
+    Json(const json_int_t v);     // integer object with native long long int type
+    Json(const int v);            // integer object
+    Json(const double v);         // real object
+
+    static Json object(); // create an empty object
+    static Json array();  // create an empty array
+    static Json null();   // explicitely create null object (same as Json() )
+
+    // parse string, throw exception on error
+    static Json load_string(const std::string & s, const size_t flags=0);
+
+    // parse file, throw exception on error
+    static Json load_file(const std::string & f, const size_t flags=0);
+
+    // flags (see documentation of jansson for more information):
+    //  JSON_REJECT_DUPLICATES  -- throw error if input text contains duplicate keys
+    //  JSON_DECODE_ANY         -- decode not a single array or object but any json value
+    //  JSON_DISABLE_EOF_CHECK  -- stop after decoding JSON array or object, skip the tail
+    //  JSON_DECODE_INT_AS_REAL -- input all numbers as real
+    //  JSON_ALLOW_NUL          -- allow \u0000 escape inside string values
+
+  // Note: Json(string) and Json::load_string(string) do different things:
+  // First puts the whole string into the single json string, escaping quotes etc.
+  // Secong parses the string and extracts json object or array from it.
+
+  // Copy constructors and assignments work without actual data copying:
+
+    Json new(old);
+    Json new = old;
+
+  // TODO: implement deep copy (json_copy and json_deep_copy in the jansson library).
+
+  // Check types
+
+    int type() const;
+    bool is_object()  const;
+    bool is_array()   const;
+    bool is_string()  const;
+    bool is_integer() const;
+    bool is_real()    const;
+    bool is_true()    const;
+    bool is_false()   const;
+    bool is_null()    const;
+    bool is_bool()    const;
+    bool is_number()  const;
+    operator bool() {return !is_null();}
+
+  // TODO: ambiguity with null objects and unexistent fields.
+
+  // Extract data from json (throw error on wrong object types)
+
+    // cast (boolean or integer) json object to boolean.
+    bool as_bool() const;
+
+    // cast (integer, real, or boolean) json object to integer.
+    json_int_t as_integer() const;
+
+    // cast (real or integer) json object to double.
+    double as_real() const;
+
+    // cast (string, null, integer, real, bool) json object to string
+    std::string as_string() const;
+
+    // save json as a string (only arrays, objects)
+    std::string save_string(const size_t flags=0) const;
+
+    // flags (see documentation of jansson for more information):
+    // JSON_INDENT(n)      -- pretty-print the result, n=0..31
+    // JSON_COMPACT        -- no spases after , or :
+    // JSON_ENSURE_ASCII   -- only ASCII characters on output
+    // JSON_SORT_KEYS      -- sort keys
+    // JSON_PRESERVE_ORDER -- keep ogiginal key order
+    // JSON_ENCODE_ANY     -- dump not only an array or object but any json value
+    // JSON_ESCAPE_SLASH   -- escape the / characters in strings with \/
+    // JSON_REAL_PRECISION(n) -- precision of real numbers, n=0..31
+
+  // Note: json.as_string() and json.save_string() do different things:
+  // First extracts a string from a json object.
+  // Secong encodes json as a string.
+
+
+  // manipulating Arrays and Objects
+
+  size_t size() const;   // number of elements in object or array (error on any other json)
+  void clear();          // clear object or array (error on any other json type)
+
+  // manipulating objects
+
+  // get field, return json_null if no such field
+  Json get(const char *key) const;
+  Json operator[](const char *key) const;
+
+  // set, delete field, exception on error
+  void set(const char *key, const Json & val);
+  void del(const char *key);
+
+  // same, but with std::string keys
+  Json get(const std::string &key) const;
+  Json operator[](const std::string &key) const;
+  void set(const std::string &key, const Json & val);
+  void del(const std::string &key);
+
+  // set functions for various types
+  template <typename T> void set(const char *key, const T v);
+  template <typename T> void set(const std::string &key, const T v);
+
+  // update object all/existing/missing fields using
+  // another object, throw exception on errors
+  void update(const Json & j);
+  void update_existing(const Json & j);
+  void update_missing(const Json & j);
+
+  // object iterator
+  class iterator{
+    std::string key();
+    Json val();
+    iterator & operator++();
+    iterator operator++(int);
+    operator bool();
+  };
+  iterator begin();
+  iterator end();
+
+  // Usage
+  for (Json::iterator i = obj.begin(); i!=obj.end(); i++)
+    std::cerr << "key: " << i.key()
+              << "val: " << i.val().as_string() << "\n";
+
+  // manipulating arrays
+
+  // array get (returns json_null on error)
+  Json get(const size_t i) const;
+  Json operator[](const size_t i) const;
+
+  // array set, del, insert, append (exception on error)
+  void set(const size_t i, const Json & val);
+  void del(const size_t i);
+  void insert(const size_t i, const Json & val);
+  void append(const Json & val);
+
+  // append another array (throw exception on error)
+  void extend(const Json & j);
+};
+
+//   V.Zavjalov, 29.3.2016
+
