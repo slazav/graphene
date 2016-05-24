@@ -137,6 +137,7 @@ assert "$(./stsdb -d . get_interp test_2 1000)" "1000 1 10 30"
 assert "$(./stsdb -d . get_interp test_2 2000)" "2000 2 20"
 assert "$(./stsdb -d . get_interp test_2 1200)" "1200 1.2 12"
 assert "$(./stsdb -d . get_interp test_2 1800)" "1800 1.8 18"
+assert "$(./stsdb -d . get_interp test_2:1 1200)" "1200 12"
 
 # columns
 assert "$(./stsdb -d . get_next test_2:0)" "1000 1"

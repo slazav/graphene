@@ -384,8 +384,8 @@ class DBsts{
   /************************************/
   // print data value
   //
-  void print_value(DBT *k, DBT *v, const int col){
-    DBinfo info = read_info();
+  void print_value(DBT *k, DBT *v, const int col,
+                   const DBinfo & info){
     // check for correct key size (do not parse DB info)
     if (k->size!=sizeof(uint64_t)) return;
     // convert DBT to strings
@@ -399,14 +399,15 @@ class DBsts{
   /************************************/
   // interpolate and print data
   //
-  void print_interp(const uint64_t t0,
-                    const std::string & k1, const std::string & k2,
-                    const std::string & v1, const std::string & v2,
-                    const int col){
+  //
+  std::string print_interp(const uint64_t t0,
+                           const std::string & k1, const std::string & k2,
+                           const std::string & v1, const std::string & v2,
+                           const int col){
     DBinfo info = read_info();
     // check for correct key size (do not parse DB info)
-    if (k1.size()!=sizeof(uint64_t)) return;
-    if (k2.size()!=sizeof(uint64_t)) return;
+    if (k1.size()!=sizeof(uint64_t)) return "";
+    if (k2.size()!=sizeof(uint64_t)) return "";
     // unpack time
     uint64_t t1 = info.unpack_time(k1);
     uint64_t t2 = info.unpack_time(k2);
@@ -418,15 +419,17 @@ class DBsts{
     uint64_t dt2 = std::max(t2,t0)-std::min(t2,t0);
     double k = (double)dt2/(dt1+dt2);
 
-    // print values
-    std::cout << t0;
+    // collect interpolated values
+    std::vector<double> values;
     while (!strv1.eof() && !strv2.eof()){
       double dv1, dv2;
       strv1 >> dv1;
       strv2 >> dv2;
-      std::cout << " " << (dv1*k + dv2*(1-k));
+      values.push_back(dv1*k + dv2*(1-k));
     }
-    std::cout << "\n";
+    // pack data in a string storage
+    return std::string((char*)values.data(),
+       (char*)values.data()+sizeof(double)*values.size());
   }
 
   /************************************/
@@ -445,7 +448,7 @@ class DBsts{
     int res = curs->c_get(curs, &k, &v, DB_SET_RANGE);
     if (res==DB_NOTFOUND) { curs->close(curs); return; }
     if (res!=0) throw Err() << name << ".db: " << db_strerror(res);
-    print_value(&k, &v, col);
+    print_value(&k, &v, col, info);
     curs->close(curs);
   }
 
@@ -477,7 +480,7 @@ class DBsts{
       if (res!=0) throw Err() << name << ".db: " << db_strerror(res);
     }
 
-    print_value(&k, &v, col);
+    print_value(&k, &v, col, info);
     curs->close(curs);
   }
 
@@ -504,7 +507,7 @@ class DBsts{
     std::string ks1((char *)k.data, (char *)k.data+k.size);
     std::string vs1((char *)v.data, (char *)v.data+v.size);
     if (info.unpack_time(ks1) == t){
-      print_value(&k, &v, col);
+      print_value(&k, &v, col, info);
     }
     else {
       res = curs->c_get(curs, &k, &v, DB_PREV);
@@ -512,7 +515,14 @@ class DBsts{
       if (res!=0) throw Err() << name << ".db: " << db_strerror(res);
       std::string ks2((char *)k.data, (char *)k.data+k.size);
       std::string vs2((char *)v.data, (char *)v.data+v.size);
-      print_interp(t, ks1, ks2, vs1, vs2, col);
+      std::string ks0 = info.pack_time(t);
+      std::string vs0 = print_interp(t, ks1, ks2, vs1, vs2, col);
+      if (vs0!=""){
+        DBT k0 = mk_dbt(ks0);
+        DBT v0 = mk_dbt(vs0);
+        // print_interp converted everything to double and chose correct columns
+        print_value(&k0, &v0, -1, DBinfo(DATA_DOUBLE));
+      }
     }
     curs->close(curs);
   }
@@ -555,7 +565,7 @@ class DBsts{
 
       // if we want every point, switch to DB_NEXT and repeat
       if (dt<=1){
-        print_value(&k, &v, col);
+        print_value(&k, &v, col, info);
         fl=DB_NEXT;
         continue;
       }
@@ -573,7 +583,7 @@ class DBsts{
         if (tn > t2 ) break;
       }
 
-      print_value(&k, &v, col);
+      print_value(&k, &v, col, info);
       tl=tn; // update last printed value
 
       // add dt to the key for the next loop:
