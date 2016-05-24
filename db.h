@@ -218,6 +218,25 @@ int cmpfunc(DB *dbp, const DBT *a, const DBT *b){
 }
 
 /***********************************************************/
+// type for data processing function and an implementation
+// for stdout printing
+//
+typedef void(process_data_func)(DBT*,DBT*,const int,const DBinfo&);
+
+void print_value(DBT *k, DBT *v, const int col,
+                 const DBinfo & info){
+  // check for correct key size (do not parse DB info)
+  if (k->size!=sizeof(uint64_t)) return;
+  // convert DBT to strings
+  std::string ks((char *)k->data, (char *)k->data+k->size);
+  std::string vs((char *)v->data, (char *)v->data+v->size);
+  // unpack and print values
+  std::cout << info.unpack_time(ks) << " "
+            << info.unpack_data(vs, col) << "\n";
+}
+
+
+/***********************************************************/
 /***********************************************************/
 
 /* class for wrapping BerkleyDB */
@@ -382,23 +401,7 @@ class DBsts{
   }
 
   /************************************/
-  // print data value
-  //
-  void print_value(DBT *k, DBT *v, const int col,
-                   const DBinfo & info){
-    // check for correct key size (do not parse DB info)
-    if (k->size!=sizeof(uint64_t)) return;
-    // convert DBT to strings
-    std::string ks((char *)k->data, (char *)k->data+k->size);
-    std::string vs((char *)v->data, (char *)v->data+v->size);
-    // unpack and print values
-    std::cout << info.unpack_time(ks) << " "
-              << info.unpack_data(vs, col) << "\n";
-  }
-
-  /************************************/
-  // interpolate and print data
-  //
+  // interpolate data and pack it into DBT string as double array
   //
   std::string print_interp(const uint64_t t0,
                            const std::string & k1, const std::string & k2,
@@ -435,7 +438,8 @@ class DBsts{
   /************************************/
   // get data from the database -- get_next
   //
-  void get_next(uint64_t t1, const int col){
+  void get_next(const uint64_t t1, const int col,
+                process_data_func proc_data){
     DBinfo info = read_info();
     /* Get a cursor */
     DBC *curs;
@@ -455,7 +459,8 @@ class DBsts{
   /************************************/
   // get data from the database -- get_prev
   //
-  void get_prev(const uint64_t t2, const int col){
+  void get_prev(const uint64_t t2, const int col,
+                process_data_func proc_data){
     DBinfo info = read_info();
     /* Get a cursor */
     DBC *curs;
@@ -487,8 +492,8 @@ class DBsts{
   /************************************/
   // get data from the database -- get_interp
   //
-  void get_interp(const uint64_t t,
-                  const int col){
+  void get_interp(const uint64_t t, const int col,
+                process_data_func proc_data){
     DBinfo info = read_info();
     if (info.val==DATA_TEXT)
       throw Err() << "Can not do interpolation of TEXT data";
@@ -539,7 +544,8 @@ class DBsts{
   // use DB_SET_RANGE with dt shift, if the point didn't
   // change - use DB_NEXT.
   void get_range(const uint64_t t1, const uint64_t t2,
-                 const uint64_t dt, const int col){
+                 const uint64_t dt, const int col,
+                 process_data_func proc_data){
 
     DBinfo info = read_info();
     /* Get a cursor */

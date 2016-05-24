@@ -252,7 +252,7 @@ main(int argc, char **argv) {
       int col = get_col_num(argv[1]); // column
       uint64_t t = argc>2? str2time(argv[2]): 0;
       DBsts db(p.dbpath, norm_name(argv[1]), DB_RDONLY);
-      db.get_next(t, col);
+      db.get_next(t, col, print_value);
       return 0;
     }
 
@@ -264,7 +264,7 @@ main(int argc, char **argv) {
       int col = get_col_num(argv[1]); // column
       uint64_t t = argc>2? str2time(argv[2]): -1;
       DBsts db(p.dbpath, norm_name(argv[1]), DB_RDONLY);
-      db.get_prev(t, col);
+      db.get_prev(t, col, print_value);
       return 0;
     }
 
@@ -276,7 +276,7 @@ main(int argc, char **argv) {
       int col = get_col_num(argv[1]); // column
       uint64_t t = str2time(argv[2]);
       DBsts db(p.dbpath, norm_name(argv[1]), DB_RDONLY);
-      db.get_interp(t, col);
+      db.get_interp(t, col, print_value);
       return 0;
     }
 
@@ -290,7 +290,7 @@ main(int argc, char **argv) {
       uint64_t t2 = argc>3? str2time(argv[3]): -1;
       uint64_t dt = argc>4? str2time(argv[4]): 0;
       DBsts db(p.dbpath, norm_name(argv[1]), DB_RDONLY);
-      db.get_range(t1,t2,dt, col);
+      db.get_range(t1,t2,dt, col, print_value);
       return 0;
     }
 
