@@ -4,7 +4,7 @@
 #include <string>
 
 #include "tests.h"
-#include "stsdb.h"
+#include "db.h"
 
 using namespace std;
 int main() {

@@ -1,5 +1,7 @@
-#ifndef DBsts_H
-#define DBsts_H
+/* work with BerkleyDB for the Simple time series database. */
+
+#ifndef STSDB_DB_H
+#define STSDB_DB_H
 
 #include <cassert>
 #include <cstdlib>
@@ -580,6 +582,7 @@ class DBsts{
     }
     curs->close(curs);
   }
+
 };
 
 #endif

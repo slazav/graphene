@@ -14,7 +14,7 @@
 #include <map>
 #include <string>
 #include <iostream>
-#include "stsdb.h"
+#include "db.h"
 
 using namespace std;
 
