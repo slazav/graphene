@@ -3,6 +3,9 @@ CPPFLAGS=-g
 CC=g++
 
 all: stsdb stsdb_http tests
+install: all
+	mkdir -p ${bindir} ${sharedstatedir}/stsdb
+	install stsdb stsdb_http ${bindir}
 
 stsdb.o:     db.h stsdb.cpp
 test_db.o:   tests.h db.h test_db.cpp
