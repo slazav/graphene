@@ -1,3 +1,5 @@
 *.o
 stsdb
+stsdb_http
 test_db
+test_json

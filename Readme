@@ -81,10 +81,19 @@ See examples/ folder in the database distriution
 
 
 =========================================================================
-    Simple JSON interface
+    HTTP + Simple JSON interface
 
 The simple JSON interface can be used with grafana frontend to access
-data
+data (simple_json plugin is needed). Text databases can be viewed as
+annotations, and numerical as metrics. Columns can be specified after
+database name: <name>:<column>, default column is 0.
+
+Usage: stsdb_http [options]
+Options:p
+ -p <port> -- tcp port for connections (default 8081)
+ -d <path> -- database path (default /var/lib/stsdb/)
+ -v        -- be verbose (show requests, input and output)
+ -h        -- write this help message and exit
 
 =========================================================================
     Matlab interface

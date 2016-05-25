@@ -6,10 +6,12 @@ all: stsdb stsdb_http tests
 
 stsdb.o:     db.h stsdb.cpp
 test_db.o:   tests.h db.h test_db.cpp
-test_json.o: tests.h json.h json.cpp test_json.cpp
+test_json.o: tests.h json.h test_json.cpp
 
-test_json: json.o test_json.o
-stsdb_http: json.o stsdb_http.o
+stsdb:      db.o stsdb.o
+stsdb_http: db.o json.o stsdb_http.o
+test_db:    db.o test_db.o
+test_json:  db.o json.o test_json.o
 
 tests: test_db test_json test_cli.sh
 	./test_db

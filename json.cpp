@@ -95,11 +95,20 @@ void add_to_buffer(DBT *k, DBT *v, const int col,
   // convert DBT to strings
   std::string ks((char *)k->data, (char *)k->data+k->size);
   std::string vs((char *)v->data, (char *)v->data+v->size);
-  // unpack and print values
-  Json jpt = Json::array();
-  jpt.append(info.unpack_data_d(vs, col));
-  jpt.append((json_int_t)info.unpack_time(ks));
-  json_buffer.append(jpt);
+
+  // unpack values and append to json_buffer
+  if (info.val!=DATA_TEXT){
+    Json jpt = Json::array();
+    jpt.append(info.unpack_data_d(vs, col));
+    jpt.append((json_int_t)info.unpack_time(ks));
+    json_buffer.append(jpt);
+  }
+  else {
+    Json jpt = Json::object();
+    jpt.set("title", info.unpack_data(vs, col));
+    jpt.set("time",  (json_int_t)info.unpack_time(ks));
+    json_buffer.append(jpt);
+  }
 }
 
 /***************************************************************************/
@@ -151,6 +160,9 @@ Json json_query(const string & dbpath, const Json & ji){
       dbname = norm_name(dbname.substr(0,cp));
     }
 
+    // Get data from the database
+    // I use global var json_buffer and a callback add_to_buffer
+    // which fills it
     json_buffer=Json::array();
     DBsts db(dbpath, dbname, DB_RDONLY);
     db.get_range(t1,t2,dt, col, add_to_buffer);
@@ -159,20 +171,8 @@ Json json_query(const string & dbpath, const Json & ji){
     jt.set("target", ji["targets"][i]["target"]);
     jt.set("datapoints", json_buffer);
     out.append(jt);
-  fprintf(stderr, "N0: %ld\n", json_buffer.size());
   }
 
-  time_t t1a = t1/1000;
-  time_t t2a = t2/1000;
-  fprintf(stderr, "T1: %s\n", ctime(&t1a));
-  fprintf(stderr, "T2: %s\n", ctime(&t2a));
-  fprintf(stderr, "dT: %ld\n", dt);
-  fprintf(stderr, "N:  %ld\n", (t2-t1)/dt);
-  fprintf(stderr, "M:  %ld\n", maxpt);
-
-  /* build the json object for output */
-  //  [ { "target":"t1", "datapoints":[ [622,1450754160000], [365,1450754220000]] },
-  //    { "target":"t2", "datapoints":[ [861,1450754160000], [767,1450754220000]] } ]
   return out;
 }
 
@@ -195,8 +195,24 @@ Json json_annotations(const string & dbpath, const Json & ji){
     text:  text // Text for the annotation. (optional)
     }]
   */
-  Json out = Json::array();
-  return out;
+  /* parse time range */
+  uint64_t t1 = convert_time( ji["range"]["from"].as_string() );
+  uint64_t t2 = convert_time( ji["range"]["to"].as_string() );
+  if (t1==0 || t2==0) throw Json::Err() << "Bad range setting";
+
+  // extract normalized db name
+  std::string dbname = norm_name(ji["annotation"]["name"].as_string());
+
+  // Get data from the database
+  // I use global var json_buffer and a callback add_to_buffer
+  // which fills it
+  json_buffer=Json::array();
+  DBsts db(dbpath, dbname, DB_RDONLY);
+  db.get_range(t1,t2, 0, -1, add_to_buffer);
+  for (size_t i=0; i<json_buffer.size(); i++){
+    json_buffer[i].set("annotation", ji["annotation"]);
+  }
+  return json_buffer;
 }
 
 /***************************************************************************/

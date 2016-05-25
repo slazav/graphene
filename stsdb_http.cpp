@@ -74,11 +74,7 @@ static int request_answer(void * cls, struct MHD_Connection * connection, const 
   int ret;
   spars_t *spars = (spars_t *) cls; /* server parameters */
 
-  if (spars->verb){
-    cout << "> " << method << " " << url << "\n";
-    if (upload_data && upload_data_size) fwrite(upload_data, *upload_data_size, 1, stdout);
-    if (*upload_data_size) cout << "\n";
-  }
+  if (spars->verb) cout << "> " << method << " " << url << "\n";
 
   if (strcmp(method, "GET")==0 && strcmp(url, "/")==0){
     response = MHD_create_response_from_buffer(0,0,MHD_RESPMEM_MUST_COPY);
@@ -111,7 +107,16 @@ static int request_answer(void * cls, struct MHD_Connection * connection, const 
     return MHD_YES;
   }
   else{ // Process the query by stsdb_json() and answer
-    string out_data = stsdb_json(spars->dbpath, url, in_data);
+    string out_data;
+    try{
+      out_data = stsdb_json(spars->dbpath, url, in_data);
+    }
+    catch(Json::Err e){ out_data = e.str(); }
+    catch(Err e){ out_data = e.str(); }
+
+    if (spars->verb) cout << "> " << in_data << "\n";
+    if (spars->verb) cout << "< " << out_data << "\n";
+
     response = MHD_create_response_from_buffer(
       out_data.size(), (void *)out_data.data(), MHD_RESPMEM_MUST_COPY);
     if (response==NULL) return MHD_NO;
