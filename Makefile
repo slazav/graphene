@@ -1,5 +1,5 @@
-LDLIBS=-lmicrohttpd -lm -ldb ./jansson/libjansson.a
-CPPFLAGS=-g -I./jansson
+LDLIBS=-lmicrohttpd -lm -ldb -ljansson
+CPPFLAGS=-g
 CC=g++
 
 all: stsdb stsdb_http tests
