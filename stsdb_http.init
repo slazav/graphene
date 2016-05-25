@@ -1,0 +1,85 @@
+#!/bin/sh
+#
+# chkconfig: 345 50 50
+# description: stsdb is a simple time series database.
+#              http interface can be used as
+#              a simple-json-datasource for grafana
+#
+# processname: stsdb_http
+# pidfile: /var/run/stsdb_http.pid
+
+WITHOUT_RC_COMPAT=1
+
+# Source function library.
+. /etc/init.d/functions
+
+PIDFILE=/var/run/stsdb_http.pid
+LOCKFILE=/var/lock/subsys/stsdb_http
+RETVAL=0
+
+start() {
+	start_daemon --pidfile "$PIDFILE" --lockfile "$LOCKFILE" --expect-user root -- stsdb_http $EXTRAOPTIONS
+	RETVAL=$?
+	return $RETVAL
+}
+
+stop()
+{
+	stop_daemon --pidfile "$PIDFILE" --lockfile "$LOCKFILE" --expect-user root -- stsdb_http
+	RETVAL=$?
+	return $RETVAL
+}
+
+reload()
+{
+	msg_reloading stsdb_http
+	stop_daemon --pidfile "$PIDFILE" --expect-user root -HUP -- stsdb_http
+	RETVAL=$?
+	return $RETVAL
+}
+
+restart()
+{
+	stop
+	start
+}
+
+# See how we were called.
+case "$1" in
+	start)
+		start
+		;;
+	stop)
+		stop
+		;;
+	status)
+		status --pidfile "$PIDFILE" --expect-user root -- stsdb_http
+		RETVAL=$?
+		;;
+	reload|sreload)
+		reload
+		;;
+	restart)
+		restart
+		;;
+	condstop)
+		if [ -e "$LOCKFILE" ]; then
+			stop
+		fi
+		;;
+	condreload)
+		if [ -e "$LOCKFILE" ]; then
+			reload
+		fi
+		;;
+	condrestart)
+		if [ -e "$LOCKFILE" ]; then
+			restart
+		fi
+		;;
+	*)
+		msg_usage "${0##*/} {start|stop|status|reload|restart|condstop|condrestart|condreload}"
+		RETVAL=1
+esac
+
+exit $RETVAL
