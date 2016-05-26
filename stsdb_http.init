@@ -18,7 +18,7 @@ LOCKFILE=/var/lock/subsys/stsdb_http
 RETVAL=0
 
 start() {
-	start_daemon --pidfile "$PIDFILE" --lockfile "$LOCKFILE" --expect-user root -- stsdb_http $EXTRAOPTIONS
+	start_daemon --pidfile "$PIDFILE" --lockfile "$LOCKFILE" --expect-user root -- stsdb_http -f $EXTRAOPTIONS
 	RETVAL=$?
 	return $RETVAL
 }
@@ -26,14 +26,6 @@ start() {
 stop()
 {
 	stop_daemon --pidfile "$PIDFILE" --lockfile "$LOCKFILE" --expect-user root -- stsdb_http
-	RETVAL=$?
-	return $RETVAL
-}
-
-reload()
-{
-	msg_reloading stsdb_http
-	stop_daemon --pidfile "$PIDFILE" --expect-user root -HUP -- stsdb_http
 	RETVAL=$?
 	return $RETVAL
 }
@@ -56,10 +48,7 @@ case "$1" in
 		status --pidfile "$PIDFILE" --expect-user root -- stsdb_http
 		RETVAL=$?
 		;;
-	reload|sreload)
-		reload
-		;;
-	restart)
+	reload|sreload|restart)
 		restart
 		;;
 	condstop)
@@ -67,12 +56,7 @@ case "$1" in
 			stop
 		fi
 		;;
-	condreload)
-		if [ -e "$LOCKFILE" ]; then
-			reload
-		fi
-		;;
-	condrestart)
+	condreload|condrestart)
 		if [ -e "$LOCKFILE" ]; then
 			restart
 		fi

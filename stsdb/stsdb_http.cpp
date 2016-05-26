@@ -14,12 +14,16 @@
 */
 
 #include <iostream>
+#include <fstream>
 #include <string>
 
 #include <cstdlib>
 #include <stdint.h>
 #include <cstring>
 #include <cstdio>
+#include <csignal>
+#include <sys/types.h>
+#include <sys/stat.h>
 #include <microhttpd.h>
 #include "json.h"
 
@@ -28,35 +32,54 @@ using namespace std;
 /**********************************************************/
 /* server parameters */
 struct spars_t{
-  int     port;   /* tcp port for connections */
-  string  dbpath; /* path to the databases (default /var/lib/stsdb/) */
-  int16_t verb;   /* print commands to stdout */
+  int     port;    /* tcp port for connections */
+  string  dbpath;  /* path to the databases (default /var/lib/stsdb/) */
+  string  logfile; /* logfile */
+  string  pidfile; /* pidfile */
+  int16_t verb;    /* print commands to stdout */
+  int16_t dofork;  /* print commands to stdout */
+  ostream *log;    /* log stream */
+  ofstream flog;
 
   /* set default values */
   spars_t(){
     port   = 8081;
     dbpath = "/var/lib/stsdb/";
-    verb   = 0;
+    logfile = ""; // to be set later
+    pidfile = "/var/run/stsdb_http.pid";
+    verb   = 1;
+    dofork = 0;
+    log    = &cout;
   }
 
   /* parse cmdline options */
   int parse_cmdline(int *argc, char ***argv){
     while(1){
-      switch (getopt(*argc, *argv, "p:d:hv")){
+      switch (getopt(*argc, *argv, "p:d:hv:f")){
         case -1: return 0; /* end*/
         case '?':
         case ':': continue; /* error msg is printed by getopt*/
-        case 'p': port = atoi(optarg); break;
-        case 'd': dbpath = optarg; break;
-        case 'v': verb = 1; break;
+        case 'p': port =  atoi(optarg); break;
+        case 'd': dbpath  = optarg; break;
+        case 'v': verb    = atoi(optarg); break;
+        case 'l': logfile = optarg; break;
+        case 'f': dofork  = 1; break;
         case 'h':
           cout << "stsdb_http -- http interface for stsdb\n"
                   "Usage: stsdb_http [options]\n"
                   "Options:p\n"
-                  " -p <port> -- tcp port for connections (default 8081)\n"
-                  " -d <path> -- database path (default /var/lib/stsdb/)\n"
-                  " -v        -- be verbose\n"
-                  " -h        -- write this help message and exit\n";
+                  " -p <port>  -- tcp port for connections (default 8081)\n"
+                  " -d <path>  -- database path (default /var/lib/stsdb/)\n"
+                  " -v <level> -- be verbose\n"
+                  "                0 - write nothing\n" 
+                  "                1 - write some information on start\n" 
+                  "                2 - write info about connections\n" 
+                  "                3 - write input data\n" 
+                  "                4 - write output data\n" 
+                  " -l <file>  -- log file, use '-' for stdout\n"
+                  "               (default /var/log/stsdb.log in daemon mode, '-' in)"
+                  " -f         -- do fork and run as a daemon\n";
+                  " -h         -- write this help message and exit\n";
         return 1;
       }
     }
@@ -74,7 +97,8 @@ static int request_answer(void * cls, struct MHD_Connection * connection, const 
   int ret;
   spars_t *spars = (spars_t *) cls; /* server parameters */
 
-  if (spars->verb) cout << "> " << method << " " << url << "\n";
+  if (spars->verb>1) *(spars->log) << "> " << method << " " << url << "\n";
+  spars->log->flush();
 
   if (strcmp(method, "GET")==0 && strcmp(url, "/")==0){
     response = MHD_create_response_from_buffer(0,0,MHD_RESPMEM_MUST_COPY);
@@ -111,11 +135,18 @@ static int request_answer(void * cls, struct MHD_Connection * connection, const 
     try{
       out_data = stsdb_json(spars->dbpath, url, in_data);
     }
-    catch(Json::Err e){ out_data = e.str(); }
-    catch(Err e){ out_data = e.str(); }
+    catch(Json::Err e){
+      out_data = e.str();
+      if (spars->verb>0) *(spars->log) << "Error: " << e.str() << "\n";
+    }
+    catch(Err e){
+      out_data = e.str();
+      if (spars->verb>0) *(spars->log) << "Error: " << e.str() << "\n";
+    }
 
-    if (spars->verb) cout << "> " << in_data << "\n";
-    if (spars->verb) cout << "< " << out_data << "\n";
+    if (spars->verb>2) *(spars->log) << ">>> " << in_data << "\n";
+    if (spars->verb>3) *(spars->log) << "<<< " << out_data << "\n";
+    spars->log->flush();
 
     response = MHD_create_response_from_buffer(
       out_data.size(), (void *)out_data.data(), MHD_RESPMEM_MUST_COPY);
@@ -127,29 +158,124 @@ static int request_answer(void * cls, struct MHD_Connection * connection, const 
   }
 }
 
+spars_t spars; /* server parameters*/
+struct MHD_Daemon *d = NULL;
+
+static void srv_stop(int signum){
+  MHD_stop_daemon(d);
+  if (spars.verb >0)
+    *(spars.log) << "Stopping the server\n";
+  remove(spars.pidfile.c_str()); // try to remove pid-file
+  exit(0);
+}
+
 /**********************************************************/
 int main(int argc, char ** argv) {
-  struct MHD_Daemon * d;
-  spars_t spars; /* server parameters*/
 
   /* parse server parameters, exit if server is not needed */
   if (spars.parse_cmdline(&argc, &argv)) return 0;
 
+  /*******************/
+  /* open log file */
+  if (spars.logfile==""){
+    if (spars.dofork) spars.logfile="/var/log/stsdb.log";
+    else spars.logfile="-";
+  }
+  if (spars.logfile!="-"){
+    spars.flog.open(spars.logfile.c_str(), ios::app);
+    if (spars.flog.fail()){
+      cerr << "Can't open log file: " << spars.logfile << "\n";
+      return 1;
+    }
+    spars.log = &spars.flog;
+  }
+
+  /*******************/
+  /* check pid file */
+  {
+    ifstream pf(spars.pidfile.c_str());
+    if (!pf.fail()){
+      int pid;
+      pf >> pid;
+      std::cerr << "Already runing (pid-file exists): " << pid << "\n";
+      return 1;
+    }
+  }
+
+  /*******************/
+  // daemon things
+  if (spars.dofork){
+    pid_t pid, sid;
+    /* Fork off the parent process */
+    pid = fork();
+    if (pid < 0) {
+      cerr << "Can't do fork\n";
+      return 1;
+    }
+    if (pid > 0) {
+      // write pid file
+      ofstream pf(spars.pidfile.c_str());
+      if (pf.fail()){
+        cerr << "Can't open pid-file: " << spars.pidfile << "\n";
+        return 1;
+      }
+      pf << pid;
+      return 0;
+    }
+    /* Change the file mode mask */
+    umask(0);
+
+    /* Create a new SID for the child process */
+    sid = setsid();
+    if (sid < 0) {
+      cerr << "Can't get SID\n";
+      return 1;
+    }
+
+    /* Change the current working directory */
+    if ((chdir("/")) < 0) {
+      std::cerr << "Can't do chdir\n";
+      return 1;
+    }
+
+    /* Close out the standard file descriptors */
+    close(STDIN_FILENO);
+    close(STDOUT_FILENO);
+    close(STDERR_FILENO);
+  }
+
+  /*******************/
   d = MHD_start_daemon(MHD_USE_SELECT_INTERNALLY,
                        spars.port, NULL, NULL,
                        &request_answer, &spars,
                        MHD_OPTION_END);
-  if (d != NULL){
-    cout << "Server is running; press enter to stop it.\n";
-    if (spars.verb){
-      cout << "Port: " <<  spars.port << "\n";
-      cout << "Path to databases: " << spars.dbpath << "\n";
-    }
-    (void) getc(stdin);
-    MHD_stop_daemon(d);
+  if (d == NULL){
+    *(spars.log) << "Error: can't start the http server\n";
+    return 1;
   }
-  else {
-    cout << "Error: can't start the http server\n";
+
+  /*******************/
+  // set up signals
+  struct sigaction sa;
+  sa.sa_handler = srv_stop;
+  sigemptyset(&sa.sa_mask);
+  sa.sa_flags = SA_RESTART; /* Restart functions if
+                               interrupted by handler */
+  if (sigaction(SIGTERM, &sa, NULL) == -1 ||
+      sigaction(SIGQUIT, &sa, NULL) == -1 ||
+      sigaction(SIGINT,  &sa, NULL) == -1 ||
+      sigaction(SIGHUP,  &sa, NULL) == -1){
+    *(spars.log) << "Error: can't set signal handler\n";
+    srv_stop(0); return 1;}
+
+  if (spars.verb >0){
+    *(spars.log) << "Starting the server:\n"
+                 << "  Port: " <<  spars.port << "\n"
+                 << "  Path to databases: " << spars.dbpath << "\n";
+     spars.log->flush();
   }
+
+  // main loop
+  while(1) sleep(10);
   return 0;
 }
