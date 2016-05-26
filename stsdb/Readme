@@ -70,6 +70,12 @@ even for integer data.
 
 Text values are printed with linebreaks converted to spaces.
 
+    Commands for deleting data:
+
+stsdb del <name> <time>  -- delete a data point
+stsdb del_range  <name> [<time1>] [<time2>] -- delete all points in the range
+
+
 TODO:
 stsdb access -- Interactively read/write data. Allows writing of
 multiple points without reopening the database. Allows making a simple

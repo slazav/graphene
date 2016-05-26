@@ -238,6 +238,13 @@ class DBsts{
                  const uint64_t dt, const int col,
                  process_data_func proc_data);
 
+
+  // delete data data from the database -- del_range
+  void del(const uint64_t t1);
+
+  // delete data data from the database -- del_range
+  void del_range(const uint64_t t1, const uint64_t t2);
+
 };
 
 #endif

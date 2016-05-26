@@ -310,8 +310,8 @@ DBsts::put(const uint64_t t,
 }
 
 /************************************/
-// interpolate data and pack it into DBT string as double array
-//
+// Interpolate data and pack it into DBT string as double array
+// This function is used in get_interp() only
 string
 DBsts::print_interp(const uint64_t t0,
                     const string & k1, const string & k2,
@@ -512,4 +512,49 @@ DBsts::get_range(const uint64_t t1, const uint64_t t2,
   curs->close(curs);
 }
 
+/************************************/
+// delete data data from the database -- del_range
+void
+DBsts::del(const uint64_t t1){
+  DBinfo info = read_info();
+  string ks = info.pack_time(t1);
+  DBT k = mk_dbt(ks);
+  int res = dbp->del(dbp, NULL, &k, 0);
+  if (res!=0) throw Err() << name << ".db: " << db_strerror(res);
+}
+
+/************************************/
+// delete data data from the database -- del_range
+void
+DBsts::del_range(const uint64_t t1, const uint64_t t2){
+  DBinfo info = read_info();
+  /* Get a cursor */
+  DBC *curs;
+  dbp->cursor(dbp, NULL, &curs, 0);
+  if (curs==NULL) throw Err() << name << ".db: can't get a cursor";
+
+  string ks = info.pack_time(t1);
+  DBT k = mk_dbt(ks);
+  DBT v = mk_dbt();
+
+  int fl = DB_SET_RANGE; // first get t >= t1
+  while (1){
+    int res = curs->c_get(curs, &k, &v, fl);
+    if (res==DB_NOTFOUND) break;
+    if (res!=0) throw Err() << name << ".db: " << db_strerror(res);
+
+    // unpack new time value and check the range
+    string s((char *)k.data, (char *)k.data+k.size);
+    uint64_t tn = info.unpack_time(s);
+    if (tn > t2 ) break;
+
+    // delete the point
+    res = curs->del(curs, 0);
+    if (res!=0) throw Err() << name << ".db: " << db_strerror(res);
+
+    // we want to delete every point, so switch to DB_NEXT and repeat
+    fl=DB_NEXT;
+  }
+  curs->close(curs);
+}
 

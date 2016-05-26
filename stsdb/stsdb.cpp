@@ -52,7 +52,7 @@ class Pars{
             "  list\n"
             "      -- list all databases in the data folder\n"
             "  put <name> <time> <value1> ... <valueN>\n"
-            "      -- write data\n"
+            "      -- write a data point\n"
             "  get_next <name>[:N] [<time1>]\n"
             "      -- get next point after time1\n"
             "  get_prev <name>[:N] [<time2>]\n"
@@ -61,6 +61,10 @@ class Pars{
             "      -- get interpolated point\n"
             "  get_range <name>[:N] [<time1>] [<time2>] [<dt>]\n"
             "      -- get points in the time range\n"
+            "  del <name> <time>\n"
+            "      -- delete one data point\n"
+            "  del_range <name> [<time1>] [<time2>]\n"
+            "      -- delete all points in the time range\n"
     ;
     throw Err();
   }
@@ -275,6 +279,29 @@ main(int argc, char **argv) {
       uint64_t dt = argc>4? str2time(argv[4]): 0;
       DBsts db(p.dbpath, norm_name(argv[1]), DB_RDONLY);
       db.get_range(t1,t2,dt, col, print_value);
+      return 0;
+    }
+
+    // delete one data point
+    // args: del <name> <time>
+    if (strcasecmp(cmd, "del")==0){
+      if (argc<3) throw Err() << "database name and time expected";
+      if (argc>3) throw Err() << "too many parameters";
+      uint64_t t = str2time(argv[2]);
+      DBsts db(p.dbpath, norm_name(argv[1]), 0);
+      db.del(t);
+      return 0;
+    }
+
+    // delete all points in the data range
+    // args: del_range <name> [<time1>] [<time2>]
+    if (strcasecmp(cmd, "del_range")==0){
+      if (argc<4) throw Err() << "database name and two times expected";
+      if (argc>4) throw Err() << "too many parameters";
+      uint64_t t1 = str2time(argv[2]);
+      uint64_t t2 = str2time(argv[3]);
+      DBsts db(p.dbpath, norm_name(argv[1]), 0);
+      db.del_range(t1,t2);
       return 0;
     }
 

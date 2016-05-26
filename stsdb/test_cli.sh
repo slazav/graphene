@@ -11,6 +11,7 @@ function assert(){
   fi
 }
 
+###########################################################################
 # help message
 help_msg="$(./stsdb -h)"
 
@@ -25,6 +26,9 @@ assert "$(./stsdb -X . 2>&1)" "./stsdb: invalid option -- 'X'"
 assert "$(./stsdb -d . a)" "Error: Unknown command"
 
 
+###########################################################################
+# database operations
+
 # remove all test databases
 rm -f test*.db
 
@@ -33,12 +37,10 @@ assert "$(./stsdb -d . create)" "Error: database name expected"
 assert "$(./stsdb -d . create a dfmt descr e)" "Error: too many parameters"
 assert "$(./stsdb -d . create a dfmt)" "Error: Unknown data format: dfmt"
 
-
 assert "$(./stsdb -d . create test_1)" ""
 assert "$(./stsdb -d . create test_2 UINT16)" ""
 assert "$(./stsdb -d . create test_3 UINT32 "Uint 32 database")" ""
 assert "$(./stsdb -d . create test_1)" "Error: test_1.db: File exists"
-
 
 # info
 assert "$(./stsdb -d . info)" "Error: database name expected"
@@ -52,7 +54,6 @@ assert "$(./stsdb -d . info test_3)" "UINT32	Uint 32 database"
 # list
 assert "$(./stsdb -d . list a)" "Error: too many parameters"
 assert "$(./stsdb -d . list | sort)" "$(printf "test_1\ntest_2\ntest_3")"
-
 
 # delete
 assert "$(./stsdb -d . delete)" "Error: database name expected"
@@ -79,7 +80,13 @@ assert "$(./stsdb -d . set_descr test_x a)" "Error: test_x.db: No such file or d
 assert "$(./stsdb -d . set_descr test_1 "Test DB number 1")" ""
 assert "$(./stsdb -d . info test_1)" "DOUBLE	Test DB number 1"
 
-#1 DOUBLE DB test_1
+assert "$(./stsdb -d . delete test_1)" ""
+assert "$(./stsdb -d . delete test_2)" ""
+
+###########################################################################
+# DOUBLE database
+
+assert "$(./stsdb -d . create test_1)" ""
 assert "$(./stsdb -d . put test_1 1234567890000 0.1)" ""
 assert "$(./stsdb -d . put test_1 2234567890123 0.2)" ""
 # get_next
@@ -127,6 +134,12 @@ assert "$(./stsdb -d . get_range test_1 1234567890000 2234567890123 2)" "1234567
 2234567890123 0.2"
 
 assert "$(./stsdb -d . get_range test_1 1234567890000 2234567890123 1200000000000)" "1234567890000 0.1"
+assert "$(./stsdb -d . delete test_1)" ""
+
+###########################################################################
+# interpolation and columns (INT database)
+assert "$(./stsdb -d . create test_2 UINT32 "Uint 32 database")" ""
+
 
 # get_interp
 assert "$(./stsdb -d . put test_2 1000 1 10 30)" ""
@@ -152,9 +165,33 @@ assert "$(./stsdb -d . get_range test_2:0)" "1000 1
 
 assert "$(./stsdb -d . get_range test_2:3)" "1000 NaN
 2000 NaN"
+assert "$(./stsdb -d . delete test_2)" ""
+
+###########################################################################
+# deleting records
+
+assert "$(./stsdb -d . create test_3 UINT32 "Uint 32 database")" ""
+assert "$(./stsdb -d . put test_3 10 1)" ""
+assert "$(./stsdb -d . put test_3 11 2)" ""
+assert "$(./stsdb -d . put test_3 12 3)" ""
+assert "$(./stsdb -d . put test_3 13 4)" ""
+assert "$(./stsdb -d . put test_3 14 5)" ""
+assert "$(./stsdb -d . put test_3 15 6)" ""
+assert "$(./stsdb -d . get_range test_3 | wc)" "      6      12      30"
+assert "$(./stsdb -d . get_next test_3 12)" "12 3"
+assert "$(./stsdb -d . del test_3 12)" ""
+assert "$(./stsdb -d . get_next test_3 12)" "13 4"
+assert "$(./stsdb -d . del_range test_3 11 13)" ""
+assert "$(./stsdb -d . get_range test_3)" "10 1
+14 5
+15 6"
 
 
-#1 TEXT db
+
+assert "$(./stsdb -d . delete test_3)" ""
+
+###########################################################################
+# INT database
 assert "$(./stsdb -d . create test_4 TEXT)" ""
 
 assert "$(./stsdb -d . put test_4 1000 text1)" ""
@@ -203,6 +240,9 @@ assert "$(./stsdb -d . get_interp test_4 2200)" "Error: Can not do interpolation
 
 # columns are not important
 assert "$(./stsdb -d . get_next test_4:5)" "1000 text1"
+assert "$(./stsdb -d . delete test_4)" ""
 
+
+###########################################################################
 # remove all test databases
 rm -f test*.db
