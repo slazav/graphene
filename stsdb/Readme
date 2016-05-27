@@ -9,15 +9,17 @@ E-mail: Vladislav Zavjalov <slazav@altlinux.org>
 
 Each dataset is a separate BerkleyDB file with .db extension, located in
 a database directory (default /var/lib/stsdb). Name of file represents
-the name of the dataset. Name may contain path, but "." and
-".." path components are always removed.
+the name of the dataset. Name may contain path, but "." and ".." path
+components are always removed. You can use "cryostat/temperature" but not
+"../temperature" for your dataset.
 
 Data are stored as a set of sorted key-value pairs. Key is time in
 milliseconds (64 bit unsigned integer), counted from 1970-01-01 UTC.
-Duplicated time values are allowed. Value can contain an array if
-numbers of arbitrary length (data columns) or some text. The data format
-can be chosen during the database creation. Possible variants are: TEXT,
-INT8, UINT8, INT16, UINT16, INT32, UINT32, INT64, UINT64, FLOAT, DOUBLE.
+Duplicated time values are allowed (but can not be shown now). Value can
+contain an array if numbers of arbitrary length (data columns) or some
+text. The data format can be chosen during the database creation.
+Possible variants are: TEXT, INT8, UINT8, INT16, UINT16, INT32, UINT32,
+INT64, UINT64, FLOAT, DOUBLE.
 
 Records with 1-byte keys are reserved for database information,
 for example the data format and database description.
@@ -95,13 +97,27 @@ annotations, and numerical as metrics. Columns can be specified after
 database name: <name>:<column>, default column is 0.
 
 Usage: stsdb_http [options]
-Options:p
- -p <port> -- tcp port for connections (default 8081)
- -d <path> -- database path (default /var/lib/stsdb/)
- -v        -- be verbose (show requests, input and output)
- -h        -- write this help message and exit
+Options:
+ -p <port>  -- tcp port for connections (default 8081)
+ -d <path>  -- database path (default /var/lib/stsdb/)
+ -v <level> -- be verbose
+                0 - write nothing.
+                1 - write some information on start
+                2 - write info about connections
+                3 - write input data
+                4 - write output data
+ -l <file>  -- log file, use '-' for stdout
+               (default /var/log/stsdb.log in daemon mode, '-' in)"
+ -f         -- do fork and run as a daemon;
+ -h         -- write help message and exit;
 
 =========================================================================
     Matlab interface
+
+Nothing is ready yet. You can use something like this to get data using the
+stsdb program:
+
+  [r, out] = system('stsdb get_range my_dataset 1464260400000 now 60000');
+  [t val1 val2] = strread(out, '%f %f %f');
 
 =========================================================================
