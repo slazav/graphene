@@ -229,9 +229,9 @@ class DBsts{
   void get_prev(const uint64_t t2, const int col,
                 process_data_func proc_data);
 
-  // get data from the database -- get_interp
-  void get_interp(const uint64_t t, const int col,
-                  process_data_func proc_data);
+  // get data from the database -- get
+  void get(const uint64_t t, const int col,
+           process_data_func proc_data);
 
   // get data from the database -- get_range
   void get_range(const uint64_t t1, const uint64_t t2,

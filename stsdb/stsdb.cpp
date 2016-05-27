@@ -53,12 +53,12 @@ class Pars{
             "      -- list all databases in the data folder\n"
             "  put <name> <time> <value1> ... <valueN>\n"
             "      -- write a data point\n"
+            "  get <name>[:N] <time>\n"
+            "      -- get previous or interpolated point\n"
             "  get_next <name>[:N] [<time1>]\n"
             "      -- get next point after time1\n"
             "  get_prev <name>[:N] [<time2>]\n"
             "      -- get previous point before time2\n"
-            "  get_interp <name>[:N] <time>\n"
-            "      -- get interpolated point\n"
             "  get_range <name>[:N] [<time1>] [<time2>] [<dt>]\n"
             "      -- get points in the time range\n"
             "  del <name> <time>\n"
@@ -250,21 +250,21 @@ main(int argc, char **argv) {
       if (argc<2) throw Err() << "database name expected";
       if (argc>3) throw Err() << "too many parameters";
       int col = get_col_num(argv[1]); // column
-      uint64_t t = argc>2? str2time(argv[2]): -1;
+      uint64_t t2 = argc>2? str2time(argv[2]): -1;
       DBsts db(p.dbpath, norm_name(argv[1]), DB_RDONLY);
-      db.get_prev(t, col, print_value);
+      db.get_prev(t2, col, print_value);
       return 0;
     }
 
-    // get interpolated point for time
-    // args: get_interp <name>[:N] <time>
-    if (strcasecmp(cmd, "get_interp")==0){
-      if (argc<3) throw Err() << "database name and time expected";
+    // get prefious or interpolated point for the time
+    // args: get <name>[:N] <time>
+    if (strcasecmp(cmd, "get")==0){
+      if (argc<2) throw Err() << "database name expected";
       if (argc>3) throw Err() << "too many parameters";
       int col = get_col_num(argv[1]); // column
-      uint64_t t = str2time(argv[2]);
+      uint64_t t2 = argc>2? str2time(argv[2]): -1;
       DBsts db(p.dbpath, norm_name(argv[1]), DB_RDONLY);
-      db.get_interp(t, col, print_value);
+      db.get(t2, col, print_value);
       return 0;
     }
 

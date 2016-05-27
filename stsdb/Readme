@@ -47,17 +47,22 @@ stsdb info <name>                    -- print database information
 stsdb list                           -- list all databases in the data directory
 
 Delete and rename commands just do simple file operations.
-A database can not be renamed only if destination file exists.
+A database can be renamed only if destination file exists.
 
     Commands for reading and writing data:
 
 stsdb put <name> <time> <value1> ... <valueN> -- write data point
 stsdb get_next <name>[:N] [<time1>] -- get next point with t>=time1
 stsdb get_prev <name>[:N] [<time2>] -- get previous point with t<=time2
-stsdb get_interp <name>[:N] <time>  -- get interpolated point
+
+stsdb get <name>[:N] <time>
+-- for integer and text databases get is eqivalent to get_prev.
+for double databases it does linear interpolation between points, or
+return the last point if time is larger then that of the newest point.
+
 stsdb get_range  <name>[:N] [<time1>] [<time2>] [<dt>]
-                                    -- get all points in the time range
-                                       if dt>1 then filter data
+-- Get all points in the time range if dt>1 then filter data.
+Works fast for any ratio of dt and interpoint distance.
 
 In get_* commands the database name can be followed by column number.
 Default value for time1 is 0, for time2 is infinity. Word "now" can be used

@@ -137,20 +137,20 @@ assert "$(./stsdb -d . get_range test_1 1234567890000 2234567890123 120000000000
 assert "$(./stsdb -d . delete test_1)" ""
 
 ###########################################################################
-# interpolation and columns (INT database)
-assert "$(./stsdb -d . create test_2 UINT32 "Uint 32 database")" ""
+# interpolation and columns (DOUBLE database)
+assert "$(./stsdb -d . create test_2 DOUBLE "double database")" ""
 
-
-# get_interp
 assert "$(./stsdb -d . put test_2 1000 1 10 30)" ""
 assert "$(./stsdb -d . put test_2 2000 2 20)" ""
-assert "$(./stsdb -d . get_interp test_2 800)"  ""
-assert "$(./stsdb -d . get_interp test_2 2200)" ""
-assert "$(./stsdb -d . get_interp test_2 1000)" "1000 1 10 30"
-assert "$(./stsdb -d . get_interp test_2 2000)" "2000 2 20"
-assert "$(./stsdb -d . get_interp test_2 1200)" "1200 1.2 12"
-assert "$(./stsdb -d . get_interp test_2 1800)" "1800 1.8 18"
-assert "$(./stsdb -d . get_interp test_2:1 1200)" "1200 12"
+
+# get
+assert "$(./stsdb -d . get test_2 800)"  ""
+assert "$(./stsdb -d . get test_2 2200)" "2000 2 20"
+assert "$(./stsdb -d . get test_2 1000)" "1000 1 10 30"
+assert "$(./stsdb -d . get test_2 2000)" "2000 2 20"
+assert "$(./stsdb -d . get test_2 1200)" "1200 1.2 12"
+assert "$(./stsdb -d . get test_2 1800)" "1800 1.8 18"
+assert "$(./stsdb -d . get test_2:1 1200)" "1200 12"
 
 # columns
 assert "$(./stsdb -d . get_next test_2:0)" "1000 1"
@@ -186,12 +186,10 @@ assert "$(./stsdb -d . get_range test_3)" "10 1
 14 5
 15 6"
 
-
-
 assert "$(./stsdb -d . delete test_3)" ""
 
 ###########################################################################
-# INT database
+# TEXT database
 assert "$(./stsdb -d . create test_4 TEXT)" ""
 
 assert "$(./stsdb -d . put test_4 1000 text1)" ""
@@ -214,6 +212,14 @@ assert "$(./stsdb -d . get_prev test_4 2000)" "2000 text2 2" # ==
 assert "$(./stsdb -d . get_prev test_4 1500)" "1000 text1"
 assert "$(./stsdb -d . get_prev test_4 2001)" "2000 text2 2"
 
+# get - same
+assert "$(./stsdb -d . get test_4)"      "2000 text2 2" # last
+assert "$(./stsdb -d . get test_4 0)"    ""
+assert "$(./stsdb -d . get test_4 1000)" "1000 text1" # ==
+assert "$(./stsdb -d . get test_4 2000)" "2000 text2 2" # ==
+assert "$(./stsdb -d . get test_4 1500)" "1000 text1"
+assert "$(./stsdb -d . get test_4 2001)" "2000 text2 2"
+
 # get_range
 assert "$(./stsdb -d . get_range test_4 0 999)" ""
 assert "$(./stsdb -d . get_range test_4 0 999 2)" ""
@@ -232,11 +238,6 @@ assert "$(./stsdb -d . get_range test_4 1000 2000)" "1000 text1
 assert "$(./stsdb -d . get_range test_4 1000 2000 1000)" "1000 text1
 2000 text2 2"
 assert "$(./stsdb -d . get_range test_4 1000 2000 1001)" "1000 text1"
-
-# get_interp
-assert "$(./stsdb -d . get_interp test_4 1000)" "Error: Can not do interpolation of TEXT data"
-assert "$(./stsdb -d . get_interp test_4 1500)" "Error: Can not do interpolation of TEXT data"
-assert "$(./stsdb -d . get_interp test_4 2200)" "Error: Can not do interpolation of TEXT data"
 
 # columns are not important
 assert "$(./stsdb -d . get_next test_4:5)" "1000 text1"

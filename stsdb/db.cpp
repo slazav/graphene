@@ -405,11 +405,13 @@ DBsts::get_prev(const uint64_t t2, const int col,
 // get data from the database -- get_interp
 //
 void
-DBsts::get_interp(const uint64_t t, const int col,
-                  process_data_func proc_data){
+DBsts::get(const uint64_t t, const int col,
+           process_data_func proc_data){
   DBinfo info = read_info();
-  if (info.val==DATA_TEXT)
-    throw Err() << "Can not do interpolation of TEXT data";
+
+  if (info.val!=DATA_FLOAT && info.val!=DATA_DOUBLE)
+    return get_prev(t,col, proc_data);
+
   /* Get a cursor */
   DBC *curs;
   dbp->cursor(dbp, NULL, &curs, 0);
@@ -418,16 +420,28 @@ DBsts::get_interp(const uint64_t t, const int col,
   DBT k = mk_dbt(ks);
   DBT v = mk_dbt();
 
+  // find next value
   int res = curs->c_get(curs, &k, &v, DB_SET_RANGE);
-  if (res==DB_NOTFOUND) { curs->close(curs); return; }
+
+  // if there is no next value - give the last value if any
+  if (res==DB_NOTFOUND) {
+    res = curs->c_get(curs, &k, &v, DB_PREV);
+    if (res==0) proc_data(&k, &v, col, info);
+    if (res!=0 && res!=DB_NOTFOUND)
+      throw Err() << name << ".db: " << db_strerror(res);
+    curs->close(curs); return;
+  }
   if (res!=0) throw Err() << name << ".db: " << db_strerror(res);
 
+  // if "next" record is asactly at t - return it
   string ks1((char *)k.data, (char *)k.data+k.size);
   string vs1((char *)v.data, (char *)v.data+v.size);
   if (info.unpack_time(ks1) == t){
     proc_data(&k, &v, col, info);
   }
+  // get the previous value and do interpolation
   else {
+    // find prev value
     res = curs->c_get(curs, &k, &v, DB_PREV);
     if (res==DB_NOTFOUND) { curs->close(curs); return; }
     if (res!=0) throw Err() << name << ".db: " << db_strerror(res);
@@ -439,7 +453,7 @@ DBsts::get_interp(const uint64_t t, const int col,
       DBT k0 = mk_dbt(ks0);
       DBT v0 = mk_dbt(vs0);
       // print_interp converted everything to double and chose correct columns
-      proc_data(&k0, &v0, -1, DBinfo(DATA_DOUBLE));
+      proc_data(&k0, &v0, -1, info);
     }
   }
   curs->close(curs);
