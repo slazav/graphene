@@ -43,7 +43,7 @@ class DBout {
       else col = -1;
     }
     if (col < -1) col = -1;
-    DBsts::check_name(name);
+    name = DBsts::check_name(name);
   }
 };
 

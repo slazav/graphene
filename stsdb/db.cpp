@@ -55,8 +55,7 @@ DBsts::DBsts(const string & path_,
   info_is_actual = false;
 
 
-  check_name(name_); // check the name
-  name = name_;
+  name = check_name(name_); // check the name
   open_flags = flags;
   string fname = path_ + "/" + name_ + ".db";
 

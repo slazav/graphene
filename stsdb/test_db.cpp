@@ -15,8 +15,8 @@ int main() {
     ASSERT_EQ(DEFAULT_DATAFMT, DATA_DOUBLE);
 
     {  // check names and extract column numbers
-      DBsts::check_name("abc");
-      DBsts::check_name("abc/def");
+      ASSERT_EQ(DBsts::check_name("abc"), "abc");
+      ASSERT_EQ(DBsts::check_name("abc/def"), "abc/def");
       const char *e1 = "symbols '.:+| \\n\\t' are not allowed in the database name";
       ASSERT_EX(DBsts::check_name("./abc/def"), e1);
       ASSERT_EX(DBsts::check_name("/abc/def:1"), e1);
@@ -26,7 +26,7 @@ int main() {
       ASSERT_EX(DBsts::check_name("/abc/def\n"), e1);
 
       {DBout dbn("abc");    ASSERT_EQ(dbn.name, "abc");
-                             ASSERT_EQ(dbn.col, -1);}
+                            ASSERT_EQ(dbn.col, -1);}
       {DBout dbn("abc/");   ASSERT_EQ(dbn.name, "abc/");}
 
       {DBout dbn("abc:1");
