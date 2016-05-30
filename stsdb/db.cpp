@@ -146,29 +146,48 @@ DBinfo::unpack_data_d(const string & s, const int col) const{
 // k is a weight of first point, 0 <= k <= 1
 //
 string
-DBinfo::interpolate(const string & s1, const string & s2, const double k){
- if (s1.size() % dsize() != 0 || s2.size() % dsize() != 0)
-    throw Err() << "Broken database: wrong data length";
-  // number of columns
-  size_t cn1 = s1.size()/dsize();
-  size_t cn2 = s2.size()/dsize();
-  size_t cn3 = min(cn1,cn2);
+DBinfo::interpolate(
+        const uint64_t t0,
+        const string & k1, const string & k2,
+        const string & v1, const string & v2){
 
-  string s3(dsize()*cn3, '\0');
-  for (size_t i=0; i<cn3; i++){
+  // check for correct key size (do not parse DB info)
+  if (k1.size()!=sizeof(uint64_t)) return "";
+  if (k2.size()!=sizeof(uint64_t)) return "";
+
+  // unpack time
+  uint64_t t1 = unpack_time(k1);
+  uint64_t t2 = unpack_time(k2);
+
+  // calculate first point weight
+  uint64_t dt1 = max(t1,t0)-min(t1,t0);
+  uint64_t dt2 = max(t2,t0)-min(t2,t0);
+  double k = (double)dt2/(dt1+dt2);
+
+  // check for correct value size
+  if (v1.size() % dsize() != 0 || v2.size() % dsize() != 0)
+    throw Err() << "Broken database: wrong data length";
+
+  // number of columns
+  size_t cn1 = v1.size()/dsize();
+  size_t cn2 = v2.size()/dsize();
+  size_t cn0 = min(cn1,cn2);
+
+  string v0(dsize()*cn0, '\0');
+  for (size_t i=0; i<cn0; i++){
     switch (val){
       case DATA_FLOAT:
-        ((float*)s3.data())[i] = ((float*)s1.data())[i]*k
-                               + ((float*)s2.data())[i]*(1-k);
+        ((float*)v0.data())[i] = ((float*)v1.data())[i]*k
+                               + ((float*)v2.data())[i]*(1-k);
         break;
       case DATA_DOUBLE:
-        ((double*)s3.data())[i] = ((double*)s1.data())[i]*k
-                                + ((double*)s2.data())[i]*(1-k);
+        ((double*)v0.data())[i] = ((double*)v1.data())[i]*k
+                                + ((double*)v2.data())[i]*(1-k);
         break;
       default: throw Err() << "Unexpected data format";
     }
   }
-  return s3;
+  return v0;
 }
 
 /***********************************************************/
@@ -309,27 +328,6 @@ DBsts::put(const uint64_t t,
 }
 
 /************************************/
-// Interpolate data and pack it into DBT string as double array
-// This function is used in get_interp() only
-string
-DBsts::print_interp(const uint64_t t0,
-                    const string & k1, const string & k2,
-                    const string & v1, const string & v2){
-  DBinfo info = read_info();
-  // check for correct key size (do not parse DB info)
-  if (k1.size()!=sizeof(uint64_t)) return "";
-  if (k2.size()!=sizeof(uint64_t)) return "";
-  // unpack time
-  uint64_t t1 = info.unpack_time(k1);
-  uint64_t t2 = info.unpack_time(k2);
-  // calculate first point weight
-  uint64_t dt1 = max(t1,t0)-min(t1,t0);
-  uint64_t dt2 = max(t2,t0)-min(t2,t0);
-  double k = (double)dt2/(dt1+dt2);
-  return info.interpolate(v1,v2,k);
-}
-
-/************************************/
 // get data from the database -- get_next
 //
 void
@@ -431,7 +429,7 @@ DBsts::get(const uint64_t t,
     string ks2((char *)k.data, (char *)k.data+k.size);
     string vs2((char *)v.data, (char *)v.data+v.size);
     string ks0 = info.pack_time(t);
-    string vs0 = print_interp(t, ks1, ks2, vs1, vs2);
+    string vs0 = info.interpolate(t, ks1, ks2, vs1, vs2);
     if (vs0!=""){
       DBT k0 = mk_dbt(ks0);
       DBT v0 = mk_dbt(vs0);

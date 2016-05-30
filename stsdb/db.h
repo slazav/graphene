@@ -106,9 +106,11 @@ class DBinfo {
   double unpack_data_d(const std::string & s, const int col=-1) const;
 
   // interpolate data (for FLOAT and DOUBLE values)
-  // s1 and s2 are _packed_ strings!
-  // k is a weight of first point, 0 <= k <= 1
-  std::string interpolate(const std::string & s1, const std::string & s2, const double k);
+  // k1,k2,v1,v2 are packed strings!
+  std::string interpolate(
+        const uint64_t t0,
+        const std::string & k1, const std::string & k2,
+        const std::string & v1, const std::string & v2);
 
 };
 
