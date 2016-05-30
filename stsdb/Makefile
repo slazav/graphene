@@ -7,12 +7,14 @@ install: all
 	mkdir -p ${bindir} ${sharedstatedir}/stsdb
 	install stsdb stsdb_http ${bindir}
 
-stsdb.o:     db.h stsdb.cpp
-test_db.o:   tests.h db.h test_db.cpp
-test_json.o: tests.h json.h test_json.cpp
+stsdb.o:       db.h dbout.h stsdb.cpp
+test_db.o:     tests.h db.h dbout.h test_db.cpp
+test_json.o:   tests.h json.h test_json.cpp
+json.o:        db.h dbout.h json.cpp
+stsdb_http.o:  json.h stsdb_http.cpp
 
-stsdb:      db.o stsdb.o
-stsdb_http: db.o json.o stsdb_http.o
+stsdb:      db.o dbout.o stsdb.o
+stsdb_http: db.o dbout.o json.o stsdb_http.o
 test_db:    db.o test_db.o
 test_json:  db.o json.o test_json.o
 

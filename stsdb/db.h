@@ -51,55 +51,6 @@ const std::string data_fmt_names[LAST_DATAFMT+1] =
 const static size_t data_fmt_sizes[LAST_DATAFMT+1] =
       {1,1,1,2,2,4,4,8,8,4,8}; // bytes
 
-/***********************************************************/
-// Class for database names.
-// TODO:
-// We need two types of database names:
-// - simple   -- it is used if we create, rename, delete file,
-//               add points; simple name is a filename
-// - extended -- used for data requests, it contains simple
-//               names, column numbers, filter names etc.
-//
-// Simple names can not contain symbols '.', '+', '|', ' ', '\n', '\t'.
-//
-// Extended names are used to make single tables from various
-// parameters (using interpolation) and apply filters to
-// data (such as calibration functions).
-//
-// Example of the extended name:
-//   dba:2+dbb+dbc:1|flt
-// This means that data should be found in the 2nd column of dba,
-// then all data from dbb and first column of dbc are interpolated
-// to the data points, then all data should go through filter program flt.
-//
-class DBname {
-  public:
-  std::string name;  // normalized database name
-  std::string fname; // name + '.db';
-
-  // extended names:
-  int col;            // column number, for the main database
-
-
-  // constructor -- parse the string
-  DBname(const std::string & str){
-    col  = -1;
-    name = str;
-
-    // extract column
-    size_t cp = name.rfind(':');
-    if (cp!=std::string::npos){
-      char *e;
-      col = strtol(name.substr(cp+1,-1).c_str(), &e, 10);
-      if (e!=NULL && *e=='\0') name = name.substr(0,cp);
-      else col = -1;
-    }
-    if (col < -1) col = -1;
-//    DBsts::check_name(name);
-    fname = name + ".db";
-  }
-};
-
 
 /***********************************************************/
 // Class for the database information.
@@ -159,9 +110,6 @@ class DBinfo {
 /***********************************************************/
 // type for data processing function.
 typedef void(process_data_func)(DBT*,DBT*,const int,const DBinfo&);
-
-//implementation for stdout printing
-void print_value(DBT *k, DBT *v, const int col, const DBinfo & info);
 
 /***********************************************************/
 /***********************************************************/

@@ -173,24 +173,6 @@ int cmpfunc(DB *dbp, const DBT *a, const DBT *b){
 }
 
 /***********************************************************/
-// type for data processing function and an implementation
-// for stdout printing
-//
-typedef void(process_data_func)(DBT*,DBT*,const int,const DBinfo&);
-
-void print_value(DBT *k, DBT *v, const int col,
-                 const DBinfo & info){
-  // check for correct key size (do not parse DB info)
-  if (k->size!=sizeof(uint64_t)) return;
-  // convert DBT to strings
-  string ks((char *)k->data, (char *)k->data+k->size);
-  string vs((char *)v->data, (char *)v->data+v->size);
-  // unpack and print values
-  cout << info.unpack_time(ks) << " "
-            << info.unpack_data(vs, col) << "\n";
-}
-
-/***********************************************************/
 // DBsts class
 
 /************************************/

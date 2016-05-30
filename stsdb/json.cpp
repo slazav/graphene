@@ -14,6 +14,7 @@
 #include <stdint.h>
 #include "jsonxx/jsonxx.h"
 #include "db.h"
+#include "dbout.h"
 
 using namespace std;
 
@@ -152,7 +153,7 @@ Json json_query(const string & dbpath, const Json & ji){
   for (int i=0; i<ji["targets"].size(); i++){
 
     // extract db name and column number
-    DBname dbn(ji["targets"][i]["target"].as_string());
+    DBout dbn(ji["targets"][i]["target"].as_string());
 
     // Get data from the database
     // I use global var json_buffer and a callback add_to_buffer
@@ -195,7 +196,7 @@ Json json_annotations(const string & dbpath, const Json & ji){
   if (t1==0 || t2==0) throw Json::Err() << "Bad range setting";
 
   // extract db name
-  DBname dbn(ji["annotation"]["name"].as_string(), false);
+  DBout dbn(ji["annotation"]["name"].as_string());
 
   // Get data from the database
   // I use global var json_buffer and a callback add_to_buffer

@@ -5,6 +5,7 @@
 
 #include "tests.h"
 #include "db.h"
+#include "dbout.h"
 
 using namespace std;
 int main() {
@@ -24,14 +25,14 @@ int main() {
       ASSERT_EX(DBsts::check_name("/abc/def\t"), e1);
       ASSERT_EX(DBsts::check_name("/abc/def\n"), e1);
 
-      {DBname dbn("abc");    ASSERT_EQ(dbn.name, "abc");
+      {DBout dbn("abc");    ASSERT_EQ(dbn.name, "abc");
                              ASSERT_EQ(dbn.col, -1);}
-      {DBname dbn("abc/");   ASSERT_EQ(dbn.name, "abc/");}
+      {DBout dbn("abc/");   ASSERT_EQ(dbn.name, "abc/");}
 
-      {DBname dbn("abc:1");
+      {DBout dbn("abc:1");
          ASSERT_EQ(dbn.name, "abc"); ASSERT_EQ(dbn.col, 1);}
-      {DBname dbn("abc:-1"); ASSERT_EQ(dbn.col, -1);}
-      {DBname dbn("abc:-2"); ASSERT_EQ(dbn.col, -1);}
+      {DBout dbn("abc:-1"); ASSERT_EQ(dbn.col, -1);}
+      {DBout dbn("abc:-2"); ASSERT_EQ(dbn.col, -1);}
     }
 
 
