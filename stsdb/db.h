@@ -1,4 +1,5 @@
-/* work with BerkleyDB for the Simple time series database. */
+/* DBsts class: wrapper for BerkleyDB, open/put/get/del functions
+ */
 
 #ifndef STSDB_DB_H
 #define STSDB_DB_H

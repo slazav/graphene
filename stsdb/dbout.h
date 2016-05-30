@@ -1,4 +1,4 @@
-/* extended data output: columns, filters, tables */
+/* DBout class: extended data output: columns, filters, tables */
 
 #ifndef STSDB_DBOUT_H
 #define STSDB_DBOUT_H
@@ -28,7 +28,7 @@ class DBout {
   std::string fname; // name + '.db';
 
   // extended names:
-  int col;            // column number, for the main database
+  int col; // column number, for the main database
 
   // constructor -- parse the string
   DBout(const std::string & str){
@@ -50,6 +50,7 @@ class DBout {
 };
 
 // callback for using with DBsts::get* functions
+// usr_data should have DBout* type
 void print_value(DBT *k, DBT *v, const DBinfo & info, void *usr_data);
 
 #endif

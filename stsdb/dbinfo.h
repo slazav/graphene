@@ -1,4 +1,6 @@
-/* work with BerkleyDB for the Simple time series database. */
+/* DBinfo class: information about databases and function for
+   packing/unpacking/interpolating raw database records.
+*/
 
 #ifndef STSDB_DBINFO_H
 #define STSDB_DBINFO_H
