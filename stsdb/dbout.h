@@ -25,7 +25,6 @@
 class DBout {
   public:
   std::string name;  // primary database name
-  std::string fname; // name + '.db';
 
   // extended names:
   int col; // column number, for the main database
@@ -45,7 +44,6 @@ class DBout {
     }
     if (col < -1) col = -1;
     DBsts::check_name(name);
-    fname = name + ".db";
   }
 };
 
