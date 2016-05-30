@@ -105,11 +105,16 @@ class DBinfo {
   // only one column are returned, 0 by default
   double unpack_data_d(const std::string & s, const int col=-1) const;
 
+  // interpolate data (for FLOAT and DOUBLE values)
+  // s1 and s2 are _packed_ strings!
+  // k is a weight of first point, 0 <= k <= 1
+  std::string interpolate(const std::string & s1, const std::string & s2, const double k);
+
 };
 
 /***********************************************************/
 // type for data processing function.
-typedef void(process_data_func)(DBT*,DBT*,const int,const DBinfo&, void *usr_data);
+typedef void(process_data_func)(DBT*,DBT*,const DBinfo&, void *usr_data);
 
 /***********************************************************/
 /***********************************************************/
@@ -213,28 +218,27 @@ class DBsts{
   // interpolate data and pack it into DBT string as double array
   std::string print_interp(const uint64_t t0,
                            const std::string & k1, const std::string & k2,
-                           const std::string & v1, const std::string & v2,
-                           const int col);
+                           const std::string & v1, const std::string & v2);
 
   // All get* functions get some data from the database
   // and call proc_func() for each key-value pair,
   // with two DBT's, DBinfo and usr_data as arguments.
 
   // get data from the database -- get_next
-  void get_next(const uint64_t t1, const int col,
+  void get_next(const uint64_t t1,
                 process_data_func proc_func, void *usr_data);
 
   // get data from the database -- get_prev
-  void get_prev(const uint64_t t2, const int col,
+  void get_prev(const uint64_t t2,
                 process_data_func proc_func, void *usr_data);
 
   // get data from the database -- get
-  void get(const uint64_t t, const int col,
+  void get(const uint64_t t,
            process_data_func proc_func, void *usr_data);
 
   // get data from the database -- get_range
   void get_range(const uint64_t t1, const uint64_t t2,
-                 const uint64_t dt, const int col,
+                 const uint64_t dt,
                  process_data_func proc_func, void *usr_data);
 
 

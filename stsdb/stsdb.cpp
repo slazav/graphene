@@ -230,7 +230,7 @@ main(int argc, char **argv) {
       uint64_t t = argc>2? str2time(argv[2]): 0;
       DBout dbo(argv[1]);
       DBsts db(p.dbpath, dbo.name, DB_RDONLY);
-      db.get_next(t, dbo.col, print_value, &dbo);
+      db.get_next(t, print_value, &dbo);
       return 0;
     }
 
@@ -242,7 +242,7 @@ main(int argc, char **argv) {
       uint64_t t2 = argc>2? str2time(argv[2]): -1;
       DBout dbo(argv[1]);
       DBsts db(p.dbpath, dbo.name, DB_RDONLY);
-      db.get_prev(t2, dbo.col, print_value, &dbo);
+      db.get_prev(t2, print_value, &dbo);
       return 0;
     }
 
@@ -254,7 +254,7 @@ main(int argc, char **argv) {
       uint64_t t2 = argc>2? str2time(argv[2]): -1;
       DBout dbo(argv[1]);
       DBsts db(p.dbpath, dbo.name, DB_RDONLY);
-      db.get(t2, dbo.col, print_value, &dbo);
+      db.get(t2, print_value, &dbo);
       return 0;
     }
 
@@ -268,7 +268,7 @@ main(int argc, char **argv) {
       uint64_t dt = argc>4? str2time(argv[4]): 0;
       DBout dbo(argv[1]);
       DBsts db(p.dbpath, dbo.name, DB_RDONLY);
-      db.get_range(t1,t2,dt, dbo.col, print_value, &dbo);
+      db.get_range(t1,t2,dt, print_value, &dbo);
       return 0;
     }
 

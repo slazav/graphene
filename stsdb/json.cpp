@@ -89,8 +89,10 @@ uint64_t convert_interval(const string & tstr){
 
 static Json json_buffer;
 
-void add_to_buffer(DBT *k, DBT *v, const int col,
+void add_to_buffer(DBT *k, DBT *v,
                    const DBinfo & info, void *usr_data){
+
+  DBout *dbo = (DBout*) usr_data;
   // check for correct key size (do not parse DB info)
   if (k->size!=sizeof(uint64_t)) return;
   // convert DBT to strings
@@ -100,13 +102,13 @@ void add_to_buffer(DBT *k, DBT *v, const int col,
   // unpack values and append to json_buffer
   if (info.val!=DATA_TEXT){
     Json jpt = Json::array();
-    jpt.append(info.unpack_data_d(vs, col));
+    jpt.append(info.unpack_data_d(vs, dbo->col));
     jpt.append((json_int_t)info.unpack_time(ks));
     json_buffer.append(jpt);
   }
   else {
     Json jpt = Json::object();
-    jpt.set("title", info.unpack_data(vs, col));
+    jpt.set("title", info.unpack_data(vs, dbo->col));
     jpt.set("time",  (json_int_t)info.unpack_time(ks));
     json_buffer.append(jpt);
   }
@@ -160,7 +162,7 @@ Json json_query(const string & dbpath, const Json & ji){
     // which fills it
     json_buffer=Json::array();
     DBsts db(dbpath, dbo.name, DB_RDONLY);
-    db.get_range(t1,t2,dt, dbo.col, add_to_buffer, &dbo);
+    db.get_range(t1,t2,dt, add_to_buffer, &dbo);
 
     Json jt = Json::object();
     jt.set("target", ji["targets"][i]["target"]);
@@ -203,7 +205,7 @@ Json json_annotations(const string & dbpath, const Json & ji){
   // which fills it
   json_buffer=Json::array();
   DBsts db(dbpath, dbo.name, DB_RDONLY);
-  db.get_range(t1,t2, 0, -1, add_to_buffer, &dbo);
+  db.get_range(t1,t2, 0, add_to_buffer, &dbo);
   for (size_t i=0; i<json_buffer.size(); i++){
     json_buffer[i].set("annotation", ji["annotation"]);
   }

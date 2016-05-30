@@ -113,6 +113,7 @@ DBinfo::unpack_data(const string & s, const int col) const{
 
 // Unpack data to a double value (for json output)
 // only one column are returned, 0 by default
+//
 double
 DBinfo::unpack_data_d(const string & s, const int col) const{
   if (val == DATA_TEXT)
@@ -138,6 +139,36 @@ DBinfo::unpack_data_d(const string & s, const int col) const{
     case DATA_DOUBLE: return (double)((double   *)s.data())[c];
     default: throw Err() << "Unexpected data format";
   }
+}
+
+// interpolate data (for FLOAT and DOUBLE values)
+// s1 and s2 are _packed_ strings!
+// k is a weight of first point, 0 <= k <= 1
+//
+string
+DBinfo::interpolate(const string & s1, const string & s2, const double k){
+ if (s1.size() % dsize() != 0 || s2.size() % dsize() != 0)
+    throw Err() << "Broken database: wrong data length";
+  // number of columns
+  size_t cn1 = s1.size()/dsize();
+  size_t cn2 = s2.size()/dsize();
+  size_t cn3 = min(cn1,cn2);
+
+  string s3(dsize()*cn3, '\0');
+  for (size_t i=0; i<cn3; i++){
+    switch (val){
+      case DATA_FLOAT:
+        ((float*)s3.data())[i] = ((float*)s1.data())[i]*k
+                               + ((float*)s2.data())[i]*(1-k);
+        break;
+      case DATA_DOUBLE:
+        ((double*)s3.data())[i] = ((double*)s1.data())[i]*k
+                                + ((double*)s2.data())[i]*(1-k);
+        break;
+      default: throw Err() << "Unexpected data format";
+    }
+  }
+  return s3;
 }
 
 /***********************************************************/
@@ -283,8 +314,7 @@ DBsts::put(const uint64_t t,
 string
 DBsts::print_interp(const uint64_t t0,
                     const string & k1, const string & k2,
-                    const string & v1, const string & v2,
-                    const int col){
+                    const string & v1, const string & v2){
   DBinfo info = read_info();
   // check for correct key size (do not parse DB info)
   if (k1.size()!=sizeof(uint64_t)) return "";
@@ -292,32 +322,18 @@ DBsts::print_interp(const uint64_t t0,
   // unpack time
   uint64_t t1 = info.unpack_time(k1);
   uint64_t t2 = info.unpack_time(k2);
-  // unpack data
-  istringstream strv1(info.unpack_data(v1, col));
-  istringstream strv2(info.unpack_data(v2, col));
   // calculate first point weight
   uint64_t dt1 = max(t1,t0)-min(t1,t0);
   uint64_t dt2 = max(t2,t0)-min(t2,t0);
   double k = (double)dt2/(dt1+dt2);
-
-  // collect interpolated values
-  vector<double> values;
-  while (!strv1.eof() && !strv2.eof()){
-    double dv1, dv2;
-    strv1 >> dv1;
-    strv2 >> dv2;
-    values.push_back(dv1*k + dv2*(1-k));
-  }
-  // pack data in a string storage
-  return string((char*)values.data(),
-     (char*)values.data()+sizeof(double)*values.size());
+  return info.interpolate(v1,v2,k);
 }
 
 /************************************/
 // get data from the database -- get_next
 //
 void
-DBsts::get_next(const uint64_t t1, const int col,
+DBsts::get_next(const uint64_t t1,
                 process_data_func proc_func, void *usr_data){
   DBinfo info = read_info();
   /* Get a cursor */
@@ -331,7 +347,7 @@ DBsts::get_next(const uint64_t t1, const int col,
   int res = curs->c_get(curs, &k, &v, DB_SET_RANGE);
   if (res==DB_NOTFOUND) { curs->close(curs); return; }
   if (res!=0) throw Err() << name << ".db: " << db_strerror(res);
-  proc_func(&k, &v, col, info, usr_data);
+  proc_func(&k, &v, info, usr_data);
   curs->close(curs);
 }
 
@@ -339,7 +355,7 @@ DBsts::get_next(const uint64_t t1, const int col,
 // get data from the database -- get_prev
 //
 void
-DBsts::get_prev(const uint64_t t2, const int col,
+DBsts::get_prev(const uint64_t t2,
                 process_data_func proc_func, void *usr_data){
   DBinfo info = read_info();
   /* Get a cursor */
@@ -365,7 +381,7 @@ DBsts::get_prev(const uint64_t t2, const int col,
     if (res!=0) throw Err() << name << ".db: " << db_strerror(res);
   }
 
-  proc_func(&k, &v, col, info, usr_data);
+  proc_func(&k, &v, info, usr_data);
   curs->close(curs);
 }
 
@@ -373,12 +389,12 @@ DBsts::get_prev(const uint64_t t2, const int col,
 // get data from the database -- get_interp
 //
 void
-DBsts::get(const uint64_t t, const int col,
+DBsts::get(const uint64_t t,
            process_data_func proc_func, void *usr_data){
   DBinfo info = read_info();
 
   if (info.val!=DATA_FLOAT && info.val!=DATA_DOUBLE)
-    return get_prev(t,col, proc_func, usr_data);
+    return get_prev(t, proc_func, usr_data);
 
   /* Get a cursor */
   DBC *curs;
@@ -394,7 +410,7 @@ DBsts::get(const uint64_t t, const int col,
   // if there is no next value - give the last value if any
   if (res==DB_NOTFOUND) {
     res = curs->c_get(curs, &k, &v, DB_PREV);
-    if (res==0) proc_func(&k, &v, col, info, usr_data);
+    if (res==0) proc_func(&k, &v, info, usr_data);
     if (res!=0 && res!=DB_NOTFOUND)
       throw Err() << name << ".db: " << db_strerror(res);
     curs->close(curs); return;
@@ -404,7 +420,7 @@ DBsts::get(const uint64_t t, const int col,
   // if "next" record is asactly at t - return it
   string ks1((char *)k.data, (char *)k.data+k.size);
   string vs1((char *)v.data, (char *)v.data+v.size);
-  if (info.unpack_time(ks1) == t) proc_func(&k, &v, col, info, usr_data);
+  if (info.unpack_time(ks1) == t) proc_func(&k, &v, info, usr_data);
 
   // get the previous value and do interpolation
   else {
@@ -415,12 +431,12 @@ DBsts::get(const uint64_t t, const int col,
     string ks2((char *)k.data, (char *)k.data+k.size);
     string vs2((char *)v.data, (char *)v.data+v.size);
     string ks0 = info.pack_time(t);
-    string vs0 = print_interp(t, ks1, ks2, vs1, vs2, col);
+    string vs0 = print_interp(t, ks1, ks2, vs1, vs2);
     if (vs0!=""){
       DBT k0 = mk_dbt(ks0);
       DBT v0 = mk_dbt(vs0);
       // print_interp converted everything to double and chose correct columns
-      proc_func(&k0, &v0, -1, info, usr_data);
+      proc_func(&k0, &v0, info, usr_data);
     }
   }
   curs->close(curs);
@@ -439,7 +455,7 @@ DBsts::get(const uint64_t t, const int col,
 // change - use DB_NEXT.
 void
 DBsts::get_range(const uint64_t t1, const uint64_t t2,
-                 const uint64_t dt, const int col,
+                 const uint64_t dt,
                  process_data_func proc_func, void *usr_data){
 
   DBinfo info = read_info();
@@ -466,7 +482,7 @@ DBsts::get_range(const uint64_t t1, const uint64_t t2,
 
     // if we want every point, switch to DB_NEXT and repeat
     if (dt<=1){
-      proc_func(&k, &v, col, info, usr_data);
+      proc_func(&k, &v, info, usr_data);
       fl=DB_NEXT;
       continue;
     }
@@ -483,7 +499,7 @@ DBsts::get_range(const uint64_t t1, const uint64_t t2,
       tn = info.unpack_time(s);
       if (tn > t2 ) break;
     }
-    proc_func(&k, &v, col, info, usr_data);
+    proc_func(&k, &v, info, usr_data);
     tl=tn; // update last printed value
 
     // add dt to the key for the next loop:
