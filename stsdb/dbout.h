@@ -50,6 +50,6 @@ class DBout {
 };
 
 // callback for using with DBsts::get* functions
-void print_value(DBT *k, DBT *v, const int col, const DBinfo & info);
+void print_value(DBT *k, DBT *v, const int col, const DBinfo & info, void *usr_data);
 
 #endif

@@ -7,7 +7,7 @@ using namespace std;
 
 // callback for using with DBsts::get* functions
 void print_value(DBT *k, DBT *v, const int col,
-                 const DBinfo & info){
+                 const DBinfo & info, void *urs_data){
   // check for correct key size (do not parse DB info)
   if (k->size!=sizeof(uint64_t)) return;
   // convert DBT to strings

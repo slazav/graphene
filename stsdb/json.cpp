@@ -90,7 +90,7 @@ uint64_t convert_interval(const string & tstr){
 static Json json_buffer;
 
 void add_to_buffer(DBT *k, DBT *v, const int col,
-                   const DBinfo & info){
+                   const DBinfo & info, void *usr_data){
   // check for correct key size (do not parse DB info)
   if (k->size!=sizeof(uint64_t)) return;
   // convert DBT to strings
@@ -153,14 +153,14 @@ Json json_query(const string & dbpath, const Json & ji){
   for (int i=0; i<ji["targets"].size(); i++){
 
     // extract db name and column number
-    DBout dbn(ji["targets"][i]["target"].as_string());
+    DBout dbo(ji["targets"][i]["target"].as_string());
 
     // Get data from the database
     // I use global var json_buffer and a callback add_to_buffer
     // which fills it
     json_buffer=Json::array();
-    DBsts db(dbpath, dbn.name, DB_RDONLY);
-    db.get_range(t1,t2,dt, dbn.col, add_to_buffer);
+    DBsts db(dbpath, dbo.name, DB_RDONLY);
+    db.get_range(t1,t2,dt, dbo.col, add_to_buffer, &dbo);
 
     Json jt = Json::object();
     jt.set("target", ji["targets"][i]["target"]);
@@ -196,14 +196,14 @@ Json json_annotations(const string & dbpath, const Json & ji){
   if (t1==0 || t2==0) throw Json::Err() << "Bad range setting";
 
   // extract db name
-  DBout dbn(ji["annotation"]["name"].as_string());
+  DBout dbo(ji["annotation"]["name"].as_string());
 
   // Get data from the database
   // I use global var json_buffer and a callback add_to_buffer
   // which fills it
   json_buffer=Json::array();
-  DBsts db(dbpath, dbn.name, DB_RDONLY);
-  db.get_range(t1,t2, 0, -1, add_to_buffer);
+  DBsts db(dbpath, dbo.name, DB_RDONLY);
+  db.get_range(t1,t2, 0, -1, add_to_buffer, &dbo);
   for (size_t i=0; i<json_buffer.size(); i++){
     json_buffer[i].set("annotation", ji["annotation"]);
   }

@@ -109,7 +109,7 @@ class DBinfo {
 
 /***********************************************************/
 // type for data processing function.
-typedef void(process_data_func)(DBT*,DBT*,const int,const DBinfo&);
+typedef void(process_data_func)(DBT*,DBT*,const int,const DBinfo&, void *usr_data);
 
 /***********************************************************/
 /***********************************************************/
@@ -216,22 +216,26 @@ class DBsts{
                            const std::string & v1, const std::string & v2,
                            const int col);
 
+  // All get* functions get some data from the database
+  // and call proc_func() for each key-value pair,
+  // with two DBT's, DBinfo and usr_data as arguments.
+
   // get data from the database -- get_next
   void get_next(const uint64_t t1, const int col,
-                process_data_func proc_data);
+                process_data_func proc_func, void *usr_data);
 
   // get data from the database -- get_prev
   void get_prev(const uint64_t t2, const int col,
-                process_data_func proc_data);
+                process_data_func proc_func, void *usr_data);
 
   // get data from the database -- get
   void get(const uint64_t t, const int col,
-           process_data_func proc_data);
+           process_data_func proc_func, void *usr_data);
 
   // get data from the database -- get_range
   void get_range(const uint64_t t1, const uint64_t t2,
                  const uint64_t dt, const int col,
-                 process_data_func proc_data);
+                 process_data_func proc_func, void *usr_data);
 
 
   // delete data data from the database -- del_range
