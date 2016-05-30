@@ -112,16 +112,6 @@ str2time(const char *str) {
 }
 
 /**********************************************************/
-// Extract column number from <name>:<N> string,
-// replace ':' with '\0' in the string.
-// Returns -1 if column number was not found.
-int get_col_num(char *str){
-  char * ci = rindex(str, ':');
-  if (ci!=NULL){ *ci='\0'; return atoi(ci+1); }
-  return -1;
-}
-
-/**********************************************************/
 int
 main(int argc, char **argv) {
 
@@ -138,11 +128,11 @@ main(int argc, char **argv) {
     if (strcasecmp(cmd, "create")==0){
       if (argc<2) throw Err() << "database name expected";
       if (argc>4) throw Err() << "too many parameters";
-      string name = norm_name(argv[1]);
+      DBname dbn(argv[1], false);
       DBinfo info(
          argc<3 ? DEFAULT_DATAFMT : DBinfo::str2datafmt(argv[2]),
          argc<4 ? "" : argv[3] );
-      DBsts db(p.dbpath, name, DB_CREATE | DB_EXCL);
+      DBsts db(p.dbpath, dbn.name, DB_CREATE | DB_EXCL);
       db.write_info(info);
       return 0;
     }
@@ -152,9 +142,9 @@ main(int argc, char **argv) {
     if (strcasecmp(cmd, "delete")==0){
       if (argc<2) throw Err() << "database name expected";
       if (argc>2) throw Err() << "too many parameters";
-      string name = norm_name(argv[1]) + ".db";
-      int res = remove((p.dbpath + "/" + name).c_str());
-      if (res) throw Err() << name << ": " << strerror(errno);
+      DBname dbn(argv[1], false);
+      int res = remove((p.dbpath + "/" + dbn.fname).c_str());
+      if (res) throw Err() << dbn.fname << ": " << strerror(errno);
       return 0;
     }
 
@@ -163,14 +153,16 @@ main(int argc, char **argv) {
     if (strcasecmp(cmd, "rename")==0){
       if (argc<3) throw Err() << "database old and new names expected";
       if (argc>3) throw Err() << "too many parameters";
-      string name1 = p.dbpath + "/" + norm_name(argv[1]) + ".db";
-      string name2 = p.dbpath + "/" + norm_name(argv[2]) + ".db";
+      DBname dbn1(argv[1], false);
+      DBname dbn2(argv[2], false);
+      string path1 = p.dbpath + "/" + dbn1.fname;
+      string path2 = p.dbpath + "/" + dbn2.fname;
       // check if destination exists
       struct stat buf;
-      int res = stat(name2.c_str(), &buf);
-      if (res==0) throw Err() << "can't rename database: destination exists";
+      int res = stat(path2.c_str(), &buf);
+      if (res==0) throw Err() << "can't rename database, destination exists: " << dbn2.fname;
       // do rename
-      res = rename(name1.c_str(), name2.c_str());
+      res = rename(path1.c_str(), path2.c_str());
       if (res) throw Err() << "can't rename database: " << strerror(errno);
       return 0;
     }
@@ -180,7 +172,8 @@ main(int argc, char **argv) {
     if (strcasecmp(cmd, "set_descr")==0){
       if (argc<3) throw Err() << "database name and new description text expected";
       if (argc>3) throw Err() << "too many parameters";
-      DBsts db(p.dbpath, norm_name(argv[1]), 0);
+      DBname dbn(argv[1], false);
+      DBsts db(p.dbpath, dbn.name, 0);
       DBinfo info = db.read_info();
       info.descr = argv[2];
       db.write_info(info);
@@ -192,7 +185,8 @@ main(int argc, char **argv) {
     if (strcasecmp(cmd, "info")==0){
       if (argc<2) throw Err() << "database name expected";
       if (argc>2) throw Err() << "too many parameters";
-      DBsts db(p.dbpath, norm_name(argv[1]), DB_RDONLY);
+      DBname dbn(argv[1], false);
+      DBsts db(p.dbpath, dbn.name, DB_RDONLY);
       DBinfo info = db.read_info();
       cout << DBinfo::datafmt2str(info.val);
       if (info.descr!="") cout << '\t' << info.descr;
@@ -206,7 +200,6 @@ main(int argc, char **argv) {
       if (argc>1) throw Err() << "too many parameters";
       DIR *dir = opendir(p.dbpath.c_str());
       if (!dir) throw Err() << "can't open database directory: " << strerror(errno);
-
       struct dirent *ent;
       while ((ent = readdir (dir)) != NULL) {
         string name(ent->d_name);
@@ -224,10 +217,10 @@ main(int argc, char **argv) {
       if (argc<4) throw Err() << "database name, timstamp and some values expected";
       uint64_t t = str2time(argv[2]);
       vector<string> dat;
-      for (int i=3; i<argc; i++)
-        dat.push_back(string(argv[i]));
+      for (int i=3; i<argc; i++) dat.push_back(string(argv[i]));
       // open database and write data
-      DBsts db(p.dbpath, norm_name(argv[1]), 0);
+      DBname dbn(argv[1], false);
+      DBsts db(p.dbpath, dbn.name, 0);
       db.put(t, dat);
       return 0;
     }
@@ -237,10 +230,10 @@ main(int argc, char **argv) {
     if (strcasecmp(cmd, "get_next")==0){
       if (argc<2) throw Err() << "database name expected";
       if (argc>3) throw Err() << "too many parameters";
-      int col = get_col_num(argv[1]); // column
       uint64_t t = argc>2? str2time(argv[2]): 0;
-      DBsts db(p.dbpath, norm_name(argv[1]), DB_RDONLY);
-      db.get_next(t, col, print_value);
+      DBname dbn(argv[1], true);
+      DBsts db(p.dbpath, dbn.name, DB_RDONLY);
+      db.get_next(t, dbn.col, print_value);
       return 0;
     }
 
@@ -249,10 +242,10 @@ main(int argc, char **argv) {
     if (strcasecmp(cmd, "get_prev")==0){
       if (argc<2) throw Err() << "database name expected";
       if (argc>3) throw Err() << "too many parameters";
-      int col = get_col_num(argv[1]); // column
       uint64_t t2 = argc>2? str2time(argv[2]): -1;
-      DBsts db(p.dbpath, norm_name(argv[1]), DB_RDONLY);
-      db.get_prev(t2, col, print_value);
+      DBname dbn(argv[1], true);
+      DBsts db(p.dbpath, dbn.name, DB_RDONLY);
+      db.get_prev(t2, dbn.col, print_value);
       return 0;
     }
 
@@ -261,10 +254,10 @@ main(int argc, char **argv) {
     if (strcasecmp(cmd, "get")==0){
       if (argc<2) throw Err() << "database name expected";
       if (argc>3) throw Err() << "too many parameters";
-      int col = get_col_num(argv[1]); // column
       uint64_t t2 = argc>2? str2time(argv[2]): -1;
-      DBsts db(p.dbpath, norm_name(argv[1]), DB_RDONLY);
-      db.get(t2, col, print_value);
+      DBname dbn(argv[1], true);
+      DBsts db(p.dbpath, dbn.name, DB_RDONLY);
+      db.get(t2, dbn.col, print_value);
       return 0;
     }
 
@@ -273,12 +266,12 @@ main(int argc, char **argv) {
     if (strcasecmp(cmd, "get_range")==0){
       if (argc<2) throw Err() << "database name expected";
       if (argc>5) throw Err() << "too many parameters";
-      int col = get_col_num(argv[1]); // column
       uint64_t t1 = argc>2? str2time(argv[2]): 0;
       uint64_t t2 = argc>3? str2time(argv[3]): -1;
       uint64_t dt = argc>4? str2time(argv[4]): 0;
-      DBsts db(p.dbpath, norm_name(argv[1]), DB_RDONLY);
-      db.get_range(t1,t2,dt, col, print_value);
+      DBname dbn(argv[1], true);
+      DBsts db(p.dbpath, dbn.name, DB_RDONLY);
+      db.get_range(t1,t2,dt, dbn.col, print_value);
       return 0;
     }
 
@@ -288,7 +281,8 @@ main(int argc, char **argv) {
       if (argc<3) throw Err() << "database name and time expected";
       if (argc>3) throw Err() << "too many parameters";
       uint64_t t = str2time(argv[2]);
-      DBsts db(p.dbpath, norm_name(argv[1]), 0);
+      DBname dbn(argv[1], false);
+      DBsts db(p.dbpath, dbn.name, 0);
       db.del(t);
       return 0;
     }
@@ -300,7 +294,8 @@ main(int argc, char **argv) {
       if (argc>4) throw Err() << "too many parameters";
       uint64_t t1 = str2time(argv[2]);
       uint64_t t2 = str2time(argv[3]);
-      DBsts db(p.dbpath, norm_name(argv[1]), 0);
+      DBname dbn(argv[1], false);
+      DBsts db(p.dbpath, dbn.name, 0);
       db.del_range(t1,t2);
       return 0;
     }

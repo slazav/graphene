@@ -13,13 +13,32 @@ int main() {
     // FMT object, data and time formats
     ASSERT_EQ(DEFAULT_DATAFMT, DATA_DOUBLE);
 
-    /*{  // norm_name moved to stsdb.c 
-      ASSERT_EQ(norm_name("abc"), "abc");
-      ASSERT_EQ(norm_name("abc/"), "abc/");
-      ASSERT_EQ(norm_name("a/b/c"), "a/b/c");
-      ASSERT_EQ(norm_name("/a/b/c"), "a/b/c");
-      ASSERT_EQ(norm_name("a/./b/..//.c//c./c"), "a/b/.c/c./c");
-    } */
+    {  // normalized names and column numbers
+      {DBname dbn("abc");    ASSERT_EQ(dbn.name, "abc");
+                             ASSERT_EQ(dbn.col, -1);}
+      {DBname dbn("abc/");   ASSERT_EQ(dbn.name, "abc/");}
+      {DBname dbn("a/b/c");  ASSERT_EQ(dbn.name, "a/b/c");}
+      {DBname dbn("/a/b/c"); ASSERT_EQ(dbn.name, "a/b/c");}
+      {DBname dbn("a/./b/..//.c//c./c");
+          ASSERT_EQ(dbn.name, "a/b/.c/c./c");}
+
+      {DBname dbn("abc:1", false);
+         ASSERT_EQ(dbn.name, "abc:1");
+         ASSERT_EQ(dbn.fname, "abc:1.db");
+         ASSERT_EQ(dbn.col, -1);}
+      {DBname dbn("abc:1", true);
+         ASSERT_EQ(dbn.name, "abc"); ASSERT_EQ(dbn.col, 1);}
+      {DBname dbn("abc:5", true); ASSERT_EQ(dbn.col, 5);}
+      {DBname dbn("abc:-1", true); ASSERT_EQ(dbn.col, -1);}
+      {DBname dbn("abc:-2", true); ASSERT_EQ(dbn.col, -1);}
+      {DBname dbn("abc:def:1", true);
+         ASSERT_EQ(dbn.name, "abc:def"); ASSERT_EQ(dbn.col, 1);}
+      {DBname dbn("abc:def", true);
+         ASSERT_EQ(dbn.name, "abc:def"); ASSERT_EQ(dbn.col, -1);}
+
+    }
+
+
 
     {
       DBinfo hh1; // default constructor

@@ -152,20 +152,14 @@ Json json_query(const string & dbpath, const Json & ji){
   for (int i=0; i<ji["targets"].size(); i++){
 
     // extract normalized db name and column number
-    std::string dbname = ji["targets"][i]["target"].as_string();
-    size_t cp = dbname.rfind(':');
-    int col = -1;
-    if (cp!=std::string::npos){
-      col = atoi(dbname.substr(cp+1,-1).c_str());
-      dbname = norm_name(dbname.substr(0,cp));
-    }
+    DBname dbn(ji["targets"][i]["target"].as_string());
 
     // Get data from the database
     // I use global var json_buffer and a callback add_to_buffer
     // which fills it
     json_buffer=Json::array();
-    DBsts db(dbpath, dbname, DB_RDONLY);
-    db.get_range(t1,t2,dt, col, add_to_buffer);
+    DBsts db(dbpath, dbn.name, DB_RDONLY);
+    db.get_range(t1,t2,dt, dbn.col, add_to_buffer);
 
     Json jt = Json::object();
     jt.set("target", ji["targets"][i]["target"]);
@@ -201,13 +195,13 @@ Json json_annotations(const string & dbpath, const Json & ji){
   if (t1==0 || t2==0) throw Json::Err() << "Bad range setting";
 
   // extract normalized db name
-  std::string dbname = norm_name(ji["annotation"]["name"].as_string());
+  DBname dbn(ji["annotation"]["name"].as_string(), false);
 
   // Get data from the database
   // I use global var json_buffer and a callback add_to_buffer
   // which fills it
   json_buffer=Json::array();
-  DBsts db(dbpath, dbname, DB_RDONLY);
+  DBsts db(dbpath, dbn.name, DB_RDONLY);
   db.get_range(t1,t2, 0, -1, add_to_buffer);
   for (size_t i=0; i<json_buffer.size(); i++){
     json_buffer[i].set("annotation", ji["annotation"]);

@@ -191,22 +191,6 @@ void print_value(DBT *k, DBT *v, const int col,
 }
 
 /***********************************************************/
-// Normilize db name. Remove starting /,
-// remove . and .. path components.
-//
-string norm_name(const string & name){
-  string ret = "";
-  int p1=0, p2=0;
-  while ((p2 = name.find('/', p1))!=string::npos){
-    string v=name.substr(p1,p2-p1);
-    if (v != ".." && v != "." && v != "")
-      ret += v + "/";
-    p1=p2+1;
-  }
-  return ret + name.substr(p1, name.length()-p1);
-}
-
-/***********************************************************/
 // DBsts class
 
 /************************************/
