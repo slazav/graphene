@@ -82,32 +82,20 @@ class DBname {
 
 
   // constructor -- parse the string
-  DBname(const std::string & str, bool extended=true){
+  DBname(const std::string & str){
     col  = -1;
     name = str;
 
-    if (extended){
-      // extract column
-      size_t cp = name.rfind(':');
-      if (cp!=std::string::npos){
-        char *e;
-        col = strtol(name.substr(cp+1,-1).c_str(), &e, 10);
-        if (e!=NULL && *e=='\0') name = name.substr(0,cp);
-        else col = -1;
-      }
-      if (col < -1) col = -1;
+    // extract column
+    size_t cp = name.rfind(':');
+    if (cp!=std::string::npos){
+      char *e;
+      col = strtol(name.substr(cp+1,-1).c_str(), &e, 10);
+      if (e!=NULL && *e=='\0') name = name.substr(0,cp);
+      else col = -1;
     }
-
-    // normalize name
-    int p1=0, p2=0;
-    std::string nn;
-    while ((p2 = name.find('/', p1))!=std::string::npos){
-      std::string v=name.substr(p1,p2-p1);
-      if (v != ".." && v != "." && v != "")
-        nn += v + "/";
-      p1=p2+1;
-    }
-    name = nn + name.substr(p1, name.length()-p1);
+    if (col < -1) col = -1;
+//    DBsts::check_name(name);
     fname = name + ".db";
   }
 };
@@ -243,7 +231,19 @@ class DBsts{
     ~DBsts(){ destroy(); }
 
   /************************************/
+  // Check database name
+  // All names (not only for reading/writing, but
+  // also for moving or deleting should be checked).
+  static void check_name(const std::string & name){
+    static const char *reject = ".:+| \n\t";
+    if (strcspn(name.c_str(), reject)!=name.length())
+      throw Err() << "symbols '.:+| \\n\\t' are not allowed in the database name";
+  }
+
+  /************************************/
   // Constructor -- open a database
+  // Path is a path to the database foolder.
+  // Name is a database name, it can not contain some symbols (.|+ \n\t)
   DBsts(const std::string & path_,
        const std::string & name_,
        const int flags);

@@ -204,6 +204,8 @@ DBsts::DBsts(const string & path_,
   *refcounter  = 1;
   info_is_actual = false;
 
+
+  check_name(name_); // check the name
   name = name_;
   open_flags = flags;
   string fname = path_ + "/" + name_ + ".db";

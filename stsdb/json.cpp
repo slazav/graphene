@@ -151,7 +151,7 @@ Json json_query(const string & dbpath, const Json & ji){
   Json out = Json::array();
   for (int i=0; i<ji["targets"].size(); i++){
 
-    // extract normalized db name and column number
+    // extract db name and column number
     DBname dbn(ji["targets"][i]["target"].as_string());
 
     // Get data from the database
@@ -194,7 +194,7 @@ Json json_annotations(const string & dbpath, const Json & ji){
   uint64_t t2 = convert_time( ji["range"]["to"].as_string() );
   if (t1==0 || t2==0) throw Json::Err() << "Bad range setting";
 
-  // extract normalized db name
+  // extract db name
   DBname dbn(ji["annotation"]["name"].as_string(), false);
 
   // Get data from the database
