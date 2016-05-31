@@ -126,7 +126,7 @@ Json json_query(const string & dbpath, const Json & ji){
   for (int i=0; i<ji["targets"].size(); i++){
 
     // extract db name and column number
-    DBout dbo(ji["targets"][i]["target"].as_string());
+    DBout dbo(dbpath, ji["targets"][i]["target"].as_string());
 
     // Get data from the database
     DBsts db(dbpath, dbo.name, DB_RDONLY);
@@ -222,7 +222,7 @@ Json json_annotations(const string & dbpath, const Json & ji){
 
 
   // extract db name
-  DBout dbo(ji["annotation"]["name"].as_string());
+  DBout dbo(dbpath, ji["annotation"]["name"].as_string());
 
   // Get data from the database
   DBsts db(dbpath, dbo.name, DB_RDONLY);

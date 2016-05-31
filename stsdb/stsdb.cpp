@@ -228,7 +228,7 @@ main(int argc, char **argv) {
       if (argc<2) throw Err() << "database name expected";
       if (argc>3) throw Err() << "too many parameters";
       uint64_t t = argc>2? str2time(argv[2]): 0;
-      DBout dbo(argv[1]);
+      DBout dbo(p.dbpath, argv[1]);
       DBsts db(p.dbpath, dbo.name, DB_RDONLY);
       db.get_next(t, print_value, &dbo);
       return 0;
@@ -240,7 +240,7 @@ main(int argc, char **argv) {
       if (argc<2) throw Err() << "database name expected";
       if (argc>3) throw Err() << "too many parameters";
       uint64_t t2 = argc>2? str2time(argv[2]): -1;
-      DBout dbo(argv[1]);
+      DBout dbo(p.dbpath, argv[1]);
       DBsts db(p.dbpath, dbo.name, DB_RDONLY);
       db.get_prev(t2, print_value, &dbo);
       return 0;
@@ -252,7 +252,7 @@ main(int argc, char **argv) {
       if (argc<2) throw Err() << "database name expected";
       if (argc>3) throw Err() << "too many parameters";
       uint64_t t2 = argc>2? str2time(argv[2]): -1;
-      DBout dbo(argv[1]);
+      DBout dbo(p.dbpath, argv[1]);
       DBsts db(p.dbpath, dbo.name, DB_RDONLY);
       db.get(t2, print_value, &dbo);
       return 0;
@@ -266,7 +266,7 @@ main(int argc, char **argv) {
       uint64_t t1 = argc>2? str2time(argv[2]): 0;
       uint64_t t2 = argc>3? str2time(argv[3]): -1;
       uint64_t dt = argc>4? str2time(argv[4]): 0;
-      DBout dbo(argv[1]);
+      DBout dbo(p.dbpath, argv[1]);
       DBsts db(p.dbpath, dbo.name, DB_RDONLY);
       db.get_range(t1,t2,dt, print_value, &dbo);
       return 0;

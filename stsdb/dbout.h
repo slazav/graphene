@@ -4,6 +4,7 @@
 #define STSDB_DBOUT_H
 
 #include <string>
+#include <errno.h>
 #include "db.h"
 
 /***********************************************************/
@@ -24,18 +25,26 @@
 //
 class DBout {
   public:
-  std::string name;  // primary database name
+  std::string name;    // primary database name
+  std::string filter;  // filter program
 
   // extended names:
   int col; // column number, for the main database
 
   // constructor -- parse the dataset string, create iostream
-  DBout(const std::string & str){
+  DBout(const std::string & dbpath, const std::string & str){
     col  = -1;
     name = str;
 
+    // extract filter
+    size_t cp = name.rfind('|');
+    if (cp!=std::string::npos){
+      filter = name.substr(cp+1,-1);
+      name = name.substr(0,cp);
+    }
+
     // extract column
-    size_t cp = name.rfind(':');
+    cp = name.rfind(':');
     if (cp!=std::string::npos){
       char *e;
       col = strtol(name.substr(cp+1,-1).c_str(), &e, 10);
@@ -43,7 +52,38 @@ class DBout {
       else col = -1;
     }
     if (col < -1) col = -1;
-    name = DBsts::check_name(name);
+    name   = DBsts::check_name(name);
+    filter = DBsts::check_name(filter);
+
+    if (filter!=""){
+      // fork
+      int fd[2];
+      if (pipe(fd) != 0)
+        throw Err() << "can't create a pipe";
+      pid_t pid = fork();
+      if (pid < 0)
+        throw Err() << "can't do fork";
+
+      // in the child process we set redirect pipe to stdin
+      // and run filter program
+      if (pid == 0) {
+        if (dup2(fd[0], 0) != 0)
+          throw Err() << "can't set up standard input: " << strerror(errno);
+        if (close(fd[0]) != 0 || close(fd[1]) != 0)
+          throw Err() << "can't set up standard input";
+
+        // This process communicates only via stdout.
+        // Here we ignore all errors.
+        std::string f = dbpath + "/" + filter;
+        execl(f.c_str(), f.c_str(), NULL);
+        throw Err();
+      }
+      //in parent we redirect stdout to the pipe
+      if (dup2(fd[1], 1) != 1)
+        throw Err() << "can't set up standard output: " << strerror(errno);
+      if (close(fd[0]) != 0 || close(fd[1]) != 0)
+        throw Err() << "can't set up standard output";
+    }
   }
 };
 
