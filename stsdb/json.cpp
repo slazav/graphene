@@ -230,15 +230,16 @@ string stsdb_json(const string & dbpath,  /* path to databases */
     /* parse input JSON */
     Json ji = Json::load_string(data);
     Json jo;
+    int out_fl = JSON_PRESERVE_ORDER;
 
     if (url == "/query")
-      return json_query(dbpath, ji).save_string();
+      return json_query(dbpath, ji).save_string(out_fl);
 
     if (url == "/search")
-      return json_search(dbpath, ji).save_string();
+      return json_search(dbpath, ji).save_string(out_fl);
 
     if (url == "/annotations")
-      return json_annotations(dbpath, ji).save_string();
+      return json_annotations(dbpath, ji).save_string(out_fl);
 
     throw Json::Err() << "Unknown query";
   }

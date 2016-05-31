@@ -29,7 +29,7 @@ class DBout {
   // extended names:
   int col; // column number, for the main database
 
-  // constructor -- parse the string
+  // constructor -- parse the dataset string, create iostream
   DBout(const std::string & str){
     col  = -1;
     name = str;
