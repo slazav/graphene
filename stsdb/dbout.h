@@ -1,4 +1,4 @@
-/* DBout class: extended data output: columns, filters, tables */
+/* DBout class: data output: columns, filters, tables */
 
 #ifndef STSDB_DBOUT_H
 #define STSDB_DBOUT_H
@@ -52,8 +52,8 @@ class DBout {
       else col = -1;
     }
     if (col < -1) col = -1;
-    name   = DBsts::check_name(name);
-    filter = DBsts::check_name(filter);
+//    name   = DBsts::check_name(name);
+//    filter = DBsts::check_name(filter);
 
     if (filter!=""){
       // fork
@@ -85,10 +85,9 @@ class DBout {
         throw Err() << "can't set up standard output";
     }
   }
-};
 
-// callback for using with DBsts::get* functions
-// usr_data should have DBout* type
-void print_value(DBT *k, DBT *v, const DBinfo & info, void *usr_data);
+  virtual void proc_point(DBT *k, DBT *v, const DBinfo & info) {};
+
+};
 
 #endif

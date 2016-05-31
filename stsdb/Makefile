@@ -16,9 +16,9 @@ json.o:        dbinfo.h db.h dbout.h json.h json.cpp
 stsdb_json.o:  dbinfo.h db.h dbout.h json.h stsdb_json.cpp
 stsdb_http.o:  dbinfo.h db.h dbout.h json.h stsdb_http.cpp
 
-stsdb:      dbinfo.o db.o dbout.o stsdb.o
-stsdb_http: dbinfo.o db.o dbout.o json.o stsdb_http.o
-stsdb_json: dbinfo.o db.o dbout.o json.o stsdb_json.o
+stsdb:      dbinfo.o db.o stsdb.o
+stsdb_http: dbinfo.o db.o json.o stsdb_http.o
+stsdb_json: dbinfo.o db.o json.o stsdb_json.o
 test_db:    dbinfo.o db.o test_db.o
 test_json:  dbinfo.o db.o json.o test_json.o
 

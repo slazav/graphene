@@ -148,8 +148,7 @@ DBsts::put(const uint64_t t,
 // get data from the database -- get_next
 //
 void
-DBsts::get_next(const uint64_t t1,
-                process_data_func proc_func, void *usr_data){
+DBsts::get_next(const uint64_t t1, DBout & dbo){
   DBinfo info = read_info();
   /* Get a cursor */
   DBC *curs;
@@ -162,7 +161,7 @@ DBsts::get_next(const uint64_t t1,
   int res = curs->c_get(curs, &k, &v, DB_SET_RANGE);
   if (res==DB_NOTFOUND) { curs->close(curs); return; }
   if (res!=0) throw Err() << name << ".db: " << db_strerror(res);
-  proc_func(&k, &v, info, usr_data);
+  dbo.proc_point(&k, &v, info);
   curs->close(curs);
 }
 
@@ -170,8 +169,7 @@ DBsts::get_next(const uint64_t t1,
 // get data from the database -- get_prev
 //
 void
-DBsts::get_prev(const uint64_t t2,
-                process_data_func proc_func, void *usr_data){
+DBsts::get_prev(const uint64_t t2, DBout & dbo){
   DBinfo info = read_info();
   /* Get a cursor */
   DBC *curs;
@@ -196,7 +194,7 @@ DBsts::get_prev(const uint64_t t2,
     if (res!=0) throw Err() << name << ".db: " << db_strerror(res);
   }
 
-  proc_func(&k, &v, info, usr_data);
+  dbo.proc_point(&k, &v, info);
   curs->close(curs);
 }
 
@@ -204,12 +202,11 @@ DBsts::get_prev(const uint64_t t2,
 // get data from the database -- get_interp
 //
 void
-DBsts::get(const uint64_t t,
-           process_data_func proc_func, void *usr_data){
+DBsts::get(const uint64_t t, DBout & dbo){
   DBinfo info = read_info();
 
   if (info.val!=DATA_FLOAT && info.val!=DATA_DOUBLE)
-    return get_prev(t, proc_func, usr_data);
+    return get_prev(t, dbo);
 
   /* Get a cursor */
   DBC *curs;
@@ -225,7 +222,7 @@ DBsts::get(const uint64_t t,
   // if there is no next value - give the last value if any
   if (res==DB_NOTFOUND) {
     res = curs->c_get(curs, &k, &v, DB_PREV);
-    if (res==0) proc_func(&k, &v, info, usr_data);
+    if (res==0) dbo.proc_point(&k, &v, info);
     if (res!=0 && res!=DB_NOTFOUND)
       throw Err() << name << ".db: " << db_strerror(res);
     curs->close(curs); return;
@@ -235,7 +232,7 @@ DBsts::get(const uint64_t t,
   // if "next" record is asactly at t - return it
   string ks1((char *)k.data, (char *)k.data+k.size);
   string vs1((char *)v.data, (char *)v.data+v.size);
-  if (info.unpack_time(ks1) == t) proc_func(&k, &v, info, usr_data);
+  if (info.unpack_time(ks1) == t) dbo.proc_point(&k, &v, info);
 
   // get the previous value and do interpolation
   else {
@@ -251,7 +248,7 @@ DBsts::get(const uint64_t t,
       DBT k0 = mk_dbt(ks0);
       DBT v0 = mk_dbt(vs0);
       // print_interp converted everything to double and chose correct columns
-      proc_func(&k0, &v0, info, usr_data);
+      dbo.proc_point(&k0, &v0, info);
     }
   }
   curs->close(curs);
@@ -270,8 +267,7 @@ DBsts::get(const uint64_t t,
 // change - use DB_NEXT.
 void
 DBsts::get_range(const uint64_t t1, const uint64_t t2,
-                 const uint64_t dt,
-                 process_data_func proc_func, void *usr_data){
+                 const uint64_t dt, DBout & dbo){
 
   DBinfo info = read_info();
   /* Get a cursor */
@@ -297,7 +293,7 @@ DBsts::get_range(const uint64_t t1, const uint64_t t2,
 
     // if we want every point, switch to DB_NEXT and repeat
     if (dt<=1){
-      proc_func(&k, &v, info, usr_data);
+      dbo.proc_point(&k, &v, info);
       fl=DB_NEXT;
       continue;
     }
@@ -314,7 +310,7 @@ DBsts::get_range(const uint64_t t1, const uint64_t t2,
       tn = info.unpack_time(s);
       if (tn > t2 ) break;
     }
-    proc_func(&k, &v, info, usr_data);
+    dbo.proc_point(&k, &v, info);
     tl=tn; // update last printed value
 
     // add dt to the key for the next loop:

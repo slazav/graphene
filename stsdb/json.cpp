@@ -85,34 +85,41 @@ uint64_t convert_interval(const string & tstr){
 }
 
 /***************************************************************************/
-// process_data_func callback, for using with get_* functions from db.h
+// json data formatter
+//
+class DBoutJSON: public DBout{
+  public:
+  Json json_buffer;
 
-static Json json_buffer;
+  DBoutJSON(const std::string & dbpath, const std::string & str):
+    DBout(dbpath, str), json_buffer(Json::array()){ };
 
-void add_to_buffer(DBT *k, DBT *v,
-                   const DBinfo & info, void *usr_data){
 
-  DBout *dbo = (DBout*) usr_data;
-  // check for correct key size (do not parse DB info)
-  if (k->size!=sizeof(uint64_t)) return;
-  // convert DBT to strings
-  std::string ks((char *)k->data, (char *)k->data+k->size);
-  std::string vs((char *)v->data, (char *)v->data+v->size);
+  void proc_point(DBT *k, DBT *v,
+                     const DBinfo & info){
 
-  // unpack values and append to json_buffer
-  if (info.val!=DATA_TEXT){
-    Json jpt = Json::array();
-    jpt.append(info.unpack_data_d(vs, dbo->col));
-    jpt.append((json_int_t)info.unpack_time(ks));
-    json_buffer.append(jpt);
+    // check for correct key size (do not parse DB info)
+    if (k->size!=sizeof(uint64_t)) return;
+    // convert DBT to strings
+    std::string ks((char *)k->data, (char *)k->data+k->size);
+    std::string vs((char *)v->data, (char *)v->data+v->size);
+
+    // unpack values and append to json_buffer
+    if (info.val!=DATA_TEXT){
+      Json jpt = Json::array();
+      jpt.append(info.unpack_data_d(vs, col));
+      jpt.append((json_int_t)info.unpack_time(ks));
+      json_buffer.append(jpt);
+    }
+    else {
+      Json jpt = Json::object();
+      jpt.set("title", info.unpack_data(vs, col));
+      jpt.set("time",  (json_int_t)info.unpack_time(ks));
+      json_buffer.append(jpt);
+    }
   }
-  else {
-    Json jpt = Json::object();
-    jpt.set("title", info.unpack_data(vs, dbo->col));
-    jpt.set("time",  (json_int_t)info.unpack_time(ks));
-    json_buffer.append(jpt);
-  }
-}
+};
+
 
 /***************************************************************************/
 // process /query
@@ -156,23 +163,20 @@ Json json_query(const string & dbpath, const Json & ji){
 
 
     // extract db name and column number
-    DBout dbo(dbpath, ji["targets"][i]["target"].as_string());
+    DBoutJSON dbo(dbpath, ji["targets"][i]["target"].as_string());
 
     // Get data from the database
-    // I use global var json_buffer and a callback add_to_buffer
-    // which fills it
-    json_buffer=Json::array();
     DBsts db(dbpath, dbo.name, DB_RDONLY);
 
     // check DB format
     if (db.read_info().val == DATA_TEXT)
       throw Json::Err() << "Can not do query from TEXT database. Use annotations";
 
-    db.get_range(t1,t2,dt, add_to_buffer, &dbo);
+    db.get_range(t1,t2,dt, dbo);
 
     Json jt = Json::object();
     jt.set("target", ji["targets"][i]["target"]);
-    jt.set("datapoints", json_buffer);
+    jt.set("datapoints", dbo.json_buffer);
     out.append(jt);
   }
 
@@ -204,23 +208,20 @@ Json json_annotations(const string & dbpath, const Json & ji){
   if (t1==0 || t2==0) throw Json::Err() << "Bad range setting";
 
   // extract db name
-  DBout dbo(dbpath, ji["annotation"]["name"].as_string());
+  DBoutJSON dbo(dbpath, ji["annotation"]["name"].as_string());
 
   // Get data from the database
-  // I use global var json_buffer and a callback add_to_buffer
-  // which fills it
-  json_buffer=Json::array();
   DBsts db(dbpath, dbo.name, DB_RDONLY);
 
   // check DB format
   if (db.read_info().val != DATA_TEXT)
     throw Json::Err() << "Annotations can be found only in TEXT databases";
 
-  db.get_range(t1,t2, 0, add_to_buffer, &dbo);
-  for (size_t i=0; i<json_buffer.size(); i++){
-    json_buffer[i].set("annotation", ji["annotation"]);
+  db.get_range(t1,t2, 0, dbo);
+  for (size_t i=0; i<dbo.json_buffer.size(); i++){
+    dbo.json_buffer[i].set("annotation", ji["annotation"]);
   }
-  return json_buffer;
+  return dbo.json_buffer;
 }
 
 /***************************************************************************/

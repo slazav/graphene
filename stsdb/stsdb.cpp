@@ -112,6 +112,28 @@ str2time(const char *str) {
   return t;
 }
 
+/***************************************************************************/
+// TEXT data formatter
+//
+class DBoutTEXT: public DBout{
+  public:
+
+  DBoutTEXT(const std::string & dbpath, const std::string & str):
+    DBout(dbpath, str){ };
+
+  void proc_point(DBT *k, DBT *v,
+                     const DBinfo & info){
+    // check for correct key size (do not parse DB info)
+    if (k->size!=sizeof(uint64_t)) return;
+    // convert DBT to strings
+    string ks((char *)k->data, (char *)k->data+k->size);
+    string vs((char *)v->data, (char *)v->data+v->size);
+    // unpack and print values
+    cout << info.unpack_time(ks) << " "
+         << info.unpack_data(vs, col) << "\n";
+  }
+};
+
 /**********************************************************/
 int
 main(int argc, char **argv) {
@@ -228,9 +250,9 @@ main(int argc, char **argv) {
       if (argc<2) throw Err() << "database name expected";
       if (argc>3) throw Err() << "too many parameters";
       uint64_t t = argc>2? str2time(argv[2]): 0;
-      DBout dbo(p.dbpath, argv[1]);
+      DBoutTEXT dbo(p.dbpath, argv[1]);
       DBsts db(p.dbpath, dbo.name, DB_RDONLY);
-      db.get_next(t, print_value, &dbo);
+      db.get_next(t, dbo);
       return 0;
     }
 
@@ -240,9 +262,9 @@ main(int argc, char **argv) {
       if (argc<2) throw Err() << "database name expected";
       if (argc>3) throw Err() << "too many parameters";
       uint64_t t2 = argc>2? str2time(argv[2]): -1;
-      DBout dbo(p.dbpath, argv[1]);
+      DBoutTEXT dbo(p.dbpath, argv[1]);
       DBsts db(p.dbpath, dbo.name, DB_RDONLY);
-      db.get_prev(t2, print_value, &dbo);
+      db.get_prev(t2, dbo);
       return 0;
     }
 
@@ -252,9 +274,9 @@ main(int argc, char **argv) {
       if (argc<2) throw Err() << "database name expected";
       if (argc>3) throw Err() << "too many parameters";
       uint64_t t2 = argc>2? str2time(argv[2]): -1;
-      DBout dbo(p.dbpath, argv[1]);
+      DBoutTEXT dbo(p.dbpath, argv[1]);
       DBsts db(p.dbpath, dbo.name, DB_RDONLY);
-      db.get(t2, print_value, &dbo);
+      db.get(t2, dbo);
       return 0;
     }
 
@@ -266,9 +288,9 @@ main(int argc, char **argv) {
       uint64_t t1 = argc>2? str2time(argv[2]): 0;
       uint64_t t2 = argc>3? str2time(argv[3]): -1;
       uint64_t dt = argc>4? str2time(argv[4]): 0;
-      DBout dbo(p.dbpath, argv[1]);
+      DBoutTEXT dbo(p.dbpath, argv[1]);
       DBsts db(p.dbpath, dbo.name, DB_RDONLY);
-      db.get_range(t1,t2,dt, print_value, &dbo);
+      db.get_range(t1,t2,dt, dbo);
       return 0;
     }
 

@@ -12,6 +12,7 @@
 #include <cstring> /* memset */
 #include <db.h>
 #include "dbinfo.h"
+#include "dbout.h"
 
 // bercleydb:
 //  http://docs.oracle.com/cd/E17076_02/html/gsg/C/index.html
@@ -131,21 +132,17 @@ class DBsts{
   // with two DBT's, DBinfo and usr_data as arguments.
 
   // get data from the database -- get_next
-  void get_next(const uint64_t t1,
-                process_data_func proc_func, void *usr_data);
+  void get_next(const uint64_t t1, DBout & dbo);
 
   // get data from the database -- get_prev
-  void get_prev(const uint64_t t2,
-                process_data_func proc_func, void *usr_data);
+  void get_prev(const uint64_t t2, DBout & dbo);
 
   // get data from the database -- get
-  void get(const uint64_t t,
-           process_data_func proc_func, void *usr_data);
+  void get(const uint64_t t,  DBout & dbo);
 
   // get data from the database -- get_range
   void get_range(const uint64_t t1, const uint64_t t2,
-                 const uint64_t dt,
-                 process_data_func proc_func, void *usr_data);
+                 const uint64_t dt, DBout & dbo);
 
 
   // delete data data from the database -- del_range
