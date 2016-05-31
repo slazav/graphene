@@ -166,7 +166,7 @@ static void srv_stop(int signum){
   if (spars.verb >0)
     *(spars.log) << "Stopping the server\n";
   remove(spars.pidfile.c_str()); // try to remove pid-file
-  exit(0);
+  throw 0;
 }
 
 /**********************************************************/
@@ -276,6 +276,11 @@ int main(int argc, char ** argv) {
   }
 
   // main loop
-  while(1) sleep(10);
+  try{
+    while(1) sleep(10);
+  }
+  catch(int ret){
+    return ret;
+  }
   return 0;
 }
