@@ -154,6 +154,7 @@ Json json_query(const string & dbpath, const Json & ji){
   Json out = Json::array();
   for (int i=0; i<ji["targets"].size(); i++){
 
+
     // extract db name and column number
     DBout dbo(ji["targets"][i]["target"].as_string());
 
@@ -162,6 +163,11 @@ Json json_query(const string & dbpath, const Json & ji){
     // which fills it
     json_buffer=Json::array();
     DBsts db(dbpath, dbo.name, DB_RDONLY);
+
+    // check DB format
+    if (db.read_info().val == DATA_TEXT)
+      throw Json::Err() << "Can not do query from TEXT database. Use annotations";
+
     db.get_range(t1,t2,dt, add_to_buffer, &dbo);
 
     Json jt = Json::object();
@@ -205,6 +211,11 @@ Json json_annotations(const string & dbpath, const Json & ji){
   // which fills it
   json_buffer=Json::array();
   DBsts db(dbpath, dbo.name, DB_RDONLY);
+
+  // check DB format
+  if (db.read_info().val != DATA_TEXT)
+    throw Json::Err() << "Annotations can be found only in TEXT databases";
+
   db.get_range(t1,t2, 0, add_to_buffer, &dbo);
   for (size_t i=0; i<json_buffer.size(); i++){
     json_buffer[i].set("annotation", ji["annotation"]);

@@ -78,18 +78,28 @@ ans='[{"title": "1st text msg", "time": 5, '$ann'},'\
 assert "$(printf "%s" "$req" | ./stsdb_json . /annotations)" "$ans"
 
 # try to do query from text db:
-#req='
-#{"panelId":3,
-#    "range":{"from":"1970-01-01T00:00:00.001Z","to":"1970-01-01T00:00:00.025Z"},
-#    "interval":"15ms",
-#    "targets":[
-#      {"refId":"A","target":"test_3"}
-#    ],
-#    "format":"json",
-#    "maxDataPoints":10
-#}'
-#ans=''
-#assert "$(printf "%s" "$req" | ./stsdb_json . /query)" "$ans"
+req='
+{"panelId":3,
+    "range":{"from":"1970-01-01T00:00:00.001Z","to":"1970-01-01T00:00:00.025Z"},
+    "interval":"15ms",
+    "targets":[
+      {"refId":"A","target":"test_3"}
+    ],
+    "format":"json",
+    "maxDataPoints":10
+}'
+ans='{"error_type": "jsonxx", "error_message":"Can not do query from TEXT database. Use annotations"}'
+assert "$(printf "%s" "$req" | ./stsdb_json . /query)" "$ans"
+
+# try to get annotations from numeric DB
+ann='"annotation": {"name": "test_1", "datasource": "Simple JSON Datasource",'\
+' "iconColor": "rgba(255, 96, 96, 1)", "enable": true, "query": "#test"}'
+req='
+{"range":{"from":"1970-01-01T00:00:00.001Z","to":"1970-01-01T00:00:00.040Z"},
+ "rangeRaw":{"from":"now-1h","to":"now"}, '$ann' }'
+ans='{"error_type": "jsonxx", "error_message":"Annotations can be found only in TEXT databases"}'
+assert "$(printf "%s" "$req" | ./stsdb_json . /annotations)" "$ans"
+
 
 ###########################################################################
 # remove all test databases
