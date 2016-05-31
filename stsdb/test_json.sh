@@ -47,10 +47,12 @@ req='
     "format":"json",
     "maxDataPoints":10
 }'
-ans='[{"target": "test_1", "datapoints": [[0.10000000000000001, 10], [0.20000000000000001, 20]]}, {"target": "test_2:2", "datapoints": [[0.0, 15], [0.0, 25]]}, {"target": "test_1:2", "datapoints": [[0.0, 10], [0.0, 20]]}]'
+ans='[{"target": "test_1", "datapoints": [[0.10000000000000001, 10], [0.20000000000000001, 20]]},'\
+' {"target": "test_2:2", "datapoints": [[0.0, 15], [0.0, 25]]},'\
+' {"target": "test_1:2", "datapoints": [[0.0, 10], [0.0, 20]]}]'
 assert "$(printf "%s" "$req" | ./stsdb_json . /query)" "$ans"
 
-# same but with larger interval - only one point redurned
+# same but with larger interval - only one point returned
 req='
 {"panelId":3,
     "range":{"from":"1970-01-01T00:00:00.001Z","to":"1970-01-01T00:00:00.025Z"},
@@ -63,7 +65,9 @@ req='
     "format":"json",
     "maxDataPoints":10
 }'
-ans='[{"target": "test_1", "datapoints": [[0.10000000000000001, 10]]}, {"target": "test_2:2", "datapoints": [[0.0, 15]]}, {"target": "test_1:2", "datapoints": [[0.0, 10]]}]'
+ans='[{"target": "test_1", "datapoints": [[0.10000000000000001, 10]]},'\
+' {"target": "test_2:2", "datapoints": [[0.0, 15]]},'\
+' {"target": "test_1:2", "datapoints": [[0.0, 10]]}]'
 assert "$(printf "%s" "$req" | ./stsdb_json . /query)" "$ans"
 
 # annotations

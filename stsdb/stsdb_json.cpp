@@ -34,9 +34,10 @@ main(int argc, char *argv[]){
   try {
     cout << stsdb_json(dbpath, url, in_data);
   }
+  catch (Json::Err e){ cout << "Error:" << e.str();  return 1; }
   catch (Err e){
-    cout << "Error:" << e.str();
-    return 1;
+    if (e.str()!="") cout << "Error:" << e.str();
+    return (e.str()!="");
   }
   return 0;
 }

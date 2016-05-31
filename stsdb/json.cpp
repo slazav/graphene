@@ -12,6 +12,7 @@
 #include <ctime>
 #include <cstring>
 #include <stdint.h>
+#include <errno.h>
 #include "jsonxx/jsonxx.h"
 #include "db.h"
 #include "dbout.h"
@@ -85,36 +86,6 @@ uint64_t convert_interval(const string & tstr){
 }
 
 /***************************************************************************/
-// process_data_func callback, for using with get_* functions from db.h
-
-static Json json_buffer;
-
-void add_to_buffer(DBT *k, DBT *v,
-                   const DBinfo & info, void *usr_data){
-
-  DBout *dbo = (DBout*) usr_data;
-  // check for correct key size (do not parse DB info)
-  if (k->size!=sizeof(uint64_t)) return;
-  // convert DBT to strings
-  std::string ks((char *)k->data, (char *)k->data+k->size);
-  std::string vs((char *)v->data, (char *)v->data+v->size);
-
-  // unpack values and append to json_buffer
-  if (info.val!=DATA_TEXT){
-    Json jpt = Json::array();
-    jpt.append(info.unpack_data_d(vs, dbo->col));
-    jpt.append((json_int_t)info.unpack_time(ks));
-    json_buffer.append(jpt);
-  }
-  else {
-    Json jpt = Json::object();
-    jpt.set("title", info.unpack_data(vs, dbo->col));
-    jpt.set("time",  (json_int_t)info.unpack_time(ks));
-    json_buffer.append(jpt);
-  }
-}
-
-/***************************************************************************/
 // process /query
 Json json_query(const string & dbpath, const Json & ji){
 
@@ -154,25 +125,71 @@ Json json_query(const string & dbpath, const Json & ji){
   Json out = Json::array();
   for (int i=0; i<ji["targets"].size(); i++){
 
-
     // extract db name and column number
     DBout dbo(ji["targets"][i]["target"].as_string());
 
     // Get data from the database
-    // I use global var json_buffer and a callback add_to_buffer
-    // which fills it
-    json_buffer=Json::array();
     DBsts db(dbpath, dbo.name, DB_RDONLY);
 
     // check DB format
     if (db.read_info().val == DATA_TEXT)
-      throw Json::Err() << "Can not do query from TEXT database. Use annotations";
+    throw Json::Err() << "Can not do query from TEXT database. Use annotations";
 
-    db.get_range(t1,t2,dt, add_to_buffer, &dbo);
+    // fork
+    int fd[2];
+    if (pipe(fd) != 0)
+      throw Json::Err() << "can't create a pipe";
+
+    pid_t pid = fork();
+    if (pid < 0)
+      throw Json::Err() << "can't do fork";
+
+    // in the child process we set redirect stdout to the pipe
+    // and start printing values using db.get_range()
+    if (pid == 0) {
+      if (dup2(fd[1], 1) != 1)
+        throw Json::Err() << "can't set up standard output: " << strerror(errno);
+      if (close(fd[1]) != 0 || close(fd[0]) != 0)
+        throw Json::Err() << "can't set up standard output";
+
+
+      // This process communicates only via stdout.
+      // Here we ignore all errors.
+      try{ db.get_range(t1,t2,dt, print_value, &dbo); }
+      catch (Err e){ };
+      throw Err();
+    }
+    close(fd[1]);
+
+    // read line-by-line from file descriptor
+    // and fill json
+    Json ja = Json::array();
+    char buf[128];
+    std::string s;
+    int n = 0;
+    while(n = read(fd[0], buf, sizeof(buf))){
+      s+=string(buf, buf+n);
+      int pos;
+      while ((pos = s.find('\n'))!=string::npos){
+        string line = s.substr(0, pos);
+        s = s.substr(pos+1,-1);
+
+        // read timestamp and one value from this line:
+        istringstream istr(line);
+        uint64_t t;
+        double   v;
+        istr >> t >> v;
+        Json jpt = Json::array();
+        jpt.append(v);
+        jpt.append((json_int_t)t);
+        ja.append(jpt);
+
+      }
+    }
 
     Json jt = Json::object();
     jt.set("target", ji["targets"][i]["target"]);
-    jt.set("datapoints", json_buffer);
+    jt.set("datapoints", ja);
     out.append(jt);
   }
 
@@ -203,24 +220,69 @@ Json json_annotations(const string & dbpath, const Json & ji){
   uint64_t t2 = convert_time( ji["range"]["to"].as_string() );
   if (t1==0 || t2==0) throw Json::Err() << "Bad range setting";
 
+
   // extract db name
   DBout dbo(ji["annotation"]["name"].as_string());
 
   // Get data from the database
-  // I use global var json_buffer and a callback add_to_buffer
-  // which fills it
-  json_buffer=Json::array();
   DBsts db(dbpath, dbo.name, DB_RDONLY);
 
   // check DB format
   if (db.read_info().val != DATA_TEXT)
     throw Json::Err() << "Annotations can be found only in TEXT databases";
 
-  db.get_range(t1,t2, 0, add_to_buffer, &dbo);
-  for (size_t i=0; i<json_buffer.size(); i++){
-    json_buffer[i].set("annotation", ji["annotation"]);
+
+  // fork
+  int fd[2];
+  if (pipe(fd) != 0)
+    throw Json::Err() << "can't create a pipe";
+
+  pid_t pid = fork();
+  if (pid < 0)
+    throw Json::Err() << "can't do fork";
+
+  // in the child process we set redirect stdout to the pipe
+  // and start printing values using db.get_range()
+  if (pid == 0) {
+    if (dup2(fd[1], 1) != 1)
+      throw Json::Err() << "can't set up standard output: " << strerror(errno);
+    if (close(fd[1]) != 0 || close(fd[0]) != 0)
+      throw Json::Err() << "can't set up standard output";
+
+    // This process communicates only via stdout.
+    // Here we ignore all errors.
+    try{ db.get_range(t1,t2, 0, print_value, &dbo); }
+    catch (Err e){ };
+    throw Err();
   }
-  return json_buffer;
+  close(fd[1]);
+
+  // read line-by-line from file descriptor
+  // and fill json
+  Json ja = Json::array();
+  char buf[128];
+  std::string s;
+  int n = 0;
+  while(n = read(fd[0], buf, sizeof(buf))){
+    s+=string(buf, buf+n);
+    int pos;
+    while ((pos = s.find('\n'))!=string::npos){
+      string line = s.substr(0, pos);
+      s = s.substr(pos+1,-1);
+
+      // read timestamp, space character and all text from the line:
+      istringstream istr(line);
+      uint64_t t; string v;
+      istr >> t; istr.get(); getline(istr, v);
+      Json jpt = Json::object();
+      jpt.set("title", v);
+      jpt.set("time",  (json_int_t)t);
+      jpt.set("annotation", ji["annotation"]);
+      ja.append(jpt);
+    }
+  }
+
+  return ja;
 }
 
 /***************************************************************************/

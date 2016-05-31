@@ -19,8 +19,8 @@ stsdb_http.o:  dbinfo.h db.h dbout.h json.h stsdb_http.cpp
 stsdb:      dbinfo.o db.o dbout.o stsdb.o
 stsdb_http: dbinfo.o db.o dbout.o json.o stsdb_http.o
 stsdb_json: dbinfo.o db.o dbout.o json.o stsdb_json.o
-test_db:    dbinfo.o db.o test_db.o
-test_json:  dbinfo.o db.o json.o test_json.o
+test_db:    dbinfo.o db.o dbout.o test_db.o
+test_json:  dbinfo.o db.o dbout.o json.o test_json.o
 
 tests: test_db test_json test_cli.sh
 	./test_db
