@@ -37,3 +37,6 @@ install -pD -m755 %_sourcedir/stsdb_http.init %buildroot%_initdir/stsdb_http
 %config %_initdir/stsdb_http
 
 %changelog
+* Wed Jun 01 2016 Vladislav Zavjalov <slazav@altlinux.org> 1.0-alt1
+- v1.0
+
