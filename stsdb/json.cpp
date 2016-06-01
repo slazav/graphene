@@ -90,34 +90,32 @@ uint64_t convert_interval(const string & tstr){
 class DBoutJSON: public DBout{
   public:
   Json json_buffer;
+  bool isnum; // numerical or text data
 
-  DBoutJSON(const std::string & dbpath, const std::string & str):
-    DBout(dbpath, str), json_buffer(Json::array()){ };
+  DBoutJSON(const std::string & dbpath, const std::string & str, const bool isnum_):
+    DBout(dbpath, str), json_buffer(Json::array()), isnum(isnum_){ };
 
-
-  void proc_point(DBT *k, DBT *v,
-                     const DBinfo & info){
-
-    // check for correct key size (do not parse DB info)
-    if (k->size!=sizeof(uint64_t)) return;
-    // convert DBT to strings
-    std::string ks((char *)k->data, (char *)k->data+k->size);
-    std::string vs((char *)v->data, (char *)v->data+v->size);
-
-    // unpack values and append to json_buffer
-    if (info.val!=DATA_TEXT){
+  void print_point(const std::string & str) {
+    if (isnum){ //read timestamp and one value from the line:
+      istringstream istr(str);
+      uint64_t t;
+      double   v;
+      istr >> t >> v;
       Json jpt = Json::array();
-      jpt.append(info.unpack_data_d(vs, col));
-      jpt.append((json_int_t)info.unpack_time(ks));
+      jpt.append(v);
+      jpt.append((json_int_t)t);
       json_buffer.append(jpt);
     }
-    else {
+    else{ // read timestamp, space character and all text from the line:
+      istringstream istr(str);
+      uint64_t t; string v;
+      istr >> t; istr.get(); getline(istr, v);
       Json jpt = Json::object();
-      jpt.set("title", info.unpack_data(vs, col));
-      jpt.set("time",  (json_int_t)info.unpack_time(ks));
+      jpt.set("title", v);
+      jpt.set("time",  (json_int_t)t);
       json_buffer.append(jpt);
     }
-  }
+  };
 };
 
 
@@ -163,7 +161,7 @@ Json json_query(const string & dbpath, const Json & ji){
 
 
     // extract db name and column number
-    DBoutJSON dbo(dbpath, ji["targets"][i]["target"].as_string());
+    DBoutJSON dbo(dbpath, ji["targets"][i]["target"].as_string(), true);
 
     // Get data from the database
     DBsts db(dbpath, dbo.name, DB_RDONLY);
@@ -208,7 +206,7 @@ Json json_annotations(const string & dbpath, const Json & ji){
   if (t1==0 || t2==0) throw Json::Err() << "Bad range setting";
 
   // extract db name
-  DBoutJSON dbo(dbpath, ji["annotation"]["name"].as_string());
+  DBoutJSON dbo(dbpath, ji["annotation"]["name"].as_string(), false);
 
   // Get data from the database
   DBsts db(dbpath, dbo.name, DB_RDONLY);

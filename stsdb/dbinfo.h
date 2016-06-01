@@ -103,10 +103,6 @@ class DBinfo {
   // Unpack data
   std::string unpack_data(const std::string & s, const int col=-1) const;
 
-  // Unpack data to a double value (for json output)
-  // only one column are returned, 0 by default
-  double unpack_data_d(const std::string & s, const int col=-1) const;
-
   // interpolate data (for FLOAT and DOUBLE values)
   // k1,k2,v1,v2 are packed strings!
   std::string interpolate(

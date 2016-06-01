@@ -229,7 +229,7 @@ DBsts::get(const uint64_t t, DBout & dbo){
   }
   if (res!=0) throw Err() << name << ".db: " << db_strerror(res);
 
-  // if "next" record is asactly at t - return it
+  // if "next" record is exactly at t - return it
   string ks1((char *)k.data, (char *)k.data+k.size);
   string vs1((char *)v.data, (char *)v.data+v.size);
   if (info.unpack_time(ks1) == t) dbo.proc_point(&k, &v, info);
@@ -247,7 +247,6 @@ DBsts::get(const uint64_t t, DBout & dbo){
     if (vs0!=""){
       DBT k0 = mk_dbt(ks0);
       DBT v0 = mk_dbt(vs0);
-      // print_interp converted everything to double and chose correct columns
       dbo.proc_point(&k0, &v0, info);
     }
   }

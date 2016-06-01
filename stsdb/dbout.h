@@ -86,8 +86,26 @@ class DBout {
     }
   }
 
-  virtual void proc_point(DBT *k, DBT *v, const DBinfo & info) {};
+  // Process a single point (select a column, make tables, filtering)
+  // and call print_point()
+  void proc_point(DBT *k, DBT *v, const DBinfo & info) {
+    // check for correct key size (do not parse DB info)
+    if (k->size!=sizeof(uint64_t)) return;
+    // convert DBT to strings
+    std::string ks((char *)k->data, (char *)k->data+k->size);
+    std::string vs((char *)v->data, (char *)v->data+v->size);
+    // print values into a string
+    std::ostringstream str;
+    str << info.unpack_time(ks) << " "
+        << info.unpack_data(vs, col) << "\n";
+    print_point(str.str());
+  };
 
+  // print_point  -- by default it just prints the line to stdout,
+  // but this function can be overriden.
+  virtual void print_point(const std::string & str) {
+    std::cout << str;
+  };
 };
 
 #endif

@@ -128,8 +128,7 @@ class DBsts{
                            const std::string & v1, const std::string & v2);
 
   // All get* functions get some data from the database
-  // and call proc_func() for each key-value pair,
-  // with two DBT's, DBinfo and usr_data as arguments.
+  // and call dbo.proc_point() for each key-value pair
 
   // get data from the database -- get_next
   void get_next(const uint64_t t1, DBout & dbo);

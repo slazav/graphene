@@ -111,36 +111,6 @@ DBinfo::unpack_data(const string & s, const int col) const{
   return ostr.str();
 }
 
-// Unpack data to a double value (for json output)
-// only one column are returned, 0 by default
-//
-double
-DBinfo::unpack_data_d(const string & s, const int col) const{
-  if (val == DATA_TEXT)
-    throw Err() << "Can't convert text data to a number";
-  if (s.size() % dsize() != 0)
-    throw Err() << "Broken database: wrong data length";
-  // number of columns
-  size_t cn = s.size()/dsize();
-  // column  we want to show:
-  size_t c = col<0? 0:col;
-  if (c>=cn) { return 0.0; }
-
-  switch (val){
-    case DATA_INT8:   return (double)((int8_t   *)s.data())[c];
-    case DATA_UINT8:  return (double)((uint8_t  *)s.data())[c];
-    case DATA_INT16:  return (double)((int16_t  *)s.data())[c];
-    case DATA_UINT16: return (double)((uint16_t *)s.data())[c];
-    case DATA_INT32:  return (double)((int32_t  *)s.data())[c];
-    case DATA_UINT32: return (double)((uint32_t *)s.data())[c];
-    case DATA_INT64:  return (double)((int64_t  *)s.data())[c];
-    case DATA_UINT64: return (double)((uint64_t *)s.data())[c];
-    case DATA_FLOAT:  return (double)((float    *)s.data())[c];
-    case DATA_DOUBLE: return (double)((double   *)s.data())[c];
-    default: throw Err() << "Unexpected data format";
-  }
-}
-
 // interpolate data (for FLOAT and DOUBLE values)
 // s1 and s2 are _packed_ strings!
 // k is a weight of first point, 0 <= k <= 1
