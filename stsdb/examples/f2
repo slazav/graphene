@@ -1,0 +1,12 @@
+#!/usr/bin/perl
+#example of perl filter
+
+# set up buffering
+select((select(STDOUT), $|=1)[0]);
+
+# read line by line
+while (my $line = <STDIN>){
+  my ($t, $v) = split(/\s+/, $line);
+  $v = 1+$v**2;
+  print "$t $v\n";
+}

@@ -1,6 +1,6 @@
 #!/bin/sh -x
 
-PATH=$PATH:..
+PATH=..:$PATH
 stsdb -d . create pressure INT16 "Some text"
 stsdb -d . delete pressure
 

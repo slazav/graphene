@@ -77,10 +77,8 @@ class DBout {
         execl(f.c_str(), f.c_str(), NULL);
         exit(0); // how to terminate process correctly?!
       }
-      else{
-        close(fd1[0]);
-        close(fd2[1]);
-      }
+      close(fd1[0]);
+      close(fd2[1]);
     }
   }
 
@@ -100,11 +98,13 @@ class DBout {
     // do filtering
     if (pid>0){
       write(fd1[1], str.str().data(), str.str().length());
-      char buf[1024];
+      char buf[256];
       size_t n;
       std::string out;
-      while ((n = read(fd2[0], buf, sizeof(buf)))>0)
+      while ((n = read(fd2[0], buf, sizeof(buf)))>0){
         out+=std::string(buf, buf+n);
+        if (out.find('\n')!=std::string::npos) break;
+      }
       print_point(out);
     }
     else{

@@ -1,0 +1,6 @@
+#!/bin/sh
+#example of shell filter
+
+while read t v; do
+  echo $t $(($v*$v))
+done
