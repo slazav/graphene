@@ -8,6 +8,13 @@
 
 using namespace std;
 
+std::string check_name(const std::string & name){
+  static const char *reject = ".:+| \n\t";
+  if (strcspn(name.c_str(), reject)!=name.length())
+    throw Err() << "symbols '.:+| \\n\\t' are not allowed in the database name";
+  return name;
+}
+
 // Pack timestamp according with time format.
 string
 DBinfo::pack_time(const uint64_t t) const{

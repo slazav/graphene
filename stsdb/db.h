@@ -90,17 +90,6 @@ class DBsts{
     ~DBsts(){ destroy(); }
 
   /************************************/
-  // Check database name
-  // All names (not only for reading/writing, but
-  // also for moving or deleting should be checked).
-  static std::string check_name(const std::string & name){
-    static const char *reject = ".:+| \n\t";
-    if (strcspn(name.c_str(), reject)!=name.length())
-      throw Err() << "symbols '.:+| \\n\\t' are not allowed in the database name";
-    return name;
-  }
-
-  /************************************/
   // Constructor -- open a database
   // Path is a path to the database foolder.
   // Name is a database name, it can not contain some symbols (.|+ \n\t)

@@ -26,10 +26,13 @@
 class DBout {
   public:
   std::string name;    // primary database name
-  std::string filter;  // filter program
 
-  // extended names:
   int col; // column number, for the main database
+
+  // filter name, pid, in/out descriptors
+  std::string filter;  // filter program
+  pid_t pid;
+  int fd1[2], fd2[2];
 
   // constructor -- parse the dataset string, create iostream
   DBout(const std::string & dbpath, const std::string & str){
@@ -52,37 +55,32 @@ class DBout {
       else col = -1;
     }
     if (col < -1) col = -1;
-//    name   = DBsts::check_name(name);
-//    filter = DBsts::check_name(filter);
+    name   = check_name(name);
+    filter = check_name(filter);
 
+    fd1[0]=fd1[1]=fd2[0]=fd2[1]=-1;
+    pid = -1;
     if (filter!=""){
-      // fork
-      int fd[2];
-      if (pipe(fd) != 0)
-        throw Err() << "can't create a pipe";
-      pid_t pid = fork();
-      if (pid < 0)
-        throw Err() << "can't do fork";
+      // two pipes and a fork
+      if (pipe(fd1)!=0 || pipe(fd2)!=0) throw Err() << "can't create pipes";
+      pid = fork();
+      if (pid < 0) throw Err() << "can't do fork";
 
       // in the child process we set redirect pipe to stdin
       // and run filter program
       if (pid == 0) {
-        if (dup2(fd[0], 0) != 0)
-          throw Err() << "can't set up standard input: " << strerror(errno);
-        if (close(fd[0]) != 0 || close(fd[1]) != 0)
-          throw Err() << "can't set up standard input";
-
-        // This process communicates only via stdout.
-        // Here we ignore all errors.
+        if (dup2(fd1[0], 0)!=0 || close(fd1[0]) != 0 || close(fd1[1]) != 0)
+          throw Err() << "can't redirect stdin";
+        if (dup2(fd2[1], 1)!=1 || close(fd2[0]) != 0 || close(fd2[1]) != 0)
+          throw Err() << "can't redirect stdout";
         std::string f = dbpath + "/" + filter;
         execl(f.c_str(), f.c_str(), NULL);
-        throw Err();
+        exit(0); // how to terminate process correctly?!
       }
-      //in parent we redirect stdout to the pipe
-      if (dup2(fd[1], 1) != 1)
-        throw Err() << "can't set up standard output: " << strerror(errno);
-      if (close(fd[0]) != 0 || close(fd[1]) != 0)
-        throw Err() << "can't set up standard output";
+      else{
+        close(fd1[0]);
+        close(fd2[1]);
+      }
     }
   }
 
@@ -98,7 +96,20 @@ class DBout {
     std::ostringstream str;
     str << info.unpack_time(ks) << " "
         << info.unpack_data(vs, col) << "\n";
-    print_point(str.str());
+
+    // do filtering
+    if (pid>0){
+      write(fd1[1], str.str().data(), str.str().length());
+      char buf[1024];
+      size_t n;
+      std::string out;
+      while ((n = read(fd2[0], buf, sizeof(buf)))>0)
+        out+=std::string(buf, buf+n);
+      print_point(out);
+    }
+    else{
+      print_point(str.str());
+    }
   };
 
   // print_point  -- by default it just prints the line to stdout,

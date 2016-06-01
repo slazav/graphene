@@ -142,7 +142,7 @@ main(int argc, char **argv) {
     if (strcasecmp(cmd, "delete")==0){
       if (argc<2) throw Err() << "database name expected";
       if (argc>2) throw Err() << "too many parameters";
-      string name = DBsts::check_name(argv[1]); // name should be always checked!
+      string name = check_name(argv[1]); // name should be always checked!
       int res = remove((p.dbpath + "/" + name + ".db").c_str());
       if (res) throw Err() << name <<  ".db: " << strerror(errno);
       return 0;
@@ -153,8 +153,8 @@ main(int argc, char **argv) {
     if (strcasecmp(cmd, "rename")==0){
       if (argc<3) throw Err() << "database old and new names expected";
       if (argc>3) throw Err() << "too many parameters";
-      string name1 = DBsts::check_name(argv[1]);
-      string name2 = DBsts::check_name(argv[2]);
+      string name1 = check_name(argv[1]);
+      string name2 = check_name(argv[2]);
       string path1 = p.dbpath + "/" + name1 + ".db";
       string path2 = p.dbpath + "/" + name2 + ".db";
       // check if destination exists
