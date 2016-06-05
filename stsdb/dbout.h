@@ -5,6 +5,7 @@
 
 #include <string>
 #include <errno.h>
+#include <wait.h>
 #include "db.h"
 
 /***********************************************************/
@@ -77,9 +78,17 @@ class DBout {
         execl(f.c_str(), f.c_str(), NULL);
         exit(0); // how to terminate process correctly?!
       }
-      close(fd1[0]);
-      close(fd2[1]);
+      close(fd1[0]); fd1[0] = -1;
+      close(fd2[1]); fd2[1] = -1;
     }
+  }
+  ~DBout(){
+    for (int i=0; i<2; i++){
+      if (fd1[i]!=-1) close(fd1[i]);
+      if (fd2[i]!=-1) close(fd2[i]);
+    }
+    int st;
+    if (pid>0) waitpid(pid, &st, 0);
   }
 
   // Process a single point (select a column, make tables, filtering)
