@@ -74,7 +74,7 @@ class Pars{
   void parse_cmdline_options(int *argc, char ***argv){
     /* parse  options */
     while(1){
-      switch (getopt(*argc, *argv, "d:h")){
+      switch (getopt(*argc, *argv, "+d:h")){
         case -1: *argc-=optind;
                  *argv+=optind;
                   optind=0;
