@@ -44,6 +44,9 @@ install -pD -m644 %_sourcedir/graphene.xinetd %buildroot/etc/xinetd.d/graphene
 %config(noreplace) /etc/xinetd.d/graphene
 
 %changelog
+* Sun Jun 05 2016 Vladislav Zavjalov <slazav@altlinux.org> 1.1-alt1
+- v1.1
+
 * Wed Jun 01 2016 Vladislav Zavjalov <slazav@altlinux.org> 1.0-alt1
 - v1.0
 
