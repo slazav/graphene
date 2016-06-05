@@ -95,7 +95,7 @@ class Pars{
     throw Err();
   }
 
-  // parse options, modify argc/argv
+  // get options and parameters from argc/argv
   void parse_cmdline_options(const int argc, char **argv){
     /* parse  options */
     int c;
@@ -111,6 +111,19 @@ class Pars{
     if (pars.size() < 1) print_help();
   }
 
+  // get parameters from a string (for interactive mode)
+  void parse_command_string(const string & str){
+    istringstream in(str);
+    pars.clear();
+    while (1) {
+      string a;
+      in >> a;
+      if (!in) break;
+      pars.push_back(a);
+    }
+  }
+
+  // run command, using parameters
   void run_command(){
     if (pars.size() < 1) return;
     string cmd = pars[0];
@@ -288,27 +301,24 @@ class Pars{
 
     // interactive mode: put/get data using stdin commands
     // args: interactive
-/*
     if (strcasecmp(cmd.c_str(), "interactive")==0){
       if (pars.size()>1) throw Err() << "too many parameters";
-      while (!cin.eof()){
-        string line;
-        cin.getline(line);
-        istringstream lin(line)
 
-        map<string, DBsts> idb, odb;
-        // read command
-        std::string cmd;
-        lin >> cmd;
-        if (cmd == "put" || cmd == "PUT"){
+      string line;
+      while (getline(cin, line)){
+        try {
+          parse_command_string(line);
+          if (pars.size()>0 &&
+              strcasecmp(pars[0].c_str(), "interactive")==0)
+            throw Err() << "Command can not be run in interactive mode";
+          run_command();
         }
-        if (cmd == "get_prev" || cmd == "GET_PREV"){
+        catch(Err e){
+          if (e.str()!="") cout << "Error: " << e.str() << "\n";
         }
-
       }
       return;
     }
-*/
 
     throw Err() << "Unknown command";
   }
@@ -323,7 +333,6 @@ int
 main(int argc, char **argv) {
 
   try {
-
     Pars p;  /* program parameters */
     p.parse_cmdline_options(argc, argv);
     p.run_command();

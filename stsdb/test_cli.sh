@@ -245,5 +245,26 @@ assert "$(./stsdb -d . delete test_4)" ""
 
 
 ###########################################################################
+# interactive mode
+
+
+# create
+assert "$(./stsdb -d . interactive 1)" "Error: too many parameters"
+assert "$(printf 'x' | ./stsdb -d . interactive)" "Error: Unknown command"
+assert "$(printf 'create' | ./stsdb -d . interactive)" "Error: database name expected"
+
+assert "$(printf 'create test_1
+                  info test_1' | ./stsdb -d . interactive)" "DOUBLE"
+
+assert "$(printf 'create test_2
+                  put test_1 10 0
+                  put test_1 20 10
+                  put test_2 30 20
+                  put test_2 40 30
+                  get test_1 15
+                  get test_2 38' | ./stsdb -d . interactive)" "15 5
+38 28"
+
+###########################################################################
 # remove all test databases
 rm -f test*.db
