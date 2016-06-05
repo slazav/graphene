@@ -11,9 +11,9 @@ stsdb -d . set_descr press "Measured pressure"
 stsdb -d . info press
 stsdb -d . list
 
-stsdb -d . put press  1234567890 0.1
-stsdb -d . put press  1234567900 0.2
-stsdb -d . get_interp press 1234567895
+stsdb -d . put press  1234567890000 0.1
+stsdb -d . put press  1234567900000 0.2
+stsdb -d . get press  1234567895000
 
 stsdb -d . put press now 0.1
 stsdb -d . put press now 0.2
