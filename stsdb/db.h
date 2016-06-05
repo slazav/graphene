@@ -8,6 +8,7 @@
 #include <cstdlib>
 #include <string>
 #include <vector>
+#include <map>
 #include <sstream>
 #include <cstring> /* memset */
 #include <db.h>
@@ -138,6 +139,35 @@ class DBsts{
 
   // delete data data from the database -- del_range
   void del_range(const uint64_t t1, const uint64_t t2);
+
+};
+
+/***********************************************************/
+// class for storing many opened databases
+class DBpool{
+  std::map<std::string, DBsts> pool;
+  public:
+
+  DBpool(){}
+
+  DBsts & get(const std::string & dbpath,
+              const std::string & name, const int fl = 0){
+
+    std::map<std::string, DBsts>::iterator i = pool.find(name);
+
+    // if database was opened with wrong flags close it
+    if (!(fl & DB_RDONLY) && i!=pool.end() &&
+         i->second.open_flags & DB_RDONLY){
+      pool.erase(i); i=pool.end();
+    }
+
+    // if database is not opened, open it
+    if (!pool.count(name)) pool.insert(
+      std::pair<std::string, DBsts>(name, DBsts(dbpath, name, fl)));
+
+    // return the database
+    return pool.find(name)->second;
+  }
 
 };
 

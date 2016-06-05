@@ -49,10 +49,11 @@ class Pars{
   public:
   string dbpath;       /* path to the databases */
   vector<string> pars; /* non-option parameters */
+  DBpool pool;         /* database storage */
 
   // defaults
   Pars(){
-    dbpath = "/var/lib/stsdb/"; 
+    dbpath = "/var/lib/stsdb/";
   }
 
   // print help message and exit
@@ -221,7 +222,7 @@ class Pars{
       vector<string> dat;
       for (int i=3; i<pars.size(); i++) dat.push_back(string(pars[i]));
       // open database and write data
-      DBsts db(dbpath, pars[1], 0);
+      DBsts db = pool.get(dbpath, pars[1]);
       db.put(t, dat);
       return;
     }
@@ -233,7 +234,7 @@ class Pars{
       if (pars.size()>3) throw Err() << "too many parameters";
       uint64_t t = pars.size()>2? str2time(pars[2]): 0;
       DBout dbo(dbpath, pars[1]);
-      DBsts db(dbpath, dbo.name, DB_RDONLY);
+      DBsts db = pool.get(dbpath, dbo.name, DB_RDONLY);
       db.get_next(t, dbo);
       return;
     }
@@ -245,7 +246,7 @@ class Pars{
       if (pars.size()>3) throw Err() << "too many parameters";
       uint64_t t2 = pars.size()>2? str2time(pars[2]): -1;
       DBout dbo(dbpath, pars[1]);
-      DBsts db(dbpath, dbo.name, DB_RDONLY);
+      DBsts db = pool.get(dbpath, dbo.name, DB_RDONLY);
       db.get_prev(t2, dbo);
       return;
     }
@@ -257,7 +258,7 @@ class Pars{
       if (pars.size()>3) throw Err() << "too many parameters";
       uint64_t t2 = pars.size()>2? str2time(pars[2]): -1;
       DBout dbo(dbpath, pars[1]);
-      DBsts db(dbpath, dbo.name, DB_RDONLY);
+      DBsts db = pool.get(dbpath, dbo.name, DB_RDONLY);
       db.get(t2, dbo);
       return;
     }
@@ -271,7 +272,7 @@ class Pars{
       uint64_t t2 = pars.size()>3? str2time(pars[3]): -1;
       uint64_t dt = pars.size()>4? str2time(pars[4]): 0;
       DBout dbo(dbpath, pars[1]);
-      DBsts db(dbpath, dbo.name, DB_RDONLY);
+      DBsts db = pool.get(dbpath, dbo.name, DB_RDONLY);
       db.get_range(t1,t2,dt, dbo);
       return;
     }
@@ -282,7 +283,7 @@ class Pars{
       if (pars.size()<3) throw Err() << "database name and time expected";
       if (pars.size()>3) throw Err() << "too many parameters";
       uint64_t t = str2time(pars[2]);
-      DBsts db(dbpath, pars[1], 0);
+      DBsts db = pool.get(dbpath, pars[1]);
       db.del(t);
       return;
     }
@@ -294,7 +295,7 @@ class Pars{
       if (pars.size()>4) throw Err() << "too many parameters";
       uint64_t t1 = str2time(pars[2]);
       uint64_t t2 = str2time(pars[3]);
-      DBsts db(dbpath, pars[1], 0);
+      DBsts db = pool.get(dbpath, pars[1]);
       db.del_range(t1,t2);
       return;
     }
@@ -320,12 +321,10 @@ class Pars{
       return;
     }
 
+    // unknown command
     throw Err() << "Unknown command";
   }
 };
-
-
-
 
 
 /**********************************************************/
