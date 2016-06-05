@@ -13,6 +13,7 @@
 
 #include <map>
 #include <string>
+#include <vector>
 #include <iostream>
 #include "db.h"
 #include "dbout.h"
@@ -23,7 +24,8 @@ using namespace std;
 /* global parameters */
 class Pars{
   public:
-  std::string dbpath; /* path to the databases */
+  string dbpath;       /* path to the databases */
+  vector<string> pars; /* non-option parameters */
 
   // defaults
   Pars(){
@@ -71,20 +73,18 @@ class Pars{
   }
 
   // parse options, modify argc/argv
-  void parse_cmdline_options(int *argc, char ***argv){
+  void parse_cmdline_options(const int argc, char **argv){
     /* parse  options */
-    while(1){
-      switch (getopt(*argc, *argv, "+d:h")){
-        case -1: *argc-=optind;
-                 *argv+=optind;
-                  optind=0;
-                  return; /* end*/
+    int c;
+    while((c = getopt(argc, argv, "+d:h"))!=-1){
+      switch (c){
         case '?':
         case ':': throw Err(); /* error msg is printed by getopt*/
         case 'd': dbpath = optarg; break;
         case 'h': print_help();
       }
     }
+    pars = vector<string>(argv+optind, argv+argc);
   }
 
 };
@@ -103,8 +103,8 @@ prectime(){
 // Read timestamp from a string.
 // String "now" means current time.
 uint64_t
-str2time(const char *str) {
-  if (strcasecmp(str, "now")==0) return prectime();
+str2time(const string & str) {
+  if (strcasecmp(str.c_str(), "now")==0) return prectime();
   istringstream s(str);
   uint64_t t;  s >> t;
   if (s.bad() || s.fail() || !s.eof())
@@ -119,30 +119,31 @@ main(int argc, char **argv) {
   try {
 
     Pars p;  /* program parameters */
-    p.parse_cmdline_options(&argc, &argv);
+    p.parse_cmdline_options(argc, argv);
 
-    if (argc < 1) p.print_help();
-    const char * cmd = argv[0];
+
+    if (p.pars.size() < 1) p.print_help();
+    string cmd = p.pars[0];
 
     // create new database
     // args: create <name> [<data_fmt>] [<description>]
-    if (strcasecmp(cmd, "create")==0){
-      if (argc<2) throw Err() << "database name expected";
-      if (argc>4) throw Err() << "too many parameters";
+    if (strcasecmp(cmd.c_str(), "create")==0){
+      if (p.pars.size()<2) throw Err() << "database name expected";
+      if (p.pars.size()>4) throw Err() << "too many parameters";
       DBinfo info(
-         argc<3 ? DEFAULT_DATAFMT : DBinfo::str2datafmt(argv[2]),
-         argc<4 ? "" : argv[3] );
-      DBsts db(p.dbpath, argv[1], DB_CREATE | DB_EXCL);
+         p.pars.size()<3 ? DEFAULT_DATAFMT : DBinfo::str2datafmt(p.pars[2]),
+         p.pars.size()<4 ? "" : p.pars[3] );
+      DBsts db(p.dbpath, p.pars[1], DB_CREATE | DB_EXCL);
       db.write_info(info);
       return 0;
     }
 
     // delete a database
     // args: delete <name>
-    if (strcasecmp(cmd, "delete")==0){
-      if (argc<2) throw Err() << "database name expected";
-      if (argc>2) throw Err() << "too many parameters";
-      string name = check_name(argv[1]); // name should be always checked!
+    if (strcasecmp(cmd.c_str(), "delete")==0){
+      if (p.pars.size()<2) throw Err() << "database name expected";
+      if (p.pars.size()>2) throw Err() << "too many parameters";
+      string name = check_name(p.pars[1]); // name should be always checked!
       int res = remove((p.dbpath + "/" + name + ".db").c_str());
       if (res) throw Err() << name <<  ".db: " << strerror(errno);
       return 0;
@@ -150,11 +151,11 @@ main(int argc, char **argv) {
 
     // rename a database
     // args: rename <old_name> <new_name>
-    if (strcasecmp(cmd, "rename")==0){
-      if (argc<3) throw Err() << "database old and new names expected";
-      if (argc>3) throw Err() << "too many parameters";
-      string name1 = check_name(argv[1]);
-      string name2 = check_name(argv[2]);
+    if (strcasecmp(cmd.c_str(), "rename")==0){
+      if (p.pars.size()<3) throw Err() << "database old and new names expected";
+      if (p.pars.size()>3) throw Err() << "too many parameters";
+      string name1 = check_name(p.pars[1]);
+      string name2 = check_name(p.pars[2]);
       string path1 = p.dbpath + "/" + name1 + ".db";
       string path2 = p.dbpath + "/" + name2 + ".db";
       // check if destination exists
@@ -169,22 +170,22 @@ main(int argc, char **argv) {
 
     // change database description
     // args: set_descr <name> <description>
-    if (strcasecmp(cmd, "set_descr")==0){
-      if (argc<3) throw Err() << "database name and new description text expected";
-      if (argc>3) throw Err() << "too many parameters";
-      DBsts db(p.dbpath, argv[1], 0);
+    if (strcasecmp(cmd.c_str(), "set_descr")==0){
+      if (p.pars.size()<3) throw Err() << "database name and new description text expected";
+      if (p.pars.size()>3) throw Err() << "too many parameters";
+      DBsts db(p.dbpath, p.pars[1], 0);
       DBinfo info = db.read_info();
-      info.descr = argv[2];
+      info.descr = p.pars[2];
       db.write_info(info);
       return 0;
     }
 
     // print database info
     // args: info <name>
-    if (strcasecmp(cmd, "info")==0){
-      if (argc<2) throw Err() << "database name expected";
-      if (argc>2) throw Err() << "too many parameters";
-      DBsts db(p.dbpath, argv[1], DB_RDONLY);
+    if (strcasecmp(cmd.c_str(), "info")==0){
+      if (p.pars.size()<2) throw Err() << "database name expected";
+      if (p.pars.size()>2) throw Err() << "too many parameters";
+      DBsts db(p.dbpath, p.pars[1], DB_RDONLY);
       DBinfo info = db.read_info();
       cout << DBinfo::datafmt2str(info.val);
       if (info.descr!="") cout << '\t' << info.descr;
@@ -194,8 +195,8 @@ main(int argc, char **argv) {
 
     // print database list
     // args: list
-    if (strcasecmp(cmd, "list")==0){
-      if (argc>1) throw Err() << "too many parameters";
+    if (strcasecmp(cmd.c_str(), "list")==0){
+      if (p.pars.size()>1) throw Err() << "too many parameters";
       DIR *dir = opendir(p.dbpath.c_str());
       if (!dir) throw Err() << "can't open database directory: " << strerror(errno);
       struct dirent *ent;
@@ -211,24 +212,24 @@ main(int argc, char **argv) {
 
     // write data
     // args: put <name> <time> <value1> ...
-    if (strcasecmp(cmd, "put")==0){
-      if (argc<4) throw Err() << "database name, timstamp and some values expected";
-      uint64_t t = str2time(argv[2]);
+    if (strcasecmp(cmd.c_str(), "put")==0){
+      if (p.pars.size()<4) throw Err() << "database name, timstamp and some values expected";
+      uint64_t t = str2time(p.pars[2]);
       vector<string> dat;
-      for (int i=3; i<argc; i++) dat.push_back(string(argv[i]));
+      for (int i=3; i<p.pars.size(); i++) dat.push_back(string(p.pars[i]));
       // open database and write data
-      DBsts db(p.dbpath, argv[1], 0);
+      DBsts db(p.dbpath, p.pars[1], 0);
       db.put(t, dat);
       return 0;
     }
 
     // get next point after time1
     // args: get_next <name>[:N] [<time1>]
-    if (strcasecmp(cmd, "get_next")==0){
-      if (argc<2) throw Err() << "database name expected";
-      if (argc>3) throw Err() << "too many parameters";
-      uint64_t t = argc>2? str2time(argv[2]): 0;
-      DBout dbo(p.dbpath, argv[1]);
+    if (strcasecmp(cmd.c_str(), "get_next")==0){
+      if (p.pars.size()<2) throw Err() << "database name expected";
+      if (p.pars.size()>3) throw Err() << "too many parameters";
+      uint64_t t = p.pars.size()>2? str2time(p.pars[2]): 0;
+      DBout dbo(p.dbpath, p.pars[1]);
       DBsts db(p.dbpath, dbo.name, DB_RDONLY);
       db.get_next(t, dbo);
       return 0;
@@ -236,11 +237,11 @@ main(int argc, char **argv) {
 
     // get previous point before time2
     // args: get_prev <name>[:N] [<time2>]
-    if (strcasecmp(cmd, "get_prev")==0){
-      if (argc<2) throw Err() << "database name expected";
-      if (argc>3) throw Err() << "too many parameters";
-      uint64_t t2 = argc>2? str2time(argv[2]): -1;
-      DBout dbo(p.dbpath, argv[1]);
+    if (strcasecmp(cmd.c_str(), "get_prev")==0){
+      if (p.pars.size()<2) throw Err() << "database name expected";
+      if (p.pars.size()>3) throw Err() << "too many parameters";
+      uint64_t t2 = p.pars.size()>2? str2time(p.pars[2]): -1;
+      DBout dbo(p.dbpath, p.pars[1]);
       DBsts db(p.dbpath, dbo.name, DB_RDONLY);
       db.get_prev(t2, dbo);
       return 0;
@@ -248,11 +249,11 @@ main(int argc, char **argv) {
 
     // get prefious or interpolated point for the time
     // args: get <name>[:N] <time>
-    if (strcasecmp(cmd, "get")==0){
-      if (argc<2) throw Err() << "database name expected";
-      if (argc>3) throw Err() << "too many parameters";
-      uint64_t t2 = argc>2? str2time(argv[2]): -1;
-      DBout dbo(p.dbpath, argv[1]);
+    if (strcasecmp(cmd.c_str(), "get")==0){
+      if (p.pars.size()<2) throw Err() << "database name expected";
+      if (p.pars.size()>3) throw Err() << "too many parameters";
+      uint64_t t2 = p.pars.size()>2? str2time(p.pars[2]): -1;
+      DBout dbo(p.dbpath, p.pars[1]);
       DBsts db(p.dbpath, dbo.name, DB_RDONLY);
       db.get(t2, dbo);
       return 0;
@@ -260,13 +261,13 @@ main(int argc, char **argv) {
 
     // get data range
     // args: get_range <name>[:N] [<time1>] [<time2>] [<dt>]
-    if (strcasecmp(cmd, "get_range")==0){
-      if (argc<2) throw Err() << "database name expected";
-      if (argc>5) throw Err() << "too many parameters";
-      uint64_t t1 = argc>2? str2time(argv[2]): 0;
-      uint64_t t2 = argc>3? str2time(argv[3]): -1;
-      uint64_t dt = argc>4? str2time(argv[4]): 0;
-      DBout dbo(p.dbpath, argv[1]);
+    if (strcasecmp(cmd.c_str(), "get_range")==0){
+      if (p.pars.size()<2) throw Err() << "database name expected";
+      if (p.pars.size()>5) throw Err() << "too many parameters";
+      uint64_t t1 = p.pars.size()>2? str2time(p.pars[2]): 0;
+      uint64_t t2 = p.pars.size()>3? str2time(p.pars[3]): -1;
+      uint64_t dt = p.pars.size()>4? str2time(p.pars[4]): 0;
+      DBout dbo(p.dbpath, p.pars[1]);
       DBsts db(p.dbpath, dbo.name, DB_RDONLY);
       db.get_range(t1,t2,dt, dbo);
       return 0;
@@ -274,23 +275,23 @@ main(int argc, char **argv) {
 
     // delete one data point
     // args: del <name> <time>
-    if (strcasecmp(cmd, "del")==0){
-      if (argc<3) throw Err() << "database name and time expected";
-      if (argc>3) throw Err() << "too many parameters";
-      uint64_t t = str2time(argv[2]);
-      DBsts db(p.dbpath, argv[1], 0);
+    if (strcasecmp(cmd.c_str(), "del")==0){
+      if (p.pars.size()<3) throw Err() << "database name and time expected";
+      if (p.pars.size()>3) throw Err() << "too many parameters";
+      uint64_t t = str2time(p.pars[2]);
+      DBsts db(p.dbpath, p.pars[1], 0);
       db.del(t);
       return 0;
     }
 
     // delete all points in the data range
     // args: del_range <name> [<time1>] [<time2>]
-    if (strcasecmp(cmd, "del_range")==0){
-      if (argc<4) throw Err() << "database name and two times expected";
-      if (argc>4) throw Err() << "too many parameters";
-      uint64_t t1 = str2time(argv[2]);
-      uint64_t t2 = str2time(argv[3]);
-      DBsts db(p.dbpath, argv[1], 0);
+    if (strcasecmp(cmd.c_str(), "del_range")==0){
+      if (p.pars.size()<4) throw Err() << "database name and two times expected";
+      if (p.pars.size()>4) throw Err() << "too many parameters";
+      uint64_t t1 = str2time(p.pars[2]);
+      uint64_t t2 = str2time(p.pars[3]);
+      DBsts db(p.dbpath, p.pars[1], 0);
       db.del_range(t1,t2);
       return 0;
     }
@@ -298,8 +299,8 @@ main(int argc, char **argv) {
     // interactive mode: put/get data using stdin commands
     // args: interactive
 /*
-    if (strcasecmp(cmd, "interactive")==0){
-      if (argc>1) throw Err() << "too many parameters";
+    if (strcasecmp(cmd.c_str(), "interactive")==0){
+      if (p.pars.size()>1) throw Err() << "too many parameters";
       while (!cin.eof()){
         string line;
         cin.getline(line);
