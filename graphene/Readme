@@ -9,7 +9,7 @@ Features:
 - store integer, floating point or text values with millisecond timestamps
 - fast access to data, interpolation, time ranges, downsampling
 - multi-column numerical values
-- http simple json interface for grafana viewer
+- http simple json interface for Grafana viewer
 - user filters for data processing (calibration tables etc.)
 
 =========================================================================
@@ -18,7 +18,7 @@ Features:
 Each dataset is a separate BerkleyDB file with .db extension, located in
 a database directory (default /var/lib/graphene). Name of file represents
 the name of the dataset. Name may contain path symbols '/', but can not
-contayn symbols '.:|+ \t\n', You can use name "cryostat/temperature" but
+contain symbols '.:|+ \t\n', You can use name "cryostat/temperature" but
 not "../temperature" for your dataset. Currently all subfolders have to
 be created manually.
 
@@ -65,7 +65,7 @@ $ graphene get_next <extended name> [<time1>] -- get next point with t>=time1
 $ graphene get_prev <extended name> [<time2>] -- get previous point with t<=time2
 
 $ graphene get <extended name> [<time2>] -- For integer and text databases
-  get is eqivalent to get_prev. For double databases it does linear
+  get is equivalent to get_prev. For double databases it does linear
   interpolation between points, or return the last point if time is larger
   then that of the newest point.
 
@@ -78,7 +78,7 @@ Default value for time1 is 0, for time2 is infinity. Word "now" can be
 used to specify current time. If the database has no future timestamps,
 then commands "get_prev name" and "get_prev name now" are equivalent.
 
-Text values are printed with linebreaks converted to spaces.
+Text values are printed with line breaks converted to spaces.
 
 The "extended name" used in get_* commands have the following format:
 <name>[:<column>][|<filter>]
@@ -104,7 +104,7 @@ Allows making a simple server with xinetd.
 
     Examples:
 
-See examples/ folder in the database distriution
+See examples/* in the source folder
 
 
 =========================================================================
