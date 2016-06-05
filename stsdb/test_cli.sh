@@ -189,6 +189,30 @@ assert "$(./stsdb -d . get_range test_3)" "10 1
 assert "$(./stsdb -d . delete test_3)" ""
 
 ###########################################################################
+# filters
+
+echo "#!/bin/sh" > test_flt
+echo "while read t v; do echo \$t \$((\$v*\$v)); done" >> test_flt
+chmod 755 test_flt
+
+assert "$(./stsdb -d . create test_3)" ""
+assert "$(./stsdb -d . put test_3 10 1 4)" ""
+assert "$(./stsdb -d . put test_3 11 2 3)" ""
+assert "$(./stsdb -d . put test_3 12 3 2)" ""
+assert "$(./stsdb -d . put test_3 13 4 1)" ""
+assert "$(./stsdb -d . get_range test_3:0)" "10 1
+11 2
+12 3
+13 4"
+assert "$(./stsdb -d . get_range 'test_3:0|test_flt')" "10 1
+11 4
+12 9
+13 16"
+
+rm -f test_flt
+assert "$(./stsdb -d . delete test_3)" ""
+
+###########################################################################
 # TEXT database
 assert "$(./stsdb -d . create test_4 TEXT)" ""
 
