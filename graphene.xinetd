@@ -1,6 +1,7 @@
 # default: off
 # description: Graphene database interface
-service graphene {
+service graphene
+{
   disable         = yes
   type            = UNLISTED
   socket_type     = stream

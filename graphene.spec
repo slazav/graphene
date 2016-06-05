@@ -36,7 +36,7 @@ install -pD -m644 %_sourcedir/graphene.xinetd %buildroot/etc/xinetd.d/graphene
 %_bindir/graphene
 %_bindir/graphene_http
 %config %_initdir/graphene_http
-%config /etc/xinetd.d/graphene
+%config(noreplace) /etc/xinetd.d/graphene
 
 %changelog
 * Wed Jun 01 2016 Vladislav Zavjalov <slazav@altlinux.org> 1.0-alt1
