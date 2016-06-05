@@ -90,8 +90,10 @@ class Pars{
             "      -- get points in the time range\n"
             "  del <name> <time>\n"
             "      -- delete one data point\n"
-            "  del_range <name> [<time1>] [<time2>]\n"
+            "  del_range <name> <time1> <time2>\n"
             "      -- delete all points in the time range\n"
+            "  interactive\n"
+            "      -- interactive mode, commands are read from stdin\n"
     ;
     throw Err();
   }
@@ -289,7 +291,7 @@ class Pars{
     }
 
     // delete all points in the data range
-    // args: del_range <name> [<time1>] [<time2>]
+    // args: del_range <name> <time1> <time2>
     if (strcasecmp(cmd.c_str(), "del_range")==0){
       if (pars.size()<4) throw Err() << "database name and two times expected";
       if (pars.size()>4) throw Err() << "too many parameters";

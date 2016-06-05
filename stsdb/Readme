@@ -9,22 +9,23 @@ E-mail: Vladislav Zavjalov <slazav@altlinux.org>
 
 Each dataset is a separate BerkleyDB file with .db extension, located in
 a database directory (default /var/lib/stsdb). Name of file represents
-the name of the dataset. Name may contain path, but "." and ".." path
-components are always removed. You can use "cryostat/temperature" but not
-"../temperature" for your dataset.
+the name of the dataset. Name may contain path symbols '/', but can not
+contayn symbols '.:|+ \t\n', You can use name "cryostat/temperature" but
+not "../temperature" for your dataset. Currently all subfolders have to
+be created manually.
 
 Data are stored as a set of sorted key-value pairs. Key is time in
-milliseconds (64 bit unsigned integer), counted from 1970-01-01 UTC.
-Duplicated time values are allowed (but can not be shown now). Value can
-contain an array if numbers of arbitrary length (data columns) or some
-text. The data format can be chosen during the database creation.
-Possible variants are: TEXT, INT8, UINT8, INT16, UINT16, INT32, UINT32,
-INT64, UINT64, FLOAT, DOUBLE.
+milliseconds (64-bit unsigned integer), counted from 1970-01-01 UTC.
+Duplicated time values are allowed (but can not be correctly shown now).
+Value can contain an array if numbers of arbitrary length (data columns)
+or some text. The data format can be chosen during the database
+creation. Possible variants are: TEXT, INT8, UINT8, INT16, UINT16,
+INT32, UINT32, INT64, UINT64, FLOAT, DOUBLE.
 
-Records with 1-byte keys are reserved for database information,
-for example the data format and database description.
-Records with 2-byte keys are reserved for arbitrary user data.
-1- and 2-bytes records are not affected by regular get/put commands.
+Records with 8-bit keys are reserved for database information, for
+example the data format and database description. Records with 16-bit
+keys are reserved for arbitrary user data. These records are not
+affected by regular get/put commands.
 
 =========================================================================
     Command line interface to data
@@ -39,54 +40,59 @@ Usage: stsdb [options] <command> <parameters>
 
     Commands for manipulating databases:
 
-stsdb create <name> [<data_fmt>] [<description>]  -- create a database
-stsdb delete <name>                  -- delete a database file
-stsdb rename <old_name> <new_name>   -- rename a database file
-stsdb set_descr <name> <description> -- change database description
-stsdb info <name>                    -- print database information
-stsdb list                           -- list all databases in the data directory
+$ stsdb create <name> [<data_fmt>] [<description>]  -- create a database file
+$ stsdb delete <name>                  -- delete a database file
+$ stsdb rename <old_name> <new_name>   -- rename a database file
+$ stsdb set_descr <name> <description> -- change database description
+$ stsdb info <name>                    -- print database format and description
+$ stsdb list                           -- list all databases in the data directory
 
 Delete and rename commands just do simple file operations.
-A database can be renamed only if destination file exists.
+A database can be renamed only if destination does not exists.
 
     Commands for reading and writing data:
 
-stsdb put <name> <time> <value1> ... <valueN> -- write data point
-stsdb get_next <name>[:N] [<time1>] -- get next point with t>=time1
-stsdb get_prev <name>[:N] [<time2>] -- get previous point with t<=time2
+$ stsdb put <name> <time> <value1> ... <valueN> -- write data point
+$ stsdb get_next <extended name> [<time1>] -- get next point with t>=time1
+$ stsdb get_prev <extended name> [<time2>] -- get previous point with t<=time2
 
-stsdb get <name>[:N] <time>
--- for integer and text databases get is eqivalent to get_prev.
-for double databases it does linear interpolation between points, or
-return the last point if time is larger then that of the newest point.
+$ stsdb get <extended name> [<time2>] -- For integer and text databases
+  get is eqivalent to get_prev. For double databases it does linear
+  interpolation between points, or return the last point if time is larger
+  then that of the newest point.
 
-stsdb get_range  <name>[:N] [<time1>] [<time2>] [<dt>]
--- Get all points in the time range if dt>1 then filter data.
-Works fast for any ratio of dt and interpoint distance.
+$ stsdb get_range <extended name> [<time1>] [<time2>] [<dt>] -- Get
+  points in the time range. If parameter dt>1 then data are filtered, only
+  points with distance >dt between them are shown. This works fast for any
+  ratio of dt and interpoint distance.
 
-In get_* commands the database name can be followed by column number.
-Default value for time1 is 0, for time2 is infinity. Word "now" can be used
-to specify current time. If the database has no future timestamps,
+Default value for time1 is 0, for time2 is infinity. Word "now" can be
+used to specify current time. If the database has no future timestamps,
 then commands "get_prev name" and "get_prev name now" are equivalent.
-
-If a certain column is requested but data array is not long enough,
-a "NaN" value is returned. Columns are ignored for text data.
-
-get_interp does not work with text data. It always prints float values,
-even for integer data.
 
 Text values are printed with linebreaks converted to spaces.
 
+The "extended name" used in get_* commands have the following format:
+<name>[:<column>][|<filter>]
+
+<column> is a column number (0,1,..), if it exists, then only this
+column is shown. If a certain column is requested but data array is not
+long enough, a "NaN" value is returned. Columns are ignored for text data.
+
+<filter> is a name of filter program, if it exists, the program is run and
+data is filtered through it. The program should be located in the
+database directory, program name can not contain '.:|+ \t\n' symbols.
+
     Commands for deleting data:
 
-stsdb del <name> <time>  -- delete a data point
-stsdb del_range  <name> [<time1>] [<time2>] -- delete all points in the range
+$ stsdb del <name> <time>  -- delete a data point
+$ stsdb del_range  <name> [<time1>] [<time2>] -- delete all points in the range
 
+    Interactive mode:
 
-TODO:
-stsdb access -- Interactively read/write data. Allows writing of
-multiple points without reopening the database. Allows making a simple
-server with xinetd.
+$ stsdb interactive -- Interactive mode. Commands are read from stdin.
+Allows making many requests without reopening databases.
+Allows making a simple server with xinetd.
 
     Examples:
 
