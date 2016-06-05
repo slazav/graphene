@@ -4,6 +4,13 @@ STSDB -- a simple time-series database
 Source code: https://github.com/slazav/stsdb
 E-mail: Vladislav Zavjalov <slazav@altlinux.org>
 
+Features:
+- store integer, floating point or text values with millisecond timestamps
+- fast access to data, interpolation, time ranges, downsampling
+- multi-column numerical values
+- http + simple json interface for grafana viewer
+- user filters for data processing (calibration tables etc.)
+
 =========================================================================
     Data storage
 
