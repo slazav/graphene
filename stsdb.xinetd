@@ -1,0 +1,18 @@
+# default: off
+# description: The STSDB interface
+service stsdb {
+  disable         = yes
+  type            = UNLISTED
+  socket_type     = stream
+  protocol        = tcp
+  port            = 3001
+  wait            = no
+  user            = root
+  nice            = 10
+  rlimit_as       = 256M
+  server          = /usr/bin/stsdb
+  server_args     = interactive
+  log_type        = FILE /var/log/xinetd/stsdb.log
+  log_on_success  = HOST PID
+  log_on_failure  = HOST
+}

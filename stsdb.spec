@@ -23,6 +23,7 @@ STSDB -- a simple time series database
 %build
 %makeinstall
 install -pD -m755 %_sourcedir/stsdb_http.init %buildroot%_initdir/stsdb_http
+install -pD -m644 %_sourcedir/stsdb.xinetd %buildroot/etc/xinetd.d/stsdb
 
 %post
 %post_service stsdb_http
@@ -35,6 +36,7 @@ install -pD -m755 %_sourcedir/stsdb_http.init %buildroot%_initdir/stsdb_http
 %_bindir/stsdb
 %_bindir/stsdb_http
 %config %_initdir/stsdb_http
+%config /etc/xinetd.d/stsdb
 
 %changelog
 * Wed Jun 01 2016 Vladislav Zavjalov <slazav@altlinux.org> 1.0-alt1
