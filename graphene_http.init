@@ -18,14 +18,14 @@ LOCKFILE=/var/lock/subsys/graphene_http
 RETVAL=0
 
 start() {
-	start_daemon --pidfile "$PIDFILE" --lockfile "$LOCKFILE" --expect-user root -- graphene_http -f $EXTRAOPTIONS
+	start_daemon --pidfile "$PIDFILE" --lockfile "$LOCKFILE" --expect-user graphene -- graphene_http -f $EXTRAOPTIONS
 	RETVAL=$?
 	return $RETVAL
 }
 
 stop()
 {
-	stop_daemon --pidfile "$PIDFILE" --lockfile "$LOCKFILE" --expect-user root -- graphene_http
+	stop_daemon --pidfile "$PIDFILE" --lockfile "$LOCKFILE" --expect-user graphene -- graphene_http
 	RETVAL=$?
 	return $RETVAL
 }
@@ -45,7 +45,7 @@ case "$1" in
 		stop
 		;;
 	status)
-		status --pidfile "$PIDFILE" --expect-user root -- graphene_http
+		status --pidfile "$PIDFILE" --expect-user graphene -- graphene_http
 		RETVAL=$?
 		;;
 	reload|sreload|restart)

@@ -8,7 +8,7 @@ service graphene
   protocol        = tcp
   port            = 3001
   wait            = no
-  user            = root
+  user            = graphene
   nice            = 10
   rlimit_as       = 256M
   server          = /usr/bin/graphene
