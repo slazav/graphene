@@ -168,6 +168,7 @@ class DBpool{
     // return the database
     return pool.find(name)->second;
   }
+  void clear(){ pool.clear(); }
 
 };
 

@@ -150,6 +150,7 @@ class Pars{
       if (pars.size()<2) throw Err() << "database name expected";
       if (pars.size()>2) throw Err() << "too many parameters";
       string name = check_name(pars[1]); // name should be always checked!
+      pool.clear();
       int res = remove((dbpath + "/" + name + ".db").c_str());
       if (res) throw Err() << name <<  ".db: " << strerror(errno);
       return;
@@ -169,6 +170,7 @@ class Pars{
       int res = stat(path2.c_str(), &buf);
       if (res==0) throw Err() << "can't rename database, destination exists: " << name2 << ".db";
       // do rename
+      pool.clear();
       res = rename(path1.c_str(), path2.c_str());
       if (res) throw Err() << "can't rename database: " << strerror(errno);
       return;
@@ -179,7 +181,7 @@ class Pars{
     if (strcasecmp(cmd.c_str(), "set_descr")==0){
       if (pars.size()<3) throw Err() << "database name and new description text expected";
       if (pars.size()>3) throw Err() << "too many parameters";
-      DBsts db(dbpath, pars[1], 0);
+      DBsts db = pool.get(dbpath, pars[1]);
       DBinfo info = db.read_info();
       info.descr = pars[2];
       db.write_info(info);
@@ -191,7 +193,7 @@ class Pars{
     if (strcasecmp(cmd.c_str(), "info")==0){
       if (pars.size()<2) throw Err() << "database name expected";
       if (pars.size()>2) throw Err() << "too many parameters";
-      DBsts db(dbpath, pars[1], DB_RDONLY);
+      DBsts db = pool.get(dbpath, pars[1], DB_RDONLY);
       DBinfo info = db.read_info();
       cout << DBinfo::datafmt2str(info.val);
       if (info.descr!="") cout << '\t' << info.descr;
