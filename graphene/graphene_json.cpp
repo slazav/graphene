@@ -1,6 +1,6 @@
 /*  Json interface for the Simple time series database.
 
-  Usually json interface is used via stsdb_http
+  Usually json interface is used via graphene_http
   program. This small program is written for tests only
 
 */
@@ -22,7 +22,7 @@ using namespace std;
 int
 main(int argc, char *argv[]){
   if (argc != 3){
-    cerr << "Usage: stsdb_json <dbpath> <url> < <json_input> > <json_output>\n";
+    cerr << "Usage: graphene_json <dbpath> <url> < <json_input> > <json_output>\n";
     return 1;
   }
   string dbpath(argv[1]);
@@ -32,7 +32,7 @@ main(int argc, char *argv[]){
   while (!cin.eof()){ string s; getline(cin, s); in_data +=s+'\n'; }
 
   try {
-    cout << stsdb_json(dbpath, url, in_data);
+    cout << graphene_json(dbpath, url, in_data);
   }
   catch (Err e){
     cout << "Error:" << e.str();

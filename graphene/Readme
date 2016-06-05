@@ -1,21 +1,22 @@
 =========================================================================
-STSDB -- a simple time-series database
+Graphene -- a simple time-series database for scientific applications
 
-Source code: https://github.com/slazav/stsdb
+Source code: https://github.com/slazav/graphene
 E-mail: Vladislav Zavjalov <slazav@altlinux.org>
 
 Features:
+- based on BerkleyDB
 - store integer, floating point or text values with millisecond timestamps
 - fast access to data, interpolation, time ranges, downsampling
 - multi-column numerical values
-- http + simple json interface for grafana viewer
+- http simple json interface for grafana viewer
 - user filters for data processing (calibration tables etc.)
 
 =========================================================================
     Data storage
 
 Each dataset is a separate BerkleyDB file with .db extension, located in
-a database directory (default /var/lib/stsdb). Name of file represents
+a database directory (default /var/lib/graphene). Name of file represents
 the name of the dataset. Name may contain path symbols '/', but can not
 contayn symbols '.:|+ \t\n', You can use name "cryostat/temperature" but
 not "../temperature" for your dataset. Currently all subfolders have to
@@ -37,38 +38,38 @@ affected by regular get/put commands.
 =========================================================================
     Command line interface to data
 
-The program stsdb is used to access data from command line.
-Usage: stsdb [options] <command> <parameters>
+The program graphene is used to access data from command line.
+Usage: graphene [options] <command> <parameters>
 
     Options:
 
--d <path> -- database directory (default /var/lib/stsdb/)
+-d <path> -- database directory (default /var/lib/graphene/)
 -h        -- write this help message and exit
 
     Commands for manipulating databases:
 
-$ stsdb create <name> [<data_fmt>] [<description>]  -- create a database file
-$ stsdb delete <name>                  -- delete a database file
-$ stsdb rename <old_name> <new_name>   -- rename a database file
-$ stsdb set_descr <name> <description> -- change database description
-$ stsdb info <name>                    -- print database format and description
-$ stsdb list                           -- list all databases in the data directory
+$ graphene create <name> [<data_fmt>] [<description>]  -- create a database file
+$ graphene delete <name>                  -- delete a database file
+$ graphene rename <old_name> <new_name>   -- rename a database file
+$ graphene set_descr <name> <description> -- change database description
+$ graphene info <name>                    -- print database format and description
+$ graphene list                           -- list all databases in the data directory
 
 Delete and rename commands just do simple file operations.
 A database can be renamed only if destination does not exists.
 
     Commands for reading and writing data:
 
-$ stsdb put <name> <time> <value1> ... <valueN> -- write data point
-$ stsdb get_next <extended name> [<time1>] -- get next point with t>=time1
-$ stsdb get_prev <extended name> [<time2>] -- get previous point with t<=time2
+$ graphene put <name> <time> <value1> ... <valueN> -- write data point
+$ graphene get_next <extended name> [<time1>] -- get next point with t>=time1
+$ graphene get_prev <extended name> [<time2>] -- get previous point with t<=time2
 
-$ stsdb get <extended name> [<time2>] -- For integer and text databases
+$ graphene get <extended name> [<time2>] -- For integer and text databases
   get is eqivalent to get_prev. For double databases it does linear
   interpolation between points, or return the last point if time is larger
   then that of the newest point.
 
-$ stsdb get_range <extended name> [<time1>] [<time2>] [<dt>] -- Get
+$ graphene get_range <extended name> [<time1>] [<time2>] [<dt>] -- Get
   points in the time range. If parameter dt>1 then data are filtered, only
   points with distance >dt between them are shown. This works fast for any
   ratio of dt and interpoint distance.
@@ -92,12 +93,12 @@ database directory, program name can not contain '.:|+ \t\n' symbols.
 
     Commands for deleting data:
 
-$ stsdb del <name> <time>  -- delete a data point
-$ stsdb del_range  <name> [<time1>] [<time2>] -- delete all points in the range
+$ graphene del <name> <time>  -- delete a data point
+$ graphene del_range  <name> [<time1>] [<time2>] -- delete all points in the range
 
     Interactive mode:
 
-$ stsdb interactive -- Interactive mode. Commands are read from stdin.
+$ graphene interactive -- Interactive mode. Commands are read from stdin.
 Allows making many requests without reopening databases.
 Allows making a simple server with xinetd.
 
@@ -114,10 +115,10 @@ data (simple_json plugin is needed). Text databases can be viewed as
 annotations, and numerical as metrics. Columns can be specified after
 database name: <name>:<column>, default column is 0.
 
-Usage: stsdb_http [options]
+Usage: graphene_http [options]
 Options:
  -p <port>  -- tcp port for connections (default 8081)
- -d <path>  -- database path (default /var/lib/stsdb/)
+ -d <path>  -- database path (default /var/lib/graphene/)
  -v <level> -- be verbose
                 0 - write nothing.
                 1 - write some information on start
@@ -125,17 +126,17 @@ Options:
                 3 - write input data
                 4 - write output data
  -l <file>  -- log file, use '-' for stdout
-               (default /var/log/stsdb.log in daemon mode, '-' in)"
+               (default /var/log/graphene.log in daemon mode, '-' in)"
  -f         -- do fork and run as a daemon;
  -h         -- write help message and exit;
 
 =========================================================================
-    Matlab interface
+    Matlab/octave interface
 
 Nothing is ready yet. You can use something like this to get data using the
-stsdb program:
+graphene program:
 
-  [r, out] = system('stsdb get_range my_dataset 1464260400000 now 60000');
+  [r, out] = system('graphene get_range my_dataset 1464260400000 now 60000');
   [t val1 val2] = strread(out, '%f %f %f');
 
 =========================================================================

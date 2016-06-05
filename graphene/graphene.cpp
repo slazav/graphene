@@ -53,14 +53,14 @@ class Pars{
 
   // defaults
   Pars(){
-    dbpath = "/var/lib/stsdb/";
+    dbpath = "/var/lib/graphene/";
   }
 
   // print help message and exit
   void print_help(){
     Pars p; // default parameters
-    cout << "stsdb -- command line interface to Simple Time Series Database\n"
-            "Usage: stsdb [options] <command> <parameters>\n"
+    cout << "graphene -- command line interface to Simple Time Series Database\n"
+            "Usage: graphene [options] <command> <parameters>\n"
             "Options:\n"
             "  -d <path> -- database directory (default " << p.dbpath << "\n"
             "  -h        -- write this help message and exit\n"

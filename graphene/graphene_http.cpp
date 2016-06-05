@@ -2,7 +2,7 @@
 
   The server works with simple-json-datasource Grafana plugin.
   It ansers "GET /" and "OPTIONS" requests by itself, and transfers all
-  POST requests into stsdb_json module.
+  POST requests into graphene_json module.
 
   Port and database location can be adjusted from the command line.
 
@@ -33,7 +33,7 @@ using namespace std;
 /* server parameters */
 struct spars_t{
   int     port;    /* tcp port for connections */
-  string  dbpath;  /* path to the databases (default /var/lib/stsdb/) */
+  string  dbpath;  /* path to the databases (default /var/lib/graphene/) */
   string  logfile; /* logfile */
   string  pidfile; /* pidfile */
   int16_t verb;    /* print commands to stdout */
@@ -44,9 +44,9 @@ struct spars_t{
   /* set default values */
   spars_t(){
     port   = 8081;
-    dbpath = "/var/lib/stsdb/";
+    dbpath = "/var/lib/graphene/";
     logfile = ""; // to be set later
-    pidfile = "/var/run/stsdb_http.pid";
+    pidfile = "/var/run/graphene_http.pid";
     verb   = 1;
     dofork = 0;
     log    = &cout;
@@ -65,11 +65,11 @@ struct spars_t{
         case 'l': logfile = optarg; break;
         case 'f': dofork  = 1; break;
         case 'h':
-          cout << "stsdb_http -- http interface for stsdb\n"
-                  "Usage: stsdb_http [options]\n"
+          cout << "graphene_http -- http interface for graphene\n"
+                  "Usage: graphene_http [options]\n"
                   "Options:p\n"
                   " -p <port>  -- tcp port for connections (default 8081)\n"
-                  " -d <path>  -- database path (default /var/lib/stsdb/)\n"
+                  " -d <path>  -- database path (default /var/lib/graphene/)\n"
                   " -v <level> -- be verbose\n"
                   "                0 - write nothing\n" 
                   "                1 - write some information on start\n" 
@@ -77,7 +77,7 @@ struct spars_t{
                   "                3 - write input data\n" 
                   "                4 - write output data\n" 
                   " -l <file>  -- log file, use '-' for stdout\n"
-                  "               (default /var/log/stsdb.log in daemon mode, '-' in)"
+                  "               (default /var/log/graphene.log in daemon mode, '-' in)"
                   " -f         -- do fork and run as a daemon\n";
                   " -h         -- write this help message and exit\n";
         return 1;
@@ -130,10 +130,10 @@ static int request_answer(void * cls, struct MHD_Connection * connection, const 
     *upload_data_size = 0;
     return MHD_YES;
   }
-  else{ // Process the query by stsdb_json() and answer
+  else{ // Process the query by graphene_json() and answer
     string out_data;
     try{
-      out_data = stsdb_json(spars->dbpath, url, in_data);
+      out_data = graphene_json(spars->dbpath, url, in_data);
     }
     catch(Json::Err e){
       out_data = e.str();
@@ -178,7 +178,7 @@ int main(int argc, char ** argv) {
   /*******************/
   /* open log file */
   if (spars.logfile==""){
-    if (spars.dofork) spars.logfile="/var/log/stsdb.log";
+    if (spars.dofork) spars.logfile="/var/log/graphene.log";
     else spars.logfile="-";
   }
   if (spars.logfile!="-"){

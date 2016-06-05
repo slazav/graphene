@@ -232,9 +232,9 @@ Json json_search(const string & dbpath, const Json & ji){
 /***************************************************************************/
 /* Process a JSON request to the database. */
 /* Returns error message on errors.*/
-string stsdb_json(const string & dbpath,  /* path to databases */
-                  const string & url,     /* /query, /annotations, etc. */
-                  const string & data){    /* input data */
+string graphene_json(const string & dbpath,  /* path to databases */
+                     const string & url,     /* /query, /annotations, etc. */
+                     const string & data){    /* input data */
 
   try {
     /* parse input JSON */

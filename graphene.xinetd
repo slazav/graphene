@@ -1,6 +1,6 @@
 # default: off
-# description: The STSDB interface
-service stsdb {
+# description: Graphene database interface
+service graphene {
   disable         = yes
   type            = UNLISTED
   socket_type     = stream
@@ -10,9 +10,9 @@ service stsdb {
   user            = root
   nice            = 10
   rlimit_as       = 256M
-  server          = /usr/bin/stsdb
+  server          = /usr/bin/graphene
   server_args     = interactive
-  log_type        = FILE /var/log/xinetd/stsdb.log
+  log_type        = FILE /var/log/xinetd/graphene.log
   log_on_success  = HOST PID
   log_on_failure  = HOST
 }

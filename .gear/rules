@@ -1,5 +1,5 @@
 tar: @name@
-copy: stsdb_http.init
-copy: stsdb.xinetd
+copy: graphene_http.init
+copy: graphene.xinetd
 
 

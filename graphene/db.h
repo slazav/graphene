@@ -1,8 +1,8 @@
 /* DBsts class: wrapper for BerkleyDB, open/put/get/del functions
  */
 
-#ifndef STSDB_DB_H
-#define STSDB_DB_H
+#ifndef GRAPHENE_DB_H
+#define GRAPHENE_DB_H
 
 #include <cassert>
 #include <cstdlib>

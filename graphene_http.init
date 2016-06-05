@@ -1,31 +1,31 @@
 #!/bin/sh
 #
 # chkconfig: 345 50 50
-# description: stsdb is a simple time series database.
+# description: graphene is a simple time series database.
 #              http interface can be used as
 #              a simple-json-datasource for grafana
 #
-# processname: stsdb_http
-# pidfile: /var/run/stsdb_http.pid
+# processname: graphene_http
+# pidfile: /var/run/graphene_http.pid
 
 WITHOUT_RC_COMPAT=1
 
 # Source function library.
 . /etc/init.d/functions
 
-PIDFILE=/var/run/stsdb_http.pid
-LOCKFILE=/var/lock/subsys/stsdb_http
+PIDFILE=/var/run/graphene_http.pid
+LOCKFILE=/var/lock/subsys/graphene_http
 RETVAL=0
 
 start() {
-	start_daemon --pidfile "$PIDFILE" --lockfile "$LOCKFILE" --expect-user root -- stsdb_http -f $EXTRAOPTIONS
+	start_daemon --pidfile "$PIDFILE" --lockfile "$LOCKFILE" --expect-user root -- graphene_http -f $EXTRAOPTIONS
 	RETVAL=$?
 	return $RETVAL
 }
 
 stop()
 {
-	stop_daemon --pidfile "$PIDFILE" --lockfile "$LOCKFILE" --expect-user root -- stsdb_http
+	stop_daemon --pidfile "$PIDFILE" --lockfile "$LOCKFILE" --expect-user root -- graphene_http
 	RETVAL=$?
 	return $RETVAL
 }
@@ -45,7 +45,7 @@ case "$1" in
 		stop
 		;;
 	status)
-		status --pidfile "$PIDFILE" --expect-user root -- stsdb_http
+		status --pidfile "$PIDFILE" --expect-user root -- graphene_http
 		RETVAL=$?
 		;;
 	reload|sreload|restart)

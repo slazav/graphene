@@ -2,8 +2,8 @@
    packing/unpacking/interpolating raw database records.
 */
 
-#ifndef STSDB_DBINFO_H
-#define STSDB_DBINFO_H
+#ifndef GRAPHENE_DBINFO_H
+#define GRAPHENE_DBINFO_H
 
 #include <cassert>
 #include <cstdlib>

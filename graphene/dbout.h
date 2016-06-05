@@ -1,7 +1,7 @@
 /* DBout class: data output: columns, filters, tables */
 
-#ifndef STSDB_DBOUT_H
-#define STSDB_DBOUT_H
+#ifndef GRAPHENE_DBOUT_H
+#define GRAPHENE_DBOUT_H
 
 #include <string>
 #include <errno.h>
