@@ -151,7 +151,7 @@ int main() {
     DBinfo hh1(DATA_INT16, "AAA");
     DBinfo hh2;
     {
-      DBsts db(".", "test", DB_CREATE | DB_TRUNCATE);
+      DBgr db(".", "test", DB_CREATE | DB_TRUNCATE);
       db.write_info(hh1);
       hh2 = db.read_info();
       ASSERT_EQ(hh1.val, hh2.val);
@@ -166,7 +166,7 @@ int main() {
     }
 
     {
-      DBsts db1(".", "test", DB_RDONLY);
+      DBgr db1(".", "test", DB_RDONLY);
       hh2 = db1.read_info();
       ASSERT_EQ(hh1.val, hh2.val);
       ASSERT_EQ(hh1.descr, hh2.descr);

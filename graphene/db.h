@@ -1,4 +1,4 @@
-/* DBsts class: wrapper for BerkleyDB, open/put/get/del functions
+/* DBgr class: wrapper for BerkleyDB, open/put/get/del functions
  */
 
 #ifndef GRAPHENE_DB_H
@@ -27,7 +27,7 @@ typedef void(process_data_func)(DBT*,DBT*,const DBinfo&, void *usr_data);
 
 /***********************************************************/
 /* class for wrapping BerkleyDB */
-class DBsts{
+class DBgr{
   public:
   /************************************/
   // Create DBT objects of various kinds.
@@ -60,7 +60,7 @@ class DBsts{
     bool info_is_actual; // is the info the same as in the file?
     int *refcounter;
 
-    void copy(const DBsts & other){
+    void copy(const DBgr & other){
       dbp        = other.dbp;
       name       = other.name;
       open_flags = other.open_flags;
@@ -83,18 +83,18 @@ class DBsts{
   // Copy constructor, destructor, assignment
   public:
 
-    DBsts(const DBsts & other){ copy(other); }
-    DBsts & operator=(const DBsts & other){
+    DBgr(const DBgr & other){ copy(other); }
+    DBgr & operator=(const DBgr & other){
       if (this != &other){ destroy(); copy(other); }
       return *this;
     }
-    ~DBsts(){ destroy(); }
+    ~DBgr(){ destroy(); }
 
   /************************************/
   // Constructor -- open a database
   // Path is a path to the database foolder.
   // Name is a database name, it can not contain some symbols (.|+ \n\t)
-  DBsts(const std::string & path_,
+  DBgr(const std::string & path_,
        const std::string & name_,
        const int flags);
 
@@ -145,15 +145,15 @@ class DBsts{
 /***********************************************************/
 // class for storing many opened databases
 class DBpool{
-  std::map<std::string, DBsts> pool;
+  std::map<std::string, DBgr> pool;
   public:
 
   DBpool(){}
 
-  DBsts & get(const std::string & dbpath,
+  DBgr & get(const std::string & dbpath,
               const std::string & name, const int fl = 0){
 
-    std::map<std::string, DBsts>::iterator i = pool.find(name);
+    std::map<std::string, DBgr>::iterator i = pool.find(name);
 
     // if database was opened with wrong flags close it
     if (!(fl & DB_RDONLY) && i!=pool.end() &&
@@ -163,7 +163,7 @@ class DBpool{
 
     // if database is not opened, open it
     if (!pool.count(name)) pool.insert(
-      std::pair<std::string, DBsts>(name, DBsts(dbpath, name, fl)));
+      std::pair<std::string, DBgr>(name, DBgr(dbpath, name, fl)));
 
     // return the database
     return pool.find(name)->second;

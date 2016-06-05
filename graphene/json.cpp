@@ -164,7 +164,7 @@ Json json_query(const string & dbpath, const Json & ji){
     DBoutJSON dbo(dbpath, ji["targets"][i]["target"].as_string(), true);
 
     // Get data from the database
-    DBsts db(dbpath, dbo.name, DB_RDONLY);
+    DBgr db(dbpath, dbo.name, DB_RDONLY);
 
     // check DB format
     if (db.read_info().val == DATA_TEXT)
@@ -209,7 +209,7 @@ Json json_annotations(const string & dbpath, const Json & ji){
   DBoutJSON dbo(dbpath, ji["annotation"]["name"].as_string(), false);
 
   // Get data from the database
-  DBsts db(dbpath, dbo.name, DB_RDONLY);
+  DBgr db(dbpath, dbo.name, DB_RDONLY);
 
   // check DB format
   if (db.read_info().val != DATA_TEXT)

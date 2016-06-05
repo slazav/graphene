@@ -41,12 +41,12 @@ int cmpfunc(DB *dbp, const DBT *a, const DBT *b){
 }
 
 /***********************************************************/
-// DBsts class
+// DBgr class
 
 /************************************/
 // Constructor -- open a database
 //
-DBsts::DBsts(const string & path_,
+DBgr::DBgr(const string & path_,
      const string & name_,
      const int flags){
 
@@ -87,7 +87,7 @@ DBsts::DBsts(const string & path_,
 // value = data_fmt (1byte) + description
 //
 void
-DBsts::write_info(const DBinfo &info){
+DBgr::write_info(const DBinfo &info){
   // remove the info entry if it exists
   uint8_t x=0;
   DBT k = mk_dbt(&x);
@@ -109,7 +109,7 @@ DBsts::write_info(const DBinfo &info){
 // Get database information
 //
 DBinfo
-DBsts::read_info(){
+DBgr::read_info(){
   if (info_is_actual) return db_info;
   uint8_t x=0;
   DBT k = mk_dbt(&x);
@@ -133,7 +133,7 @@ DBsts::read_info(){
 // the database.
 //
 void
-DBsts::put(const uint64_t t,
+DBgr::put(const uint64_t t,
            const vector<string> & dat){
   DBinfo info = read_info();
   string ks = info.pack_time(t);
@@ -148,7 +148,7 @@ DBsts::put(const uint64_t t,
 // get data from the database -- get_next
 //
 void
-DBsts::get_next(const uint64_t t1, DBout & dbo){
+DBgr::get_next(const uint64_t t1, DBout & dbo){
   DBinfo info = read_info();
   /* Get a cursor */
   DBC *curs;
@@ -169,7 +169,7 @@ DBsts::get_next(const uint64_t t1, DBout & dbo){
 // get data from the database -- get_prev
 //
 void
-DBsts::get_prev(const uint64_t t2, DBout & dbo){
+DBgr::get_prev(const uint64_t t2, DBout & dbo){
   DBinfo info = read_info();
   /* Get a cursor */
   DBC *curs;
@@ -202,7 +202,7 @@ DBsts::get_prev(const uint64_t t2, DBout & dbo){
 // get data from the database -- get_interp
 //
 void
-DBsts::get(const uint64_t t, DBout & dbo){
+DBgr::get(const uint64_t t, DBout & dbo){
   DBinfo info = read_info();
 
   if (info.val!=DATA_FLOAT && info.val!=DATA_DOUBLE)
@@ -265,7 +265,7 @@ DBsts::get(const uint64_t t, DBout & dbo){
 // use DB_SET_RANGE with dt shift, if the point didn't
 // change - use DB_NEXT.
 void
-DBsts::get_range(const uint64_t t1, const uint64_t t2,
+DBgr::get_range(const uint64_t t1, const uint64_t t2,
                  const uint64_t dt, DBout & dbo){
 
   DBinfo info = read_info();
@@ -322,7 +322,7 @@ DBsts::get_range(const uint64_t t1, const uint64_t t2,
 /************************************/
 // delete data data from the database -- del_range
 void
-DBsts::del(const uint64_t t1){
+DBgr::del(const uint64_t t1){
   DBinfo info = read_info();
   string ks = info.pack_time(t1);
   DBT k = mk_dbt(ks);
@@ -333,7 +333,7 @@ DBsts::del(const uint64_t t1){
 /************************************/
 // delete data data from the database -- del_range
 void
-DBsts::del_range(const uint64_t t1, const uint64_t t2){
+DBgr::del_range(const uint64_t t1, const uint64_t t2){
   DBinfo info = read_info();
   /* Get a cursor */
   DBC *curs;
