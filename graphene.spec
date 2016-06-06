@@ -46,7 +46,12 @@ install -pD -m644 %_sourcedir/graphene.xinetd %buildroot/etc/xinetd.d/graphene
 %changelog
 * Sun Jun 05 2016 Vladislav Zavjalov <slazav@altlinux.org> 1.1-alt1
 - v1.1
+  - rename: stsdb -> graphene
+  - user-defined filter programs
+  - interactive mode (read commands from stdin without reopening databases)
+  - xinetd network service
 
 * Wed Jun 01 2016 Vladislav Zavjalov <slazav@altlinux.org> 1.0-alt1
 - v1.0
-
+  - command line interface: reading and writing data, manipulating databases
+  - http + simple json interface
