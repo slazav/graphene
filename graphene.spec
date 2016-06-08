@@ -37,7 +37,7 @@ install -pD -m644 %_sourcedir/graphene.xinetd %buildroot/etc/xinetd.d/graphene
 %preun_service graphene_http
 
 %files
-%attr(0700,graphene,graphene) %dir %_sharedstatedir/graphene
+%attr(0755,graphene,graphene) %dir %_sharedstatedir/graphene
 %_bindir/graphene
 %_bindir/graphene_http
 %config %_initdir/graphene_http
