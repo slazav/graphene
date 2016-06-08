@@ -1,5 +1,4 @@
 tar: @name@
 copy: graphene_http.init
-copy: graphene.xinetd
 
 

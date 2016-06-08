@@ -11,7 +11,6 @@ Packager:     Vladislav Zavjalov <slazav@altlinux.org>
 
 Source:       %name-%version.tar
 Source1:      graphene_http.init
-Source2:      graphene.xinetd
 BuildRequires: libmicrohttpd-devel libjansson-devel
 Requires:      libmicrohttpd libjansson
 
@@ -24,7 +23,6 @@ graphene -- a simple time series database
 %build
 %makeinstall
 install -pD -m755 %_sourcedir/graphene_http.init %buildroot%_initdir/graphene_http
-install -pD -m644 %_sourcedir/graphene.xinetd %buildroot/etc/xinetd.d/graphene
 
 %pre
 %_sbindir/useradd -c 'Graphene server' -d /var/lib/graphene -s '/dev/null' \
@@ -41,7 +39,6 @@ install -pD -m644 %_sourcedir/graphene.xinetd %buildroot/etc/xinetd.d/graphene
 %_bindir/graphene
 %_bindir/graphene_http
 %config %_initdir/graphene_http
-%config(noreplace) /etc/xinetd.d/graphene
 
 %changelog
 * Sun Jun 05 2016 Vladislav Zavjalov <slazav@altlinux.org> 1.1-alt1
