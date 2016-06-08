@@ -24,10 +24,6 @@ graphene -- a simple time series database
 %makeinstall
 install -pD -m755 %_sourcedir/graphene_http.init %buildroot%_initdir/graphene_http
 
-%pre
-%_sbindir/useradd -c 'Graphene server' -d /var/lib/graphene -s '/dev/null' \
-  -r graphene 2>/dev/null || :
-
 %post
 %post_service graphene_http
 
@@ -35,7 +31,7 @@ install -pD -m755 %_sourcedir/graphene_http.init %buildroot%_initdir/graphene_ht
 %preun_service graphene_http
 
 %files
-%attr(0755,graphene,graphene) %dir %_sharedstatedir/graphene
+%attr(0755,root,root) %dir %_sharedstatedir/graphene
 %_bindir/graphene
 %_bindir/graphene_http
 %config %_initdir/graphene_http
