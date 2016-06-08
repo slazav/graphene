@@ -77,7 +77,8 @@ class DBinfo {
   // convert string into enum member
   static DataFMT str2datafmt(const std::string & s){
     for (int i = 0; i<=LAST_DATAFMT; i++)
-      if (s == data_fmt_names[i]) return static_cast<DataFMT>(i);
+      if (strcasecmp(s.c_str(),data_fmt_names[i].c_str())==0)
+        return static_cast<DataFMT>(i);
     throw Err() << "Unknown data format: " << s;
   }
   // ...and back

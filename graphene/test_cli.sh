@@ -39,7 +39,7 @@ assert "$(./graphene -d . create a dfmt)" "Error: Unknown data format: dfmt"
 
 assert "$(./graphene -d . create test_1)" ""
 assert "$(./graphene -d . create test_2 UINT16)" ""
-assert "$(./graphene -d . create test_3 UINT32 "Uint 32 database")" ""
+assert "$(./graphene -d . create test_3 uint32 "Uint 32 database")" ""
 assert "$(./graphene -d . create test_1)" "Error: test_1.db: File exists"
 
 # info
