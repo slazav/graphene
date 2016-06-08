@@ -94,6 +94,7 @@ class Pars{
             "      -- delete all points in the time range\n"
             "  interactive\n"
             "      -- interactive mode, commands are read from stdin\n"
+            "  sync -- close all opened databases in interactive mode\n"
     ;
     throw Err();
   }
@@ -323,6 +324,13 @@ class Pars{
         }
       }
       return;
+    }
+
+    // close all opened databases in interactive mode
+    // args: sync
+    if (strcasecmp(cmd.c_str(), "sync")==0){
+      if (pars.size()>1) throw Err() << "too many parameters";
+      pool.clear();
     }
 
     // unknown command

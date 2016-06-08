@@ -103,6 +103,11 @@ $ graphene interactive -- Interactive mode. Commands are read from stdin.
 Allows making many requests without reopening databases.
 Allows making a simple server with xinetd.
 
+$ graphene sync -- In the command line mode it does nothing. In the
+interactive mode it closes all previously opened databases. It is useful
+if you keep a connection (for example via ssh) for a long time, but want
+to commit your changes to the databases regularly.
+
     Examples:
 
 See examples/* in the source folder
