@@ -168,6 +168,26 @@ assert "$(./graphene -d . get_range test_2:3)" "1000 NaN
 assert "$(./graphene -d . delete test_2)" ""
 
 ###########################################################################
+# precision (DOUBLE database)
+assert "$(./graphene -d . create test_2 DOUBLE "double database")" ""
+assert "$(./graphene -d . create test_3 FLOAT  "float database")" ""
+
+assert "$(./graphene -d . put test_2 1000 1.2345678901234567890123456789)" ""
+assert "$(./graphene -d . put test_2 2000 1.2345678901234567890123456789e88)" ""
+assert "$(./graphene -d . put test_3 1000 1.2345678901234567890123456789)" ""
+assert "$(./graphene -d . put test_3 2000 1.2345678901234567890123456789e38)" ""
+
+assert "$(./graphene -d . put test_3 2000 1e88)" "Error: Can't put value into FLOAT database: 1e88"
+
+assert "$(./graphene -d . get_range test_2)" "1000 1.234567890123457
+2000 1.234567890123457e+88"
+assert "$(./graphene -d . get_range test_3)" "1000 1.2345679
+2000 1.2345679e+38"
+
+assert "$(./graphene -d . delete test_2)" ""
+assert "$(./graphene -d . delete test_3)" ""
+
+###########################################################################
 # deleting records
 
 assert "$(./graphene -d . create test_3 UINT32 "Uint 32 database")" ""

@@ -3,6 +3,7 @@
 #include <vector>
 #include <sstream>
 #include <iostream>
+#include <iomanip>
 #include <cstring> /* memset */
 #include "db.h"
 
@@ -110,8 +111,11 @@ DBinfo::unpack_data(const string & s, const int col) const{
       case DATA_UINT32: ostr << ((uint32_t *)s.data())[i]; break;
       case DATA_INT64:  ostr << ((int64_t  *)s.data())[i]; break;
       case DATA_UINT64: ostr << ((uint64_t *)s.data())[i]; break;
-      case DATA_FLOAT:  ostr << ((float    *)s.data())[i]; break;
-      case DATA_DOUBLE: ostr << ((double   *)s.data())[i]; break;
+      // No loss of information happens if we convert float and double
+      // numbers into strings with 9 and 17 significant digits.
+      // We use one less digit to have round values (3.1415 instead of 3.1415000000000002)
+      case DATA_FLOAT:  ostr << setprecision(8)  << ((float  *)s.data())[i]; break;
+      case DATA_DOUBLE: ostr << setprecision(16) << ((double *)s.data())[i]; break;
       default: throw Err() << "Unexpected data format";
     }
   }
