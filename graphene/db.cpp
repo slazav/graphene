@@ -76,7 +76,7 @@ DBgr::DBgr(const string & path_,
                   NULL,          /* DB name */
                   DB_BTREE,      /* Database type (using btree) */
                   flags,         /* Open flags */
-                  0600);         /* File mode. Using defaults */
+                  0644);         /* File mode*/
   if (ret != 0)
     throw Err() << name << ".db: " << db_strerror(ret);
 }
