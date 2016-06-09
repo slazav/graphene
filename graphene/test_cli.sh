@@ -298,7 +298,8 @@ assert "$(printf 'x' | ./graphene -d . interactive)" "Error: Unknown command"
 assert "$(printf 'create' | ./graphene -d . interactive)" "Error: database name expected"
 
 assert "$(printf 'create test_1
-                  info test_1' | ./graphene -d . interactive)" "DOUBLE"
+                  info test_1' | ./graphene -d . interactive)"\
+       "$(printf "OK\nDOUBLE\nOK")"
 
 assert "$(printf 'create test_2
                   put test_1 10 0
@@ -306,8 +307,8 @@ assert "$(printf 'create test_2
                   put test_2 30 20
                   put test_2 40 30
                   get test_1 15
-                  get test_2 38' | ./graphene -d . interactive)" "15 5
-38 28"
+                  get test_2 38' | ./graphene -d . interactive)"\
+        "$(printf "OK\nOK\nOK\nOK\nOK\n15 5\nOK\n38 28\nOK")"
 
 ###########################################################################
 # remove all test databases

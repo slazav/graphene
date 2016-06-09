@@ -318,6 +318,7 @@ class Pars{
               strcasecmp(pars[0].c_str(), "interactive")==0)
             throw Err() << "Command can not be run in interactive mode";
           run_command();
+          cout << "OK\n";
         }
         catch(Err e){
           if (e.str()!="") cout << "Error: " << e.str() << "\n";

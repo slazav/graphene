@@ -130,7 +130,8 @@ Interactive mode commands:
 - `interactive` -- Interactive mode. Commands are read from stdin.
 Allows making many requests without reopening databases. Opening and closing of
 databases are long operations. It can be useful to open the connection once
-and do many operations.
+and do many operations. Each response ends with "OK" or "Error: <message>"
+line.
 
 - `sync` -- In the command line mode it does nothing. In the
 interactive mode it closes all previously opened databases. It is useful
