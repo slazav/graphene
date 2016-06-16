@@ -332,6 +332,7 @@ class Pars{
     if (strcasecmp(cmd.c_str(), "sync")==0){
       if (pars.size()>1) throw Err() << "too many parameters";
       pool.clear();
+      return;
     }
 
     // unknown command
