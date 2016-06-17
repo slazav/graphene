@@ -3,10 +3,12 @@
 #include <sys/time.h>
 #include <unistd.h>
 
+
 int prectimetoday(ClientData clientData, Tcl_Interp *interp,
 		    int objc, Tcl_Obj *CONST objv[]);
 int prectime(ClientData clientData, Tcl_Interp *interp,
 		    int objc, Tcl_Obj *CONST objv[]);
+
 
 int Prectime_Init (Tcl_Interp *interp) {
   Tcl_CreateObjCommand(interp, "prectimetoday", prectimetoday,
@@ -16,6 +18,7 @@ int Prectime_Init (Tcl_Interp *interp) {
   Tcl_PkgProvide(interp,"Prectime","1.1");
   return TCL_OK;
 }
+
 
 int prectimetoday (ClientData clientData, Tcl_Interp *interp,
 		   int objc, Tcl_Obj *CONST objv[]) {
