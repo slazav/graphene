@@ -86,18 +86,19 @@ itcl::class monitor_module {
   # show pop-up window, edit module parameters, to be done
   method setup {} {
     if {$verb} {puts "$this: setup"}
-    global setup1 setup2 setup3 setup4 setup5
+    global setup1 setup2 setup3 setup4 setup5 setup6
     set setup1 [expr {$tmin / 1000.0}]
     set setup2 [expr {$tmax / 1000.0}]
     set setup3 [join $atol " "]
     set setup4 [join $rtol " "]
     set setup5 $dbname
+    set setup6 $verb
     destroy .setup
     toplevel .setup
     grid [ label .setup.l0 -text $name ] -columnspan 2
     grid [ label .setup.l1 -text "measurement period, s:" ]\
          [ entry .setup.e1 -textvariable setup1]
-    grid [ label .setup.l2 -text "maximal save period, s:" ]\
+    grid [ label .setup.l2 -text "max.save period, s:" ]\
          [ entry .setup.e2 -textvariable setup2 ]
     grid [ label .setup.l3 -text "absolute tolerance:" ]\
          [ entry .setup.e3 -textvariable setup3 ]
@@ -105,17 +106,21 @@ itcl::class monitor_module {
          [ entry .setup.e4 -textvariable setup4 ]
     grid [ label .setup.l5 -text "database name:" ]\
          [ entry .setup.e5 -textvariable setup5 ]
+    grid [ label .setup.l6 -text "log events:" ]\
+         [ checkbutton .setup.e6 -variable setup6 ]
+
     grid [ button .setup.b1 -text Apply  -state normal -command "$this close_setup 1" ]\
          [ button .setup.b2 -text Cancel -state normal -command "$this close_setup 0" ]
   }
   method close_setup {save} {
     if {$save} {
-      global setup1 setup2 setup3 setup4 setup5
+      global setup1 setup2 setup3 setup4 setup5 setup6
       set tmin   [expr {round($setup1 * 1000)}]
       set tmax   [expr {round($setup2 * 1000)}]
       set atol   [ regexp -all -inline {\S+} $setup3 ]
       set rtol   [ regexp -all -inline {\S+} $setup4 ]
       set dbname "$setup5"
+      set verb   "$setup6"
     }
     destroy .setup
   }
