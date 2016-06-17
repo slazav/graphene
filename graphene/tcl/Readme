@@ -1,0 +1,22 @@
+tcl packages
+
+======================================================================
+* Daemon
+* Locking
+* ParseOptions
+* Prectime
+
+A few ROTA pakages. Now only ParseOptions is used in Graphene module
+
+======================================================================
+* Graphene
+
+Simple interface to Graphene database: open/close connection (local or
+ssh), run command, get result.
+
+======================================================================
+* GrapheneMonitor
+
+A monitor program for Graphene database. Simple modules are used for
+reading data from variouse places. Data is read regularly and stored
+in databases.
