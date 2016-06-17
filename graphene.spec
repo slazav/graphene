@@ -24,7 +24,8 @@ graphene -- a simple time series database
 %makeinstall
 install -pD -m755 %_sourcedir/graphene_http.init %buildroot%_initdir/graphene_http
 # buld and install tcl packages
-for n in ParseOptions-1.0 Prectime-1.1\
+for n in Graphene GrapheneMonitor\
+         ParseOptions-1.0 Prectime-1.1\
          Daemon Locking-1.1; do
   [ ! -s "tcl/$n/Makefile" ] || make -C tcl/$n
   mkdir -p %buildroot/%_tcldatadir/$n/
