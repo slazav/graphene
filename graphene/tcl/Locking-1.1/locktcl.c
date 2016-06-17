@@ -29,11 +29,11 @@ static int check_error(int res, Tcl_Interp *interp);
 
 int lock_init_cmd (ClientData clientData, Tcl_Interp *interp,
 		   int objc, Tcl_Obj *CONST objv[]) {
-  int id;
+  static int id;
   char namebuf[50], *pname;
   Tcl_CmdInfo cinfo;
   Tcl_Command ctoken;
-  
+
   if (objc < 2 || objc > 3) {
     Tcl_WrongNumArgs(interp, 1, objv, "?name? key");
     return TCL_ERROR;
@@ -54,7 +54,7 @@ int lock_init_cmd (ClientData clientData, Tcl_Interp *interp,
 
    /* Now create instance procedure */
   ctoken =
-    Tcl_CreateObjCommand(interp, pname, lock_proc, (ClientData)id, NULL);
+    Tcl_CreateObjCommand(interp, pname, lock_proc, (ClientData)(&id), NULL);
   if (ctoken==NULL) {
     Tcl_SetResult(interp,"instance creation failed",TCL_STATIC);
     return TCL_ERROR;
@@ -82,7 +82,7 @@ static struct {
 
 int lock_proc (ClientData clientData, Tcl_Interp *interp,
 	       int objc, Tcl_Obj *CONST objv[]) {
-  int id = (int) clientData;
+  int id = *(int*) clientData;
   int cmdind;
 
   if (objc != 2) {
