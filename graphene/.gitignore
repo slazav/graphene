@@ -1,4 +1,5 @@
 *.o
+*.db
 graphene
 graphene_http
 graphene_json
