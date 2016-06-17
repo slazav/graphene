@@ -23,6 +23,16 @@ graphene -- a simple time series database
 %build
 %makeinstall
 install -pD -m755 %_sourcedir/graphene_http.init %buildroot%_initdir/graphene_http
+# buld and install tcl packages
+for n in ParseOptions-1.0 Prectime-1.1\
+         Daemon Locking-1.1; do
+  [ ! -s "tcl/$n/Makefile" ] || make -C tcl/$n
+  mkdir -p %buildroot/%_tcldatadir/$n/
+  mkdir -p %buildroot/%_libdir/tcl/
+  install tcl/$n/*.tcl %buildroot/%_tcldatadir/$n/ ||:
+  install tcl/$n/*.so  %buildroot/%_libdir/tcl/ ||:
+done
+
 
 %post
 %post_service graphene_http
@@ -35,6 +45,8 @@ install -pD -m755 %_sourcedir/graphene_http.init %buildroot%_initdir/graphene_ht
 %_bindir/graphene
 %_bindir/graphene_http
 %config %_initdir/graphene_http
+%_tcldatadir/*
+%_libdir/tcl/*
 
 %changelog
 * Sun Jun 05 2016 Vladislav Zavjalov <slazav@altlinux.org> 1.1-alt1

@@ -1,4 +1,4 @@
-CFLAGS = -O2 -Wall
+CFLAGS = -O2 -Wall -fPIC
 
 locktcl.so: locktcl.c locklib.h locklib.o
 	$(CC) -shared $(CFLAGS) -fpic -o locktcl.so \
@@ -7,3 +7,5 @@ locktcl.so: locktcl.c locklib.h locklib.o
 
 locklib.o: locklib.c locklib.h
 
+clean:
+	rm -f *.o *.so
