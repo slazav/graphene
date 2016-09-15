@@ -2,8 +2,9 @@
 
 # example of monitoring program
 lappend auto_path ..
+lappend auto_path .
 package require Graphene
-package require GrapheneMonitor
+package require GrapheneMonitor 1.1
 
 source module_cpu_load.tcl
 source module_cpu_temp.tcl
