@@ -1,0 +1,70 @@
+#!/usr/bin/wish
+
+lappend auto_path ..
+
+package require xBlt 3
+
+blt::graph .p -highlightthickness 0
+pack .p -fill both -expand yes -side top
+
+checkbutton .b -text Crosshairs -variable v
+pack .b -side top
+
+checkbutton .b2 -text Readout -variable v2 
+pack .b2 -side top
+
+entry .m -textvariable mes -relief flat -state readonly \
+    -width 50 -font [.b2 cget -font] -highlightthickness 0
+pack .m -side top
+proc show_message {s args} {set ::mes [string map {\n " "} $s]}
+
+xblt::plotmenu .p -showbutton 1 ;# -menuoncanvas 0
+
+xblt::crosshairs .p -variable v -usemenu 1
+
+xblt::readout .p -variable v2 -active 1 -interpolate yes -onmarkers x* \
+    -usemenu 1 -eventcommand {1 show_message}
+
+
+.p marker create text -name xmark -text "Readout enabled" \
+    -coords {4.7 0} -bg green
+.p marker create text -name ymark -text "Readout\ndisabled" \
+    -coords {7 0.5} -bg red
+
+xblt::hielems .p -usemenu 1
+.p legend configure -activebackground white
+set m [xblt::legmenu .p -showseparator 1]
+$m add command -label Delete -command {
+    .p element delete [xblt::legmenu::curelem .p]
+}
+
+xblt::measure .p -event <Key-equal> -quickevent <Alt-1> \
+    -usemenu 1 \
+    -command show_message -commandlabel "Save reading"
+
+xblt::zoomstack .p -scrollbutton 2 -usemenu 1 -axes {x y}
+.p axis configure y2 -hide 0
+
+xblt::rubberrect::add .p -type x -modifier Shift \
+    -configure {-outline blue} \
+    -invtransformx x -command show_rect ;# -cancelbutton ""
+proc show_rect {graph x1 x2 y1 y2} {
+    show_message "$x1 -- $x2"
+}
+
+set m [xblt::plotmenu .p -showseparator 1]
+$m add command -label Exit -command exit
+
+bind .p <Enter> {focus %W}
+
+
+blt::vector create xd yd y2d
+xd seq 0 8 0.05
+yd expr sin(xd)
+y2d expr cos(xd)
+
+.p element create d -xdata xd -ydata yd -symbol {} -color blue
+.p element create d2 -xdata xd -ydata y2d -symbol {} -color red
+
+xblt::readout::set_axis_format .p x "%.3f rad"
+xblt::readout::set_element_format .p d2 "%.4f cm"

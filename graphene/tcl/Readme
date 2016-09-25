@@ -1,12 +1,14 @@
 tcl packages
 
 ======================================================================
+ROTA packages:
+
+* xBLT -- extentions to TCL BLT library
+* GPIB -- tcl interface to linux-gpib library
+* ParseOptions
 * Daemon
 * Locking
-* ParseOptions
 * Prectime
-
-A few ROTA packages. Now only ParseOptions is used in Graphene module
 
 ======================================================================
 * Graphene

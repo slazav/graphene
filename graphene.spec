@@ -14,6 +14,8 @@ Source1:      graphene_http.init
 BuildRequires: libmicrohttpd-devel libjansson-devel
 Requires:      libmicrohttpd libjansson
 
+Conflicts:    tcl-xblt tcl-gpib
+
 %description
 graphene -- a simple time series database
 
@@ -26,7 +28,7 @@ install -pD -m755 %_sourcedir/graphene_http.init %buildroot%_initdir/graphene_ht
 # build and install tcl packages
 for n in Graphene GrapheneMonitor\
          ParseOptions-1.0 Prectime-1.1\
-         Daemon Locking-1.1; do
+         Daemon Locking-1.1 xBLT GPIB; do
   [ ! -s "tcl/$n/Makefile" ] || make -C tcl/$n
   mkdir -p %buildroot/%_tcldatadir/$n/
   mkdir -p %buildroot/%_libdir/tcl/
