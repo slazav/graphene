@@ -1,25 +1,25 @@
 #!/bin/sh -x
 
-PATH=..:$PATH
-stsdb -d . create pressure INT16 "Some text"
-stsdb -d . delete pressure
+PATH=../src:$PATH
+graphene -d . create pressure INT16 "Some text"
+graphene -d . delete pressure
 
-stsdb -d . create pressure DOUBLE "Some text"
-stsdb -d . rename pressure press
-stsdb -d . set_descr press "Measured pressure"
+graphene -d . create pressure DOUBLE "Some text"
+graphene -d . rename pressure press
+graphene -d . set_descr press "Measured pressure"
 
-stsdb -d . info press
-stsdb -d . list
+graphene -d . info press
+graphene -d . list
 
-stsdb -d . put press  1234567890000 0.1
-stsdb -d . put press  1234567900000 0.2
-stsdb -d . get press  1234567895000
+graphene -d . put press  1234567890000 0.1
+graphene -d . put press  1234567900000 0.2
+graphene -d . get press  1234567895000
 
-stsdb -d . put press now 0.1
-stsdb -d . put press now 0.2
-stsdb -d . put press now 0.3
-stsdb -d . get_prev press
-stsdb -d . get_next press
-stsdb -d . get_range press
+graphene -d . put press now 0.1
+graphene -d . put press now 0.2
+graphene -d . put press now 0.3
+graphene -d . get_prev press
+graphene -d . get_next press
+graphene -d . get_range press
 
-stsdb -d . delete press
+graphene -d . delete press

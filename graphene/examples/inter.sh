@@ -1,9 +1,9 @@
 #!/bin/sh -x
 # interactive mode example
 
-PATH=..:$PATH
+PATH=../src:$PATH
 
-stsdb -d . interactive <<EOF
+graphene -d . interactive <<EOF
 create pressure INT16 "Some_text"
 delete pressure
 

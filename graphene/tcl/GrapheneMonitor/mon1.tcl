@@ -17,7 +17,7 @@ source module_lockin_sweep.tcl
 
 set dbcon [graphene::open]
 
-catch { graphene::cmd $dbcon "create he4s	/lockin_sweep double" }
+catch { graphene::cmd $dbcon "create he4s/lockin_sweep double" }
 #catch { graphene::cmd $dbcon "create test/therm double" }
 
 graphene::monitor mon $dbcon

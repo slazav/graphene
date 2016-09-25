@@ -23,7 +23,7 @@ graphene -- a simple time series database
 %build
 %makeinstall
 install -pD -m755 %_sourcedir/graphene_http.init %buildroot%_initdir/graphene_http
-# buld and install tcl packages
+# build and install tcl packages
 for n in Graphene GrapheneMonitor\
          ParseOptions-1.0 Prectime-1.1\
          Daemon Locking-1.1; do
@@ -32,7 +32,7 @@ for n in Graphene GrapheneMonitor\
   mkdir -p %buildroot/%_libdir/tcl/
   install -m644 tcl/$n/*.tcl %buildroot/%_tcldatadir/$n/ ||:
   install -m644 tcl/$n/*.so  %buildroot/%_libdir/tcl/ ||:
-  sed -i -e 's|%LIB_DIR%|%_libdir/tcl/|' %buildroot/%_tcldatadir/$n/pkgIndex.tcl
+  sed -i -e 's|%%LIB_DIR%%|%_libdir/tcl/|' %buildroot/%_tcldatadir/$n/pkgIndex.tcl
 done
 
 

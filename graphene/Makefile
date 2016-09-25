@@ -1,33 +1,13 @@
-LDLIBS=-lmicrohttpd -lm -ldb -ljansson
-CPPFLAGS=-g
-CC=g++
+all: graphene tcl
 
-all: graphene graphene_http graphene_json tests
-install: all
-	mkdir -p ${bindir} ${sharedstatedir}/graphene
-	install graphene graphene_http ${bindir}
+graphene:
+	make -C src
+tcl:
+	make -C tcl
 
-dbinfo.o:      dbinfo.h dbinfo.cpp
-db.o:          dbinfo.h db.h db.cpp
-graphene.o:       dbinfo.h db.h dbout.h graphene.cpp
-test_db.o:     tests.h dbinfo.h db.h dbout.h test_db.cpp
-test_json.o:   tests.h json.h test_json.cpp
-json.o:        dbinfo.h db.h dbout.h json.h json.cpp
-graphene_json.o:  dbinfo.h db.h dbout.h json.h graphene_json.cpp
-graphene_http.o:  dbinfo.h db.h dbout.h json.h graphene_http.cpp
-
-graphene:      dbinfo.o db.o graphene.o
-graphene_http: dbinfo.o db.o json.o graphene_http.o
-graphene_json: dbinfo.o db.o json.o graphene_json.o
-test_db:    dbinfo.o db.o test_db.o
-test_json:  dbinfo.o db.o json.o test_json.o
-
-tests: test_db test_json test_cli.sh
-	./test_db
-	rm -f test.db
-	./test_json
-	./test_cli.sh
-	./test_json.sh
+install:
+	make -C src install
 
 clean:
-	rm -f *.o test_db test_json graphene graphene_http graphene_json *.db
+	make -C src clean
+	make -C tcl clean
