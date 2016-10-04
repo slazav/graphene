@@ -10,7 +10,7 @@ E-mail: Vladislav Zavjalov <slazav@altlinux.org>
 - store integer, floating point or text values with millisecond timestamps
 - fast access to data, interpolation, time ranges, downsampling
 - multi-column numerical values
-- command line and xinetd network interface for reading/writing data
+- command line interface for reading/writing data
 - http simple json interface for Grafana viewer
 - user filters for data processing (calibration tables etc.)
 

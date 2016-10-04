@@ -14,6 +14,13 @@ package require ParseOptions 1.0
 ## and ssh-add authentication agent to avoid typing
 ## passwords and passphrases.
 ##
+## get first/last timestamp:
+##   set tmin [lindex [graphene::cmd $conn "get_next $name"] 0 0]
+##   set tmax [lindex [graphene::cmd $conn "get_prev $name"] 0 0]
+## get many timestamps:
+##   foreach line [graphene::cmd $conn "get_range $name $t1 $t2 $dt"] {
+##     lappend t [lindex $line 0] }
+
 namespace eval graphene {
 
 proc open {args} {

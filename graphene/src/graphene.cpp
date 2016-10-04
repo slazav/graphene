@@ -1,4 +1,4 @@
-/*  Command-line interface for the Simple time series database.
+/*  Command-line interface for the Graphene time series database.
 */
 
 #include <cstdlib>
@@ -59,7 +59,7 @@ class Pars{
   // print help message and exit
   void print_help(){
     Pars p; // default parameters
-    cout << "graphene -- command line interface to Simple Time Series Database\n"
+    cout << "graphene -- command line interface to Graphene time series database\n"
             "Usage: graphene [options] <command> <parameters>\n"
             "Options:\n"
             "  -d <path> -- database directory (default " << p.dbpath << "\n"
@@ -256,7 +256,7 @@ class Pars{
       return;
     }
 
-    // get prefious or interpolated point for the time
+    // get previous or interpolated point for the time
     // args: get <name>[:N] <time>
     if (strcasecmp(cmd.c_str(), "get")==0){
       if (pars.size()<2) throw Err() << "database name expected";

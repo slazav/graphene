@@ -1,4 +1,4 @@
-/*  HTTP interface for the Simple time series database.
+/*  HTTP interface for the Graphene time series database.
 
   The server works with simple-json-datasource Grafana plugin.
   It ansers "GET /" and "OPTIONS" requests by itself, and transfers all

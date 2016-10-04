@@ -1,6 +1,6 @@
 #ifndef GRAPHENE_JSON
 #define GRAPHENE_JSON
-/*  JSON interface to the Simple time series database. */
+/*  JSON interface to the Graphene time series database. */
 
 #include <string>
 #include <cstdlib>

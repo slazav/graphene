@@ -1,4 +1,4 @@
-/*  JSON interface to the Simple time series database.
+/*  JSON interface to the Graphene time series database.
     See json.h for more information.
 
   simple-json-datasource documentation:

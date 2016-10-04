@@ -1,4 +1,4 @@
-/*  Json interface for the Simple time series database.
+/*  Json interface for the Graphene time series database.
 
   Usually json interface is used via graphene_http
   program. This small program is written for tests only
