@@ -140,6 +140,7 @@ class Pars{
       DBinfo info(
          pars.size()<3 ? DEFAULT_DATAFMT : DBinfo::str2datafmt(pars[2]),
          pars.size()<4 ? "" : pars[3] );
+      // todo: create folders if needed
       DBgr db(dbpath, pars[1], DB_CREATE | DB_EXCL);
       db.write_info(info);
       return;

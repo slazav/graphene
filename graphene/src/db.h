@@ -99,8 +99,8 @@ class DBgr{
        const int flags);
 
   // Write database information.
-  // key = (uint8_t)0 (1byte),
-  // value = data_fmt (1byte) + description
+  // key = (uint8_t)0 (1byte),  value = data_fmt (1byte) + description
+  // key = (uint8_t)1 (1byte),  value = version  (1byte)
   void write_info(const DBinfo &info);
 
   // Get database information

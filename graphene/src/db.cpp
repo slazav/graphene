@@ -83,11 +83,12 @@ DBgr::DBgr(const string & path_,
 
 /************************************/
 // Write database information.
-// key = (uint8_t)0 (1byte),
-// value = data_fmt (1byte) + description
+// key = (uint8_t)0 (1byte), value = data_fmt (1byte) + description
+// key = (uint8_t)1 (1byte), value = version  (1byte)
 //
 void
 DBgr::write_info(const DBinfo &info){
+  // key = 0
   // remove the info entry if it exists
   uint8_t x=0;
   DBT k = mk_dbt(&x);
@@ -101,6 +102,20 @@ DBgr::write_info(const DBinfo &info){
   ret = dbp->put(dbp, NULL, &k, &v, 0);
   if (ret != 0)
     throw Err() << name << ".db: " << db_strerror(ret);
+
+  // key = 1
+  // remove the info entry if it exists
+  x=1;
+  k = mk_dbt(&x);
+  ret = dbp->del(dbp, NULL, &k, 0);
+  if (ret != 0 && ret != DB_NOTFOUND)
+    throw Err() << name << ".db: " << db_strerror(ret);
+  // write new data
+  v = mk_dbt(&info.version);
+  ret = dbp->put(dbp, NULL, &k, &v, 0);
+  if (ret != 0)
+    throw Err() << name << ".db: " << db_strerror(ret);
+
   db_info = info;
   info_is_actual = true;
 }
@@ -111,6 +126,8 @@ DBgr::write_info(const DBinfo &info){
 DBinfo
 DBgr::read_info(){
   if (info_is_actual) return db_info;
+
+  // key = 0
   uint8_t x=0;
   DBT k = mk_dbt(&x);
   DBT v = mk_dbt();
@@ -122,6 +139,18 @@ DBgr::read_info(){
     throw Err() << name << ".db: broken database, bad data format in the header";
   db_info.val = static_cast<DataFMT>(dfmt);
   db_info.descr = string((char*)v.data+1, (char*)v.data+v.size);
+
+  // key = 1
+  x=1;
+  k = mk_dbt(&x);
+  v = mk_dbt();
+  ret = dbp->get(dbp, NULL, &k, &v, 0);
+  if (ret == DB_NOTFOUND)
+    db_info.version = 1; // first version can be without key=1
+  else if (ret != 0)
+    throw Err() << name << ".db: " << db_strerror(ret);
+  db_info.version = *((uint8_t*)v.data);
+
   info_is_actual = true;
   return db_info;
 }

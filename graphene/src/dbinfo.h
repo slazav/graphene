@@ -13,6 +13,9 @@
 #include <cstring> /* memset */
 #include <db.h>
 
+// current database version
+#define DBVERSION 1
+
 // bercleydb:
 //  http://docs.oracle.com/cd/E17076_02/html/gsg/C/index.html
 //  https://web.stanford.edu/class/cs276a/projects/docs/berkeleydb/reftoc.html
@@ -64,11 +67,12 @@ std::string check_name(const std::string & name);
 class DBinfo {
   public:
   DataFMT val;
+  uint8_t  version;
   std::string descr;
 
   DBinfo(const DataFMT v = DATA_DOUBLE,
          const std::string &d = std::string())
-            : val(v),descr(d) {}
+            : val(v),descr(d),version(DBVERSION) {}
 
   // return size and name of the data format
   size_t dsize() const { return data_fmt_sizes[val]; }
@@ -86,7 +90,7 @@ class DBinfo {
     return data_fmt_names[s]; }
 
   bool operator==(const DBinfo &o) const{
-    return o.val==val && o.descr==descr; }
+    return o.val==val && o.descr==descr && o.version==version; }
 
   // Pack timestamp according with time format.
   // std::string is used as a convenient data storage, which
