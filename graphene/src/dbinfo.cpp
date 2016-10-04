@@ -41,6 +41,21 @@ DBinfo::unpack_time(const string & s) const{
     throw Err() << "Broken database: wrong timestamp size";
   return *(uint64_t *)s.data();
 }
+// Compare two packed time values, return +1,0,-1 if s1>s2,s1=s2,s1<s2
+int
+DBinfo::cmp_time(const std::string & s1, const std::string & s2) const{
+  uint64_t t1 = *(uint64_t *)s1.data();
+  uint64_t t2 = *(uint64_t *)s2.data();
+  if (t1==t2) return 0;
+  return t1>t2 ? 1:-1;
+}
+// Add two packed time values, return packed string
+string
+DBinfo::add_time(const std::string & s1, const std::string & s2) const{
+  uint64_t t1 = *(uint64_t *)s1.data();
+  uint64_t t2 = *(uint64_t *)s2.data();
+  return pack_time(t1+t2);
+}
 
 // Pack data according with data format
 // string is used as a convenient data storage, which

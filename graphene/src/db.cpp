@@ -184,8 +184,8 @@ DBgr::get_next(const uint64_t t1, DBout & dbo){
   dbp->cursor(dbp, NULL, &curs, 0);
   if (curs==NULL) throw Err() << name << ".db: can't get a cursor";
 
-  string ks = info.pack_time(t1);
-  DBT k = mk_dbt(ks);
+  string t1p = info.pack_time(t1);
+  DBT k = mk_dbt(t1p);
   DBT v = mk_dbt();
   int res = curs->c_get(curs, &k, &v, DB_SET_RANGE);
   if (res==DB_NOTFOUND) { curs->close(curs); return; }
@@ -204,8 +204,8 @@ DBgr::get_prev(const uint64_t t2, DBout & dbo){
   DBC *curs;
   dbp->cursor(dbp, NULL, &curs, 0);
   if (curs==NULL) throw Err() << name << ".db: can't get a cursor";
-  string ks = info.pack_time(t2);
-  DBT k = mk_dbt(ks);
+  string t2p = info.pack_time(t2);
+  DBT k = mk_dbt(t2p);
   DBT v = mk_dbt();
 
   int res = curs->c_get(curs, &k, &v, DB_SET_RANGE);
@@ -213,11 +213,10 @@ DBgr::get_prev(const uint64_t t2, DBout & dbo){
     throw Err() << name << ".db: " << db_strerror(res);
 
   // unpack time
-  string s((char *)k.data, (char *)k.data+k.size);
-  uint64_t tn = info.unpack_time(s);
+  string tp((char *)k.data, (char *)k.data+k.size);
 
   // if needed, get previous record:
-  if (tn > t2 || res==DB_NOTFOUND){
+  if (info.cmp_time(tp,t2p)>0 || res==DB_NOTFOUND){
     res = curs->c_get(curs, &k, &v, DB_PREV);
     if (res==DB_NOTFOUND) { curs->close(curs); return; }
     if (res!=0) throw Err() << name << ".db: " << db_strerror(res);
@@ -241,8 +240,8 @@ DBgr::get(const uint64_t t, DBout & dbo){
   DBC *curs;
   dbp->cursor(dbp, NULL, &curs, 0);
   if (curs==NULL) throw Err() << name << ".db: can't get a cursor";
-  string ks = info.pack_time(t);
-  DBT k = mk_dbt(ks);
+  string tp = info.pack_time(t);
+  DBT k = mk_dbt(tp);
   DBT v = mk_dbt();
 
   // find next value
@@ -259,9 +258,9 @@ DBgr::get(const uint64_t t, DBout & dbo){
   if (res!=0) throw Err() << name << ".db: " << db_strerror(res);
 
   // if "next" record is exactly at t - return it
-  string ks1((char *)k.data, (char *)k.data+k.size);
-  string vs1((char *)v.data, (char *)v.data+v.size);
-  if (info.unpack_time(ks1) == t) dbo.proc_point(&k, &v, info);
+  string t1p((char *)k.data, (char *)k.data+k.size);
+  string v1p((char *)v.data, (char *)v.data+v.size);
+  if (info.cmp_time(t1p,tp) == 0) dbo.proc_point(&k, &v, info);
 
   // get the previous value and do interpolation
   else {
@@ -269,13 +268,12 @@ DBgr::get(const uint64_t t, DBout & dbo){
     res = curs->c_get(curs, &k, &v, DB_PREV);
     if (res==DB_NOTFOUND) { curs->close(curs); return; }
     if (res!=0) throw Err() << name << ".db: " << db_strerror(res);
-    string ks2((char *)k.data, (char *)k.data+k.size);
-    string vs2((char *)v.data, (char *)v.data+v.size);
-    string ks0 = info.pack_time(t);
-    string vs0 = info.interpolate(t, ks1, ks2, vs1, vs2);
-    if (vs0!=""){
-      DBT k0 = mk_dbt(ks0);
-      DBT v0 = mk_dbt(vs0);
+    string t2p((char *)k.data, (char *)k.data+k.size);
+    string v2p((char *)v.data, (char *)v.data+v.size);
+    string vp = info.interpolate(t, t1p, t2p, v1p, v2p);
+    if (vp!=""){
+      DBT k0 = mk_dbt(tp);
+      DBT v0 = mk_dbt(vp);
       dbo.proc_point(&k0, &v0, info);
     }
   }
@@ -303,10 +301,12 @@ DBgr::get_range(const uint64_t t1, const uint64_t t2,
   dbp->cursor(dbp, NULL, &curs, 0);
   if (curs==NULL) throw Err() << name << ".db: can't get a cursor";
 
-  string ks = info.pack_time(t1);
-  DBT k = mk_dbt(ks);
+  string t1p = info.pack_time(t1);
+  string t2p = info.pack_time(t2);
+  string dtp = info.pack_time(dt);
+  DBT k = mk_dbt(t1p);
   DBT v = mk_dbt();
-  uint64_t tl = -1; // last printed value
+  string tlp; // last printed value
 
   int fl = DB_SET_RANGE; // first get t >= t1
   while (1){
@@ -315,9 +315,8 @@ DBgr::get_range(const uint64_t t1, const uint64_t t2,
     if (res!=0) throw Err() << name << ".db: " << db_strerror(res);
 
     // unpack new time value and check the range
-    string s((char *)k.data, (char *)k.data+k.size);
-    uint64_t tn = info.unpack_time(s);
-    if (tn > t2 ) break;
+    string tnp((char *)k.data, (char *)k.data+k.size);
+    if (info.cmp_time(tnp,t2p)>0) break;
 
     // if we want every point, switch to DB_NEXT and repeat
     if (dt<=1){
@@ -328,21 +327,20 @@ DBgr::get_range(const uint64_t t1, const uint64_t t2,
 
     // If dt >=1 we continue using fl=DB_SET_RANGE.
     // If new value the same as old
-    if (tl==tn){
+    if (info.cmp_time(tlp,tnp)==0){
       // get next value
       res = curs->c_get(curs, &k, &v, DB_NEXT);
       if (res==DB_NOTFOUND) break;
       if (res!=0) throw Err() << name << ".db: " << db_strerror(res);
       // unpack new time value and check the range
-      string s((char *)k.data, (char *)k.data+k.size);
-      tn = info.unpack_time(s);
-      if (tn > t2 ) break;
+      tnp = string((char *)k.data, (char *)k.data+k.size);
+      if (info.cmp_time(tnp,t2p) > 0 ) break;
     }
     dbo.proc_point(&k, &v, info);
-    tl=tn; // update last printed value
+    tlp=tnp; // update last printed value
 
     // add dt to the key for the next loop:
-    string sp = info.pack_time(tl+dt);
+    string sp = info.add_time(tlp, dtp);
     memcpy(k.data,sp.data(),k.size);
   }
   curs->close(curs);
@@ -353,8 +351,8 @@ DBgr::get_range(const uint64_t t1, const uint64_t t2,
 void
 DBgr::del(const uint64_t t1){
   DBinfo info = read_info();
-  string ks = info.pack_time(t1);
-  DBT k = mk_dbt(ks);
+  string t1p = info.pack_time(t1);
+  DBT k = mk_dbt(t1p);
   int res = dbp->del(dbp, NULL, &k, 0);
   if (res!=0) throw Err() << name << ".db: " << db_strerror(res);
 }
@@ -369,8 +367,9 @@ DBgr::del_range(const uint64_t t1, const uint64_t t2){
   dbp->cursor(dbp, NULL, &curs, 0);
   if (curs==NULL) throw Err() << name << ".db: can't get a cursor";
 
-  string ks = info.pack_time(t1);
-  DBT k = mk_dbt(ks);
+  string t1p = info.pack_time(t1);
+  string t2p = info.pack_time(t2);
+  DBT k = mk_dbt(t1p);
   DBT v = mk_dbt();
 
   int fl = DB_SET_RANGE; // first get t >= t1
@@ -379,10 +378,9 @@ DBgr::del_range(const uint64_t t1, const uint64_t t2){
     if (res==DB_NOTFOUND) break;
     if (res!=0) throw Err() << name << ".db: " << db_strerror(res);
 
-    // unpack new time value and check the range
-    string s((char *)k.data, (char *)k.data+k.size);
-    uint64_t tn = info.unpack_time(s);
-    if (tn > t2 ) break;
+    // get packed time value and check the range
+    string tp((char *)k.data, (char *)k.data+k.size);
+    if (info.cmp_time(tp,t2p)>0) break;
 
     // delete the point
     res = curs->del(curs, 0);
