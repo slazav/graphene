@@ -162,7 +162,7 @@ DBgr::read_info(){
 // the database.
 //
 void
-DBgr::put(const uint64_t t,
+DBgr::put(const string &t,
            const vector<string> & dat){
   DBinfo info = read_info();
   string ks = info.pack_time(t);
@@ -177,7 +177,7 @@ DBgr::put(const uint64_t t,
 // get data from the database -- get_next
 //
 void
-DBgr::get_next(const uint64_t t1, DBout & dbo){
+DBgr::get_next(const string &t1, DBout & dbo){
   DBinfo info = read_info();
   /* Get a cursor */
   DBC *curs;
@@ -198,7 +198,7 @@ DBgr::get_next(const uint64_t t1, DBout & dbo){
 // get data from the database -- get_prev
 //
 void
-DBgr::get_prev(const uint64_t t2, DBout & dbo){
+DBgr::get_prev(const string &t2, DBout & dbo){
   DBinfo info = read_info();
   /* Get a cursor */
   DBC *curs;
@@ -230,7 +230,7 @@ DBgr::get_prev(const uint64_t t2, DBout & dbo){
 // get data from the database -- get_interp
 //
 void
-DBgr::get(const uint64_t t, DBout & dbo){
+DBgr::get(const string &t, DBout & dbo){
   DBinfo info = read_info();
 
   if (info.val!=DATA_FLOAT && info.val!=DATA_DOUBLE)
@@ -270,7 +270,7 @@ DBgr::get(const uint64_t t, DBout & dbo){
     if (res!=0) throw Err() << name << ".db: " << db_strerror(res);
     string t2p((char *)k.data, (char *)k.data+k.size);
     string v2p((char *)v.data, (char *)v.data+v.size);
-    string vp = info.interpolate(t, t1p, t2p, v1p, v2p);
+    string vp = info.interpolate(tp, t1p, t2p, v1p, v2p);
     if (vp!=""){
       DBT k0 = mk_dbt(tp);
       DBT v0 = mk_dbt(vp);
@@ -292,8 +292,8 @@ DBgr::get(const uint64_t t, DBout & dbo){
 // use DB_SET_RANGE with dt shift, if the point didn't
 // change - use DB_NEXT.
 void
-DBgr::get_range(const uint64_t t1, const uint64_t t2,
-                 const uint64_t dt, DBout & dbo){
+DBgr::get_range(const string &t1, const string &t2,
+                const string &dt, DBout & dbo){
 
   DBinfo info = read_info();
   /* Get a cursor */
@@ -319,7 +319,7 @@ DBgr::get_range(const uint64_t t1, const uint64_t t2,
     if (info.cmp_time(tnp,t2p)>0) break;
 
     // if we want every point, switch to DB_NEXT and repeat
-    if (dt<=1){
+    if (info.is_zero_time(dt)){
       dbo.proc_point(&k, &v, info);
       fl=DB_NEXT;
       continue;
@@ -349,7 +349,7 @@ DBgr::get_range(const uint64_t t1, const uint64_t t2,
 /************************************/
 // delete data data from the database -- del_range
 void
-DBgr::del(const uint64_t t1){
+DBgr::del(const string &t1){
   DBinfo info = read_info();
   string t1p = info.pack_time(t1);
   DBT k = mk_dbt(t1p);
@@ -360,7 +360,7 @@ DBgr::del(const uint64_t t1){
 /************************************/
 // delete data data from the database -- del_range
 void
-DBgr::del_range(const uint64_t t1, const uint64_t t2){
+DBgr::del_range(const string &t1, const string &t2){
   DBinfo info = read_info();
   /* Get a cursor */
   DBC *curs;

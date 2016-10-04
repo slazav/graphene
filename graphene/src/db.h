@@ -110,7 +110,7 @@ class DBgr{
   // input: timestamp + vector of strings
   // The function can be run multiple times without reopening
   // the database.
-  void put(const uint64_t t, const std::vector<std::string> & dat);
+  void put(const std::string &t, const std::vector<std::string> & dat);
 
   // interpolate data and pack it into DBT string as double array
   std::string print_interp(const uint64_t t0,
@@ -121,24 +121,24 @@ class DBgr{
   // and call dbo.proc_point() for each key-value pair
 
   // get data from the database -- get_next
-  void get_next(const uint64_t t1, DBout & dbo);
+  void get_next(const std::string &t1, DBout & dbo);
 
   // get data from the database -- get_prev
-  void get_prev(const uint64_t t2, DBout & dbo);
+  void get_prev(const std::string &t2, DBout & dbo);
 
   // get data from the database -- get
-  void get(const uint64_t t,  DBout & dbo);
+  void get(const std::string &t,  DBout & dbo);
 
   // get data from the database -- get_range
-  void get_range(const uint64_t t1, const uint64_t t2,
-                 const uint64_t dt, DBout & dbo);
+  void get_range(const std::string &t1, const std::string &t2,
+                 const std::string &dt, DBout & dbo);
 
 
   // delete data data from the database -- del_range
-  void del(const uint64_t t1);
+  void del(const std::string &t1);
 
   // delete data data from the database -- del_range
-  void del_range(const uint64_t t1, const uint64_t t2);
+  void del_range(const std::string &t1, const std::string &t2);
 
 };
 

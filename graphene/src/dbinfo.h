@@ -107,6 +107,9 @@ class DBinfo {
   // Compare two packed time values, return +1,0,-1 if s1>s2,s1=s2,s1<s2
   int cmp_time(const std::string & s1, const std::string & s2) const;
 
+  // Is time equals zero?
+  bool is_zero_time(const std::string & s1) const;
+
   // Add two packed time values, return packed string
   std::string add_time(const std::string & s1, const std::string & s2) const;
 
@@ -122,7 +125,7 @@ class DBinfo {
   // interpolate data (for FLOAT and DOUBLE values)
   // k1,k2,v1,v2 are packed strings!
   std::string interpolate(
-        const uint64_t t0,
+        const std::string & k0,
         const std::string & k1, const std::string & k2,
         const std::string & v1, const std::string & v2);
 

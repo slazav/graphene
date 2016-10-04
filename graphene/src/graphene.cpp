@@ -8,8 +8,6 @@
 #include <cerrno>
 #include <dirent.h>
 #include <sys/stat.h>
-#include <ctime>
-#include <sys/time.h>
 
 #include <map>
 #include <string>
@@ -19,29 +17,6 @@
 #include "dbout.h"
 
 using namespace std;
-
-/**********************************************************/
-// Current time in ms
-uint64_t
-prectime(){
-    struct timeval tv;
-    gettimeofday(&tv,NULL);
-    return (uint64_t)tv.tv_usec/1000
-         + (uint64_t)tv.tv_sec*1000;
-}
-
-/**********************************************************/
-// Read timestamp from a string.
-// String "now" means current time.
-uint64_t
-str2time(const string & str) {
-  if (strcasecmp(str.c_str(), "now")==0) return prectime();
-  istringstream s(str);
-  uint64_t t;  s >> t;
-  if (s.bad() || s.fail() || !s.eof())
-  throw Err() << "Not a timestamp: " << str;
-  return t;
-}
 
 /**********************************************************/
 /* global parameters */
@@ -224,12 +199,11 @@ class Pars{
     // args: put <name> <time> <value1> ...
     if (strcasecmp(cmd.c_str(), "put")==0){
       if (pars.size()<4) throw Err() << "database name, timstamp and some values expected";
-      uint64_t t = str2time(pars[2]);
       vector<string> dat;
       for (int i=3; i<pars.size(); i++) dat.push_back(string(pars[i]));
       // open database and write data
       DBgr db = pool.get(dbpath, pars[1]);
-      db.put(t, dat);
+      db.put(pars[2], dat);
       return;
     }
 
@@ -238,10 +212,10 @@ class Pars{
     if (strcasecmp(cmd.c_str(), "get_next")==0){
       if (pars.size()<2) throw Err() << "database name expected";
       if (pars.size()>3) throw Err() << "too many parameters";
-      uint64_t t = pars.size()>2? str2time(pars[2]): 0;
+      string t1 = pars.size()>2? pars[2]: "0";
       DBout dbo(dbpath, pars[1]);
       DBgr db = pool.get(dbpath, dbo.name, DB_RDONLY);
-      db.get_next(t, dbo);
+      db.get_next(t1, dbo);
       return;
     }
 
@@ -250,7 +224,7 @@ class Pars{
     if (strcasecmp(cmd.c_str(), "get_prev")==0){
       if (pars.size()<2) throw Err() << "database name expected";
       if (pars.size()>3) throw Err() << "too many parameters";
-      uint64_t t2 = pars.size()>2? str2time(pars[2]): -1;
+      string t2 = pars.size()>2? pars[2]: "inf";
       DBout dbo(dbpath, pars[1]);
       DBgr db = pool.get(dbpath, dbo.name, DB_RDONLY);
       db.get_prev(t2, dbo);
@@ -262,7 +236,7 @@ class Pars{
     if (strcasecmp(cmd.c_str(), "get")==0){
       if (pars.size()<2) throw Err() << "database name expected";
       if (pars.size()>3) throw Err() << "too many parameters";
-      uint64_t t2 = pars.size()>2? str2time(pars[2]): -1;
+      string t2 = pars.size()>2? pars[2]: "inf";
       DBout dbo(dbpath, pars[1]);
       DBgr db = pool.get(dbpath, dbo.name, DB_RDONLY);
       db.get(t2, dbo);
@@ -274,9 +248,9 @@ class Pars{
     if (strcasecmp(cmd.c_str(), "get_range")==0){
       if (pars.size()<2) throw Err() << "database name expected";
       if (pars.size()>5) throw Err() << "too many parameters";
-      uint64_t t1 = pars.size()>2? str2time(pars[2]): 0;
-      uint64_t t2 = pars.size()>3? str2time(pars[3]): -1;
-      uint64_t dt = pars.size()>4? str2time(pars[4]): 0;
+      string t1 = pars.size()>2? pars[2]: "0";
+      string t2 = pars.size()>3? pars[3]: "inf";
+      string dt = pars.size()>4? pars[4]: "0";
       DBout dbo(dbpath, pars[1]);
       DBgr db = pool.get(dbpath, dbo.name, DB_RDONLY);
       db.get_range(t1,t2,dt, dbo);
@@ -288,9 +262,8 @@ class Pars{
     if (strcasecmp(cmd.c_str(), "del")==0){
       if (pars.size()<3) throw Err() << "database name and time expected";
       if (pars.size()>3) throw Err() << "too many parameters";
-      uint64_t t = str2time(pars[2]);
       DBgr db = pool.get(dbpath, pars[1]);
-      db.del(t);
+      db.del(pars[2]);
       return;
     }
 
@@ -299,10 +272,8 @@ class Pars{
     if (strcasecmp(cmd.c_str(), "del_range")==0){
       if (pars.size()<4) throw Err() << "database name and two times expected";
       if (pars.size()>4) throw Err() << "too many parameters";
-      uint64_t t1 = str2time(pars[2]);
-      uint64_t t2 = str2time(pars[3]);
       DBgr db = pool.get(dbpath, pars[1]);
-      db.del_range(t1,t2);
+      db.del_range(pars[2],pars[3]);
       return;
     }
 

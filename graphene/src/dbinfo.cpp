@@ -6,6 +6,8 @@
 #include <iomanip>
 #include <cstring> /* memset */
 #include "db.h"
+#include <ctime>
+#include <sys/time.h>
 
 using namespace std;
 
@@ -27,9 +29,23 @@ DBinfo::pack_time(const uint64_t t) const{
 // same, but with string on input
 string
 DBinfo::pack_time(const string & ts) const{
+  if (strcasecmp(ts.c_str(), "now")==0){
+    struct timeval tv;
+    gettimeofday(&tv,NULL);
+    return pack_time(
+           (uint64_t)tv.tv_usec/1000
+         + (uint64_t)tv.tv_sec*1000 );
+  }
+  if (strcasecmp(ts.c_str(), "now_s")==0){
+    struct timeval tv;
+    gettimeofday(&tv,NULL);
+    return pack_time((uint64_t)tv.tv_sec*1000);
+  }
+  if (strcasecmp(ts.c_str(), "inf")==0){
+    return pack_time((uint64_t)-1);
+  }
   istringstream s(ts);
-  uint64_t t;
-  s >> t;
+  uint64_t t;  s >> t;
   if (s.bad() || s.fail() || !s.eof())
     throw Err() << "Not a timestamp: " << ts;
   return pack_time(t);
@@ -48,6 +64,11 @@ DBinfo::cmp_time(const std::string & s1, const std::string & s2) const{
   uint64_t t2 = *(uint64_t *)s2.data();
   if (t1==t2) return 0;
   return t1>t2 ? 1:-1;
+}
+// Is time equals zero?
+bool
+DBinfo::is_zero_time(const std::string & s1) const {
+  return *(uint64_t *)s1.data()==0;
 }
 // Add two packed time values, return packed string
 string
@@ -143,7 +164,7 @@ DBinfo::unpack_data(const string & s, const int col) const{
 //
 string
 DBinfo::interpolate(
-        const uint64_t t0,
+        const string & k0,
         const string & k1, const string & k2,
         const string & v1, const string & v2){
 
@@ -152,6 +173,7 @@ DBinfo::interpolate(
   if (k2.size()!=sizeof(uint64_t)) return "";
 
   // unpack time
+  uint64_t t0 = unpack_time(k0);
   uint64_t t1 = unpack_time(k1);
   uint64_t t2 = unpack_time(k2);
 

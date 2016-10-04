@@ -7,6 +7,7 @@
 */
 
 #include <string>
+#include <sstream>
 
 #include <cstdlib>
 #include <ctime>
@@ -22,24 +23,24 @@ using namespace std;
    Input format: "2016-05-02T11:20:36.356Z"
                   012345678901234567890123
 */
-uint64_t convert_time(const string & tstr){
+string convert_time(const string & tstr){
   /* check string format */
-  if (tstr.size()!=24) return 0;
+  if (tstr.size()!=24) return "";
   for (size_t i=0; i<24; i++){
     switch (i){
       case  4:
-      case  7: if (tstr[i]!='-') return 0;
+      case  7: if (tstr[i]!='-') return "";
                break;
-      case 10: if (tstr[i]!='T') return 0;
+      case 10: if (tstr[i]!='T') return "";
                break;
       case 13:
-      case 16: if (tstr[i]!=':') return 0;
+      case 16: if (tstr[i]!=':') return "";
                break;
-      case 19: if (tstr[i]!='.') return 0;
+      case 19: if (tstr[i]!='.') return "";
                break;
-      case 23: if (tstr[i]!='Z') return 0;
+      case 23: if (tstr[i]!='Z') return "";
                break;
-      default: if (tstr[i]<'0' || tstr[i]>'9') return 0;
+      default: if (tstr[i]<'0' || tstr[i]>'9') return "";
     }
   }
   /* parse fields */
@@ -53,7 +54,7 @@ uint64_t convert_time(const string & tstr){
   tt.tm_wday  = 0;   /* day of the week */
   tt.tm_yday  = 0;   /* day in the year */
   tt.tm_isdst = 0;   /* daylight saving time */
-  uint64_t ret = atoi(tstr.c_str() + 20); /* milliseconds */
+  uint64_t ms = atoi(tstr.c_str() + 20); /* milliseconds */
 
   char *tz;
   tz = getenv("TZ");
@@ -63,25 +64,30 @@ uint64_t convert_time(const string & tstr){
   if (tz) setenv("TZ", tz, 1);
   else    unsetenv("TZ");
   tzset();
-  if (t<0) return 0;
-  ret += 1000*(uint64_t)t;
-  return ret;
+  if (t<0) return "";
+
+  ostringstream ret;
+  ret << (1000*(uint64_t)t + ms);
+  return ret.str();
 }
 
-/* Convert string with time interval to milliseconds, return 0 on error.
+/* Convert string with time interval to milliseconds, return "" on error.
    Input format: <integer number><suffix>, where suffix can be: ms, s, m, h, d
 */
-uint64_t convert_interval(const string & tstr){
+string convert_interval(const string & tstr){
   char *e;
-  uint64_t ret;
-  ret = strtol(tstr.c_str(), &e, 10);
-  if (e==NULL) return 0;
-  if (strcmp(e,"ms")==0) return ret;
-  if (strcmp(e,"s")==0)  return 1000*ret;
-  if (strcmp(e,"m")==0)  return 60*1000*ret;
-  if (strcmp(e,"h")==0)  return 3600*1000*ret;
-  if (strcmp(e,"d")==0)  return 24*3600*1000*ret;
-  return 0;
+  uint64_t s,ms;
+  uint64_t v = strtol(tstr.c_str(), &e, 10);
+  if (e==NULL) return "";
+  if      (strcmp(e,"ms")==0) { ms=v; s=0;}
+  else if (strcmp(e,"s")==0)  { ms=0; s=v;}
+  else if (strcmp(e,"m")==0)  { ms=0; s=60*v;}
+  else if (strcmp(e,"h")==0)  { ms=0; s=3600*v;}
+  else if (strcmp(e,"d")==0)  { ms=0; s=24*3600*v;}
+  else return "";
+  ostringstream ret;
+  ret << (1000*s+ms);
+  return ret.str();
 }
 
 /***************************************************************************/
@@ -137,19 +143,18 @@ Json json_query(const string & dbpath, const Json & ji){
   [ { "target":"t1", "datapoints":[ [622,1450754160000], [365,1450754220000]] },
     { "target":"t2", "datapoints":[ [861,1450754160000], [767,1450754220000]] } ]
   */
-
   /* parse time range */
-  uint64_t t1 = convert_time( ji["range"]["from"].as_string() );
-  uint64_t t2 = convert_time( ji["range"]["to"].as_string() );
-  if (t1==0 || t2==0) throw Json::Err() << "Bad range setting";
+  string t1 = convert_time( ji["range"]["from"].as_string() );
+  string t2 = convert_time( ji["range"]["to"].as_string() );
+  if (t1=="" || t2=="") throw Json::Err() << "Bad range setting";
 
   /* check format */
   if (ji["format"].as_string() != "json") 
     throw Json::Err() << "Unknown format";
 
   /* parse interval */
-  uint64_t dt = convert_interval( ji["interval"].as_string() );
-  if (dt==0) throw Json::Err() << "Bad interval";
+  string dt = convert_interval( ji["interval"].as_string() );
+  if (dt=="") throw Json::Err() << "Bad interval";
 
   /* parse maxDataPoints */
   uint64_t maxpt = ji["maxDataPoints"].as_integer();
@@ -201,9 +206,9 @@ Json json_annotations(const string & dbpath, const Json & ji){
     }]
   */
   /* parse time range */
-  uint64_t t1 = convert_time( ji["range"]["from"].as_string() );
-  uint64_t t2 = convert_time( ji["range"]["to"].as_string() );
-  if (t1==0 || t2==0) throw Json::Err() << "Bad range setting";
+  string t1 = convert_time( ji["range"]["from"].as_string() );
+  string t2 = convert_time( ji["range"]["to"].as_string() );
+  if (t1=="" || t2=="") throw Json::Err() << "Bad range setting";
 
   // extract db name
   DBoutJSON dbo(dbpath, ji["annotation"]["name"].as_string(), false);
@@ -215,7 +220,7 @@ Json json_annotations(const string & dbpath, const Json & ji){
   if (db.read_info().val != DATA_TEXT)
     throw Json::Err() << "Annotations can be found only in TEXT databases";
 
-  db.get_range(t1,t2, 0, dbo);
+  db.get_range(t1,t2, "0", dbo);
   for (size_t i=0; i<dbo.json_buffer.size(); i++){
     dbo.json_buffer[i].set("annotation", ji["annotation"]);
   }
