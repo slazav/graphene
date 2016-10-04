@@ -102,9 +102,8 @@ Commands for reading and writing data:
   only points with distance >dt between them are shown. This works fast
   for any ratio of dt and interpoint distance.
 
-Default value for time1 is 0, for time2 is infinity. Word "now" can be
-used to specify current time. If the database has no future timestamps,
-then commands "get_prev name" and "get_prev name now" are equivalent.
+You can use words "now" and "inf" as a time.
+Default value for time1 is 0, for time2 is "inf".
 
 Text values are printed with line breaks converted to spaces.
 

@@ -97,6 +97,8 @@ assert "$(./graphene -d . get_next test_1 1234567890000)" "1234567890000 0.1" # 
 assert "$(./graphene -d . get_next test_1 1234567895000)" "2234567890123 0.2"
 assert "$(./graphene -d . get_next test_1 now)"           "2234567890123 0.2"
 assert "$(./graphene -d . get_next test_1 NoW)"           "2234567890123 0.2"
+assert "$(./graphene -d . get_next test_1 NoW_s)"         "2234567890123 0.2"
+assert "$(./graphene -d . get_next test_1 inf)"           ""
 assert "$(./graphene -d . get_next test_1 2000000000124)" "2234567890123 0.2"
 assert "$(./graphene -d . get_next test_1 3000000000000)" ""
 assert "$(./graphene -d . get_next test_1 1234567890000000)"    ""
@@ -108,6 +110,7 @@ assert "$(./graphene -d . get_prev test_1 1234567890000)" "1234567890000 0.1" # 
 assert "$(./graphene -d . get_prev test_1 2234567890123)" "2234567890123 0.2" # ==
 assert "$(./graphene -d . get_prev test_1 1234567895000)" "1234567890000 0.1"
 assert "$(./graphene -d . get_prev test_1 now)"           "1234567890000 0.1"
+assert "$(./graphene -d . get_prev test_1 inf)"           "2234567890123 0.2"
 assert "$(./graphene -d . get_prev test_1 3234567895000)" "2234567890123 0.2"
 
 # get_range
