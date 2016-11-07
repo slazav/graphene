@@ -22,6 +22,9 @@ main(){
   assert( convert_time("2016-05-02T11:20:36.356ZZ") == "");
   assert( convert_time("2016-05-02T11:20:36Z")      == "");
   assert( convert_time("2016-05-02T11:20:36.356Z")  == "1462188036356");
+  assert( convert_time("2016-05-02T11:20:36.001Z")  == "1462188036001");
+  assert( convert_time("2016-05-02T11:20:36.100Z")  == "1462188036100");
+//  assert( convert_time("2016-05-02T11:20:36.10Z")  == "1462188036010");
 
 
   /* convert_interval() */

@@ -21,7 +21,7 @@ using namespace std;
 
 /* Convert string with time to milliseconds, return 0 on error.
    Input format: "2016-05-02T11:20:36.356Z"
-                  012345678901234567890123
+   Positions:     012345678901234567890123
 */
 string convert_time(const string & tstr){
   /* check string format */
