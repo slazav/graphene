@@ -6,39 +6,24 @@ package require xBlt 3
 package require Graphene
 
 source libs/data_source.tcl
+source libs/comment_source.tcl
 source libs/data_mod.tcl
+source libs/scroll.tcl
 source libs/hielems.tcl
+source libs/readout.tcl
+source libs/format_time.tcl
 
-source comments.tcl
-set ocomments 1
+#source comments.tcl
+#set ocomments 1
 
 namespace eval graphene {
 
+proc format_xlabel {w x} { time2str $x }
 
-proc format_xlabel {w x} { tim2str $x }
-
-proc tim2str {x} {
-  set ret [ clock format [expr {int($x/1000)}] -format %H:%M:%S -gmt yes]
-  set ms [expr int($x)%1000]
-  if { $ms > 0 } {set ret "$ret.$ms"}
-  return $ret
-}
-
-proc axlims {graph ax var1 var2} {
-    set lims [$graph axis limits $ax]
-    uplevel 1 [list set $var1 [lindex $lims 0]]\n[list set $var2 [lindex $lims 1]]
-}
-
-proc autoscale {graph} {
-    set v [$graph legend get current]
-    if {$v == ""} return
-    set mi [vector expr min(p$v)]
-    set ma [vector expr max(p$v)]
-    if {$ma > $mi} {
-      $graph axis configure $v -min $mi -max $ma
-      position_all_comments
-    }
-}
+#proc axlims {graph ax var1 var2} {
+#    set lims [$graph axis limits $ax]
+#    uplevel 1 [list set $var1 [lindex $lims 0]]\n[list set $var2 [lindex $lims 1]]
+#}
 
 
 ######################################################################
@@ -147,7 +132,7 @@ itcl::class viewer {
 
     pack $mwid -side top -fill x -padx 4 -pady 4
 
-    scrollbar $swid -orient horizontal -command "$this scroll_command"
+    scrollbar $swid -orient horizontal
     pack $swid -side bottom -fill x
 
     set swidth [winfo screenwidth .]
@@ -156,24 +141,23 @@ itcl::class viewer {
     blt::graph $pwid -width $pwidth -height 600 -leftmargin 60
     pack $pwid -side top -expand yes -fill both
 
-    $pwid axis create zy -hide 1 -min 0 -max 1
-    $pwid axis configure x -command graphene::format_xlabel
+    $pwid legend configure -activebackground white
+
     $pwid axis configure y -hide 1
 
-    $pwid legend configure -activebackground white
-    $pwid axis configure x -scrollcommand "$this scrollbar_set"
+    $pwid axis configure x -command graphene::format_xlabel
 
-    $pwid marker create text -name logmes -background white \
-        -foreground black -justify left -anchor w -mapy zy
+    $pwid axis create zy -hide 0 -min 0 -max 1
+#    $pwid marker create text -name logmes -background white \
+#        -foreground black -justify left -anchor w -mapy zy
+#    $pwid marker create polygon -name swpoutl -mapy zy \
+#        -fill "" -outline gray50 -linewidth 2 -under 1
+#    $pwid marker create text -name swptxt -mapy zy -anchor n \
+#        -background "" -foreground black
 
-    $pwid marker create polygon -name swpoutl -mapy zy \
-        -fill "" -outline gray50 -linewidth 2 -under 1
-    $pwid marker create text -name swptxt -mapy zy -anchor n \
-        -background "" -foreground black
 
-
-    init_comments_view
-    init_comments
+#    init_comments_view
+#    init_comments
 
 
     # configure standard xBLT things:
@@ -185,7 +169,7 @@ itcl::class viewer {
     xblt::crosshairs $pwid -variable v_crosshairs -usemenu 1
     xblt::measure $pwid -event <Key-equal> -usemenu 1\
           -quickevent <Alt-1>; # -command "$this message"
-    xblt::readout $pwid -variable v_readout -usemenu 1\
+    yblt::readout $pwid -variable v_readout -usemenu 1\
           -active 1; # -eventcommand "1 $this message"
     xblt::zoomstack $pwid -scrollbutton 2  -usemenu 1 -axes x -recttype x
 
@@ -198,23 +182,16 @@ itcl::class viewer {
     # - 2nd button on plot: shift and rescale
     # - 3rd button on legend: autoscale
     DataMod #auto $pwid;
+    Scroll  #auto $pwid $swid;
+#    CommentSource #auto $pwid;
 
     bind . <Key-F1> show_help
     bind . <Key-Insert> do_update
-    bind . <Key-End>   "$this scroll_to_end"
-    bind . <Key-Left>  "$this scroll_command scroll -1 units"
-    bind . <Key-Right> "$this scroll_command scroll 1 units"
-    bind . <Key-Prior> "$this scroll_command scroll -1 pages"
-    bind . <Key-Next>  "$this scroll_command scroll 1 pages"
-    bind . <ButtonPress-4> "$this scroll_command scroll -1 units"
-    bind . <ButtonPress-5> "$this scroll_command scroll 1 units"
 
     bind . <Alt-Key-q>     "$this finish"
     bind . <Control-Key-q> "$this finish"
     wm protocol . WM_DELETE_WINDOW "$this finish"
 
-
-#    wm title . "Stripchart"
 
     update idletasks
     #after idle {bindtags $pwid [bindtags $w]} ;# Obscur tk/blt bug workaround
@@ -299,56 +276,6 @@ itcl::class viewer {
     return $ret
   }
 
-
-  #####################################
-  # scrolling
-
-  method scrollbar_set {x1 x2} {
-    $swid set $x1 $x2
-    set N [winfo width $pwid]
-#puts "$x1 $x2 $N"
-#    foreach d $data_sources { $d update_data $x1 $x2 $N }
-  }
-
-  method scroll_command {args} {
-    set tmin [$this tmin]
-    set tmax [$this tmax]
-    if {$tmin eq {} || $tmax eq {}} return
-    foreach {view_min view_max} [$pwid axis limits x] break
-    set xw [expr {double($view_max - $view_min)}]
-    switch -exact [lindex $args 0] {
-      moveto {
-        set x [expr {[lindex $args 1]*($tmax - $tmin) + $tmin}]
-        set view_min $x
-        set view_max [expr {$x + $xw}]
-      }
-      scroll {
-        set n [lindex $args 1]
-        if {[string equal [lindex $args 2] units]} {
-          set view_min [expr {$view_min + $n*$xw/20}]
-          set view_max [expr {$view_max + $n*$xw/20}]
-        } else {
-          set view_min [expr {$view_min + $n*$xw}]
-          set view_max [expr {$view_max + $n*$xw}]
-        }
-      }
-    }
-    if {$view_min < $tmin} {
-      set view_max [expr {$tmin + $xw}]
-      set view_min $tmin
-    } elseif {$view_max > $tmax} {
-      set view_min [expr {$tmax - $xw}]
-      set view_max $tmax
-    }
-    $pwid axis configure x -min $view_min -max $view_max
-  }
-
-  method scroll_to_end {} {
-    graphene::axlims $pwid x xmin xmax
-    set tmax [$this tmax]
-    $pwid axis configure x -min [expr {$tmax-$xmax+$xmin}] -max $tmax
-  }
-
 }
 }
 
@@ -364,7 +291,7 @@ viewer add_data\
    -ncols    3
 
 viewer add_data\
-   -name     cpu_temp\
+   -name     comp_temp\
    -conn     $conn\
    -cnames   {temp}\
    -ctitles  {CPU Temperature}\
@@ -375,5 +302,21 @@ viewer add_data\
 viewer add_comments\
    -name cpu_comm.txt
 
-viewer update_data 0 1 4096
+viewer update_data 0 1 10240
+
+
+package require Iwidgets 4.0
+source mv_comments.tcl
+#comments::add_comment 1 .p .
+
+set xl [viewer tmin]
+set xh [viewer tmax]
+#.p marker create polygon -name swpoutl -mapy zy \
+#  -fill gray50 -outline {} -linewidth 2 -under 1
+#.p marker configure swpoutl -coords \
+#  [list $xl 0 $xl 0.02 $xh 0.02 $xh 0 $xl 0]
+
+.p marker create line -name dd -mapy zy \
+  -outline grey80 -linewidth 5 -under 1
+.p marker configure dd -coords [list $xl 0 $xh 0]
 

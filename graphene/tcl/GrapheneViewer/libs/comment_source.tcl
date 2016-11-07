@@ -12,7 +12,7 @@ package require BLT
 # File source:
 #  comments: #, %, ;
 
-itcl::class DataSource {
+itcl::class CommentSource {
   variable name
   variable conn
   variable color
@@ -35,8 +35,31 @@ itcl::class DataSource {
     if {$verbose} {
       puts "Add comment source \"$name\"" }
 
+    bind $plot <Control-ButtonPress-1> "$this comment_operation %x %y %X %Y"
+    bind scomment <Motion> "$this comment_create_drag %x %y"
+    bind scomment <ButtonRelease-1> "$this comment_create_finish %x %y %X %Y"
+    bind scomment <B1-ButtonPress-3> "$this comment_create_cancel %x %y"
 
+    bind scomment <ButtonPress-2>   "$this com_move_start %x %y"
+    bind scomment <B2-Motion>       "$this com_move_do %x %y"
+    bind scomment <ButtonRelease-2> "$this com_move_end %x %y"
+
+    bind scomment <B2-ButtonPress-3> "$this com_move_cancel %x %y"
+    bind scomment <ButtonPress-3>    "$this com_edit %X %Y"
+    xblt::bindtag::add $plot scomment
+    $plot axis create zx -hide 1 -min 0 -max 1
   }
+
+  method comment_operation {args} {  puts "comment_operation $args" }
+  method comment_create_drag {args} {  puts "comment_create_drag $args" }
+  method comment_create_finish {args} {  puts "comment_create_finish $args" }
+  method comment_create_cancel {args} {  puts "comment_create_cancel $args" }
+  method com_move_start {args} {  puts "com_move_start $args" }
+  method com_move_do {args} {  puts "com_move_do $args" }
+  method com_move_end {args} {  puts "com_move_end $args" }
+  method com_move_cancel {args} {  puts "com_move_cancel $args" }
+  method com_edit {args} {  puts "com_edit $args" }
+
 
   ######################################################################
   # functions for reading files:
@@ -101,36 +124,6 @@ itcl::class DataSource {
   }
 
   ######################################################################
-  # build position map for text sources
-  # should be run after update_tlimits
-  method update_pmap {} {
-    set pmap_size 4096
-
-    if {$conn ne {}} { return }
-
-    # open file, get its size
-    set fp [open $name r ]
-    seek $fp 0 end
-    set fsize [tell $fp]
-
-    # roughly estimate number of lines in the file
-    # if it is smaller then pmap_size - no need for a position map
-    if {[expr {$fsize/30}] < $pmap_size } {close $fp; return}
-
-    # max time step
-    set dt [expr {($tmax-$tmin)/$pmap_size}]
-
-    # get data
-    seek $fp 0 start
-    while {} {
-      set l [get_next_line $fp]
-    }
-    for {set i 0} {$i < $pmap_size} {incr $i} {
-      seek $fp [expr {$i*$fsize/$pmap_size}] start
-    }
-
-    close $fp
-  }
 
   ######################################################################
   # update data

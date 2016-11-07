@@ -99,7 +99,7 @@ itcl::class DataSource {
       puts " tmin: $tmin, tmax: $tmax" }
     # we will load data by parts, so it is important to set global
     # limits into x axis scrollmin/scrollmax
-    $plot axis configure x -scrollmin $tmin -scrollmax $tmax
+#    $plot axis configure x -scrollmin $tmin -scrollmax $tmax
 
     # create BLT vectors for data
     blt::vector create "$this:T"
@@ -270,6 +270,10 @@ itcl::class DataSource {
       set fp [open $name r ]
       set to {}
       while { [gets $fp line] >= 0 } {
+
+        # skip comments
+        set line [ split_line $line ]
+        if {$line == {}} {continue}
 
         # check the range
         set t [lindex $line 0]
