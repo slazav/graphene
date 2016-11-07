@@ -26,6 +26,17 @@ itcl::class TenmaPS {
     return {}
   }
 
+  # One needs to use proper number of digits after the dot
+  # to set current/voltage.
+  method iset {val} {
+    set val [expr {round($val*1000)/1000.0}]
+    cmd "ISET1:$val"
+  }
+  method vset {val} {
+    set val [expr {round($val*100)/100.0}]
+    cmd "VSET1:$val"
+  }
+
 }
 }
 
