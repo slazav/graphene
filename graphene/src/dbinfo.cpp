@@ -23,42 +23,51 @@ std::string check_name(const std::string & name){
 
 // Pack timestamp according with time format.
 string
-DBinfo::pack_time(const uint64_t t) const{
+DBinfo::pack_time_v1(const uint64_t t) const{
   string ret(sizeof(uint64_t), '\0');
   *(uint64_t *)ret.data() = t;
   return ret;
 }
+// Unpack timestamp
+uint64_t
+DBinfo::unpack_time_v1(const string & s) const{
+  if (s.size()!=sizeof(uint64_t))
+    throw Err() << "Broken database: wrong timestamp size: " << s.size();
+  return *(uint64_t *)s.data();
+}
 
-// same, but with string on input
+// Parse timestemp from a string
 string
-DBinfo::pack_time(const string & ts) const{
+DBinfo::parse_time(const string & ts) const{
   if (strcasecmp(ts.c_str(), "now")==0){
     struct timeval tv;
     gettimeofday(&tv,NULL);
-    return pack_time(
+    return pack_time_v1(
            (uint64_t)tv.tv_usec/1000
          + (uint64_t)tv.tv_sec*1000 );
   }
   if (strcasecmp(ts.c_str(), "now_s")==0){
     struct timeval tv;
     gettimeofday(&tv,NULL);
-    return pack_time((uint64_t)tv.tv_sec*1000);
+    return pack_time_v1((uint64_t)tv.tv_sec*1000);
   }
   if (strcasecmp(ts.c_str(), "inf")==0){
-    return pack_time((uint64_t)-1);
+    return pack_time_v1((uint64_t)-1);
   }
   istringstream s(ts);
   uint64_t t;  s >> t;
   if (s.bad() || s.fail() || !s.eof())
     throw Err() << "Not a timestamp: " << ts;
-  return pack_time(t);
+  return pack_time_v1(t);
 }
-// Unpack timestamp
-uint64_t
-DBinfo::unpack_time(const string & s) const{
-  if (s.size()!=sizeof(uint64_t))
-    throw Err() << "Broken database: wrong timestamp size: " << s.size();
-  return *(uint64_t *)s.data();
+
+// Print timestamp
+std::string
+DBinfo::print_time(const string & s) const{
+  uint64_t t = unpack_time_v1(s);
+  std::ostringstream ss;
+  ss << t;
+  return ss.str();
 }
 // Compare two packed time values, return +1,0,-1 if s1>s2,s1=s2,s1<s2
 int
@@ -88,18 +97,18 @@ DBinfo::add_time(const std::string & s1, const std::string & s2) const{
     throw Err() << "Broken database: wrong timestamp size: " << s2.size();
   uint64_t t1 = *(uint64_t *)s1.data();
   uint64_t t2 = *(uint64_t *)s2.data();
-  return pack_time(t1+t2);
+  return pack_time_v1(t1+t2);
 }
 
 /********************************************************************/
 // Data handling
 
-// Pack data according with data format
-// string is used as a convenient data storage, which
-// can be easily converted into Berkleydb data.
+// Parse data string according with data format.
 // Output string is not a c-string!
+// It is used as a convenient data storage, which
+// can be easily converted into Berkleydb data.
 string
-DBinfo::pack_data(const vector<string> & strs) const{
+DBinfo::parse_data(const vector<string> & strs) const{
   if (strs.size() < 1) throw Err() << "Some data expected";
   string ret;
   if (val == DATA_TEXT){ // text: join all data
@@ -132,9 +141,9 @@ DBinfo::pack_data(const vector<string> & strs) const{
   return ret;
 }
 
-// Unpack data
+// Print data
 string
-DBinfo::unpack_data(const string & s, const int col) const{
+DBinfo::print_data(const string & s, const int col) const{
   if (val == DATA_TEXT){
     // remove linebreaks
     int i;
@@ -192,9 +201,9 @@ DBinfo::interpolate(
   if (k2.size()!=sizeof(uint64_t)) return "";
 
   // unpack time
-  uint64_t t0 = unpack_time(k0);
-  uint64_t t1 = unpack_time(k1);
-  uint64_t t2 = unpack_time(k2);
+  uint64_t t0 = unpack_time_v1(k0);
+  uint64_t t1 = unpack_time_v1(k1);
+  uint64_t t2 = unpack_time_v1(k2);
 
   // calculate first point weight
   uint64_t dt1 = max(t1,t0)-min(t1,t0);

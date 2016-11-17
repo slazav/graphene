@@ -165,8 +165,8 @@ void
 DBgr::put(const string &t,
            const vector<string> & dat){
   DBinfo info = read_info();
-  string ks = info.pack_time(t);
-  string vs = info.pack_data(dat);
+  string ks = info.parse_time(t);
+  string vs = info.parse_data(dat);
   DBT k = mk_dbt(ks);
   DBT v = mk_dbt(vs);
   int res = dbp->put(dbp, NULL, &k, &v, 0);
@@ -184,7 +184,7 @@ DBgr::get_next(const string &t1, DBout & dbo){
   dbp->cursor(dbp, NULL, &curs, 0);
   if (curs==NULL) throw Err() << name << ".db: can't get a cursor";
 
-  string t1p = info.pack_time(t1);
+  string t1p = info.parse_time(t1);
   DBT k = mk_dbt(t1p);
   DBT v = mk_dbt();
   int res = curs->c_get(curs, &k, &v, DB_SET_RANGE);
@@ -204,7 +204,7 @@ DBgr::get_prev(const string &t2, DBout & dbo){
   DBC *curs;
   dbp->cursor(dbp, NULL, &curs, 0);
   if (curs==NULL) throw Err() << name << ".db: can't get a cursor";
-  string t2p = info.pack_time(t2);
+  string t2p = info.parse_time(t2);
   DBT k = mk_dbt(t2p);
   DBT v = mk_dbt();
 
@@ -241,7 +241,7 @@ DBgr::get(const string &t, DBout & dbo){
   DBC *curs;
   dbp->cursor(dbp, NULL, &curs, 0);
   if (curs==NULL) throw Err() << name << ".db: can't get a cursor";
-  string tp = info.pack_time(t);
+  string tp = info.parse_time(t);
   DBT k = mk_dbt(tp);
   DBT v = mk_dbt();
 
@@ -302,9 +302,9 @@ DBgr::get_range(const string &t1, const string &t2,
   dbp->cursor(dbp, NULL, &curs, 0);
   if (curs==NULL) throw Err() << name << ".db: can't get a cursor";
 
-  string t1p = info.pack_time(t1);
-  string t2p = info.pack_time(t2);
-  string dtp = info.pack_time(dt);
+  string t1p = info.parse_time(t1);
+  string t2p = info.parse_time(t2);
+  string dtp = info.parse_time(dt);
   DBT k = mk_dbt(t1p);
   DBT v = mk_dbt();
   string tlp; // last printed value
@@ -352,7 +352,7 @@ DBgr::get_range(const string &t1, const string &t2,
 void
 DBgr::del(const string &t1){
   DBinfo info = read_info();
-  string t1p = info.pack_time(t1);
+  string t1p = info.parse_time(t1);
   DBT k = mk_dbt(t1p);
   int res = dbp->del(dbp, NULL, &k, 0);
   if (res!=0) throw Err() << name << ".db: " << db_strerror(res);
@@ -368,8 +368,8 @@ DBgr::del_range(const string &t1, const string &t2){
   dbp->cursor(dbp, NULL, &curs, 0);
   if (curs==NULL) throw Err() << name << ".db: can't get a cursor";
 
-  string t1p = info.pack_time(t1);
-  string t2p = info.pack_time(t2);
+  string t1p = info.parse_time(t1);
+  string t2p = info.parse_time(t2);
   DBT k = mk_dbt(t1p);
   DBT v = mk_dbt();
 

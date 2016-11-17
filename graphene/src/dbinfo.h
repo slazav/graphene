@@ -92,17 +92,21 @@ class DBinfo {
   bool operator==(const DBinfo &o) const{
     return o.val==val && o.descr==descr && o.version==version; }
 
-  // Pack timestamp according with time format.
-  // std::string is used as a convenient data storage, which
+  // We keep time in a std::string storage, which
   // can be easily converted into Berkleydb data.
   // It is not a c-string!
-  std::string pack_time(const uint64_t t) const;
 
-  // same, but with string on input
-  std::string pack_time(const std::string & ts) const;
+  // Pack/Unpack integer timestamp (to be removed)
+  private:
+  std::string pack_time_v1(const uint64_t t) const;
+  uint64_t unpack_time_v1(const std::string & s) const;
+  public:
 
-  // Unpack timestamp
-  uint64_t unpack_time(const std::string & s) const;
+  // Parse timestamp from a string
+  std::string parse_time(const std::string & ts) const;
+
+  // Print timestamp
+  std::string print_time(const std::string & s) const;
 
   // Compare two packed time values, return +1,0,-1 if s1>s2,s1=s2,s1<s2
   int cmp_time(const std::string & s1, const std::string & s2) const;
@@ -117,10 +121,10 @@ class DBinfo {
   // std::string is used as a convenient data storage, which
   // can be easily converted into Berkleydb data.
   // Output string is not a c-string!
-  std::string pack_data(const std::vector<std::string> & strs) const;
+  std::string parse_data(const std::vector<std::string> & strs) const;
 
-  // Unpack data
-  std::string unpack_data(const std::string & s, const int col=-1) const;
+  // Print data
+  std::string print_data(const std::string & s, const int col=-1) const;
 
   // interpolate data (for FLOAT and DOUBLE values)
   // k0,k1,k2,v1,v2 are packed strings!

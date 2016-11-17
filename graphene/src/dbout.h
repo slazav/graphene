@@ -101,8 +101,8 @@ class DBout {
     std::string vs((char *)v->data, (char *)v->data+v->size);
     // print values into a string
     std::ostringstream str;
-    str << info.unpack_time(ks) << " "
-        << info.unpack_data(vs, col) << "\n";
+    str << info.print_time(ks) << " "
+        << info.print_data(vs, col) << "\n";
 
     // do filtering
     if (pid>0){

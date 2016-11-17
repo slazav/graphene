@@ -54,14 +54,14 @@ int main() {
       DBinfo hh1(DATA_DOUBLE);
       DBinfo hh2(DATA_INT16);
 
-      uint64_t ts  = 1234567890123;
-      string d1  = hh1.pack_time(ts);
+      std::string ts  = "1234567890123";
+      string d1  = hh1.parse_time(ts);
       ASSERT_EQ(d1.size(),  8);
-      ASSERT_EQ(hh1.unpack_time(d1),   ts);
+      ASSERT_EQ(hh1.print_time(d1), ts);
 
-      ASSERT_EQ(hh2.unpack_time(hh1.pack_time(0)), 0);
-      ASSERT_EQ(hh2.unpack_time(
-        hh1.pack_time(0xFFFFFFFFFFFFFFFF)), 0xFFFFFFFFFFFFFFFF); //max
+      ASSERT_EQ(hh2.print_time(hh1.parse_time("0")), "0");
+      ASSERT_EQ(hh2.print_time(
+        hh1.parse_time("18446744073709551615")), "18446744073709551615"); //max
     }
 
     {
@@ -79,33 +79,33 @@ int main() {
       v3.push_back("2pi");
 
       // store in integer DB
-      ASSERT_EQ(hh1.unpack_data(hh1.pack_data(v1)), "314 628");
-      ASSERT_EX(hh1.unpack_data(hh1.pack_data(v2)), "Can't put value into INT32 database: 3.1415");
-      ASSERT_EX(hh1.unpack_data(hh1.pack_data(v3)), "Can't put value into INT32 database: pi"); //!!!
+      ASSERT_EQ(hh1.print_data(hh1.parse_data(v1)), "314 628");
+      ASSERT_EX(hh1.print_data(hh1.parse_data(v2)), "Can't put value into INT32 database: 3.1415");
+      ASSERT_EX(hh1.print_data(hh1.parse_data(v3)), "Can't put value into INT32 database: pi"); //!!!
 
       // store in double DB
-      ASSERT_EQ(hh2.unpack_data(hh2.pack_data(v1)), "314 628");
-      ASSERT_EQ(hh2.unpack_data(hh2.pack_data(v2)), "3.1415 6.283");
-      ASSERT_EX(hh2.unpack_data(hh2.pack_data(v3)), "Can't put value into DOUBLE database: pi");
+      ASSERT_EQ(hh2.print_data(hh2.parse_data(v1)), "314 628");
+      ASSERT_EQ(hh2.print_data(hh2.parse_data(v2)), "3.1415 6.283");
+      ASSERT_EX(hh2.print_data(hh2.parse_data(v3)), "Can't put value into DOUBLE database: pi");
 
       // store in text DB
-      ASSERT_EQ(hh3.unpack_data(hh3.pack_data(v1)), "314 628");
-      ASSERT_EQ(hh3.unpack_data(hh3.pack_data(v2)), "3.1415 6.2830");
-      ASSERT_EQ(hh3.unpack_data(hh3.pack_data(v3)), "pi 2pi");
+      ASSERT_EQ(hh3.print_data(hh3.parse_data(v1)), "314 628");
+      ASSERT_EQ(hh3.print_data(hh3.parse_data(v2)), "3.1415 6.2830");
+      ASSERT_EQ(hh3.print_data(hh3.parse_data(v3)), "pi 2pi");
 
       // colums
-      ASSERT_EQ(hh1.unpack_data(hh1.pack_data(v1), 0), "314");
-      ASSERT_EQ(hh1.unpack_data(hh1.pack_data(v1), 1), "628");
-      ASSERT_EQ(hh1.unpack_data(hh1.pack_data(v1), 2), "NaN");
+      ASSERT_EQ(hh1.print_data(hh1.parse_data(v1), 0), "314");
+      ASSERT_EQ(hh1.print_data(hh1.parse_data(v1), 1), "628");
+      ASSERT_EQ(hh1.print_data(hh1.parse_data(v1), 2), "NaN");
 
-      ASSERT_EQ(hh2.unpack_data(hh2.pack_data(v2), 0), "3.1415");
-      ASSERT_EQ(hh2.unpack_data(hh2.pack_data(v2), 1), "6.283");
-      ASSERT_EQ(hh2.unpack_data(hh2.pack_data(v2), 2), "NaN");
+      ASSERT_EQ(hh2.print_data(hh2.parse_data(v2), 0), "3.1415");
+      ASSERT_EQ(hh2.print_data(hh2.parse_data(v2), 1), "6.283");
+      ASSERT_EQ(hh2.print_data(hh2.parse_data(v2), 2), "NaN");
 
       // column is ignored for the text database
-      ASSERT_EQ(hh3.unpack_data(hh3.pack_data(v2), 0), "3.1415 6.2830");
-      ASSERT_EQ(hh3.unpack_data(hh3.pack_data(v2), 1), "3.1415 6.2830");
-      ASSERT_EQ(hh3.unpack_data(hh3.pack_data(v2), 2), "3.1415 6.2830");
+      ASSERT_EQ(hh3.print_data(hh3.parse_data(v2), 0), "3.1415 6.2830");
+      ASSERT_EQ(hh3.print_data(hh3.parse_data(v2), 1), "3.1415 6.2830");
+      ASSERT_EQ(hh3.print_data(hh3.parse_data(v2), 2), "3.1415 6.2830");
     }
 
     // sizes and names
