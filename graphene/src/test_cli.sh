@@ -87,56 +87,56 @@ assert "$(./graphene -d . delete test_2)" ""
 # DOUBLE database
 
 assert "$(./graphene -d . create test_1)" ""
-assert "$(./graphene -d . put test_1 1234567890000 0.1)" ""
-assert "$(./graphene -d . put test_1 2234567890123 0.2)" ""
+assert "$(./graphene -d . put test_1 1234567890.000 0.1)" ""
+assert "$(./graphene -d . put test_1 2234567890.123 0.2)" ""
 # get_next
-assert "$(./graphene -d . get_next test_1)"               "1234567890000 0.1" # first
-assert "$(./graphene -d . get_next test_1 0)"             "1234567890000 0.1"
-assert "$(./graphene -d . get_next test_1 1000000000000)" "1234567890000 0.1"
-assert "$(./graphene -d . get_next test_1 1234567890000)" "1234567890000 0.1" # ==
-assert "$(./graphene -d . get_next test_1 1234567895000)" "2234567890123 0.2"
-assert "$(./graphene -d . get_next test_1 now)"           "2234567890123 0.2"
-assert "$(./graphene -d . get_next test_1 NoW)"           "2234567890123 0.2"
-assert "$(./graphene -d . get_next test_1 NoW_s)"         "2234567890123 0.2"
+assert "$(./graphene -d . get_next test_1)"               "1234567890 0.1" # first
+assert "$(./graphene -d . get_next test_1 0)"             "1234567890 0.1"
+assert "$(./graphene -d . get_next test_1 1000000000.000)" "1234567890 0.1"
+assert "$(./graphene -d . get_next test_1 1234567890.000)" "1234567890 0.1" # ==
+assert "$(./graphene -d . get_next test_1 1234567895.000)" "2234567890.123 0.2"
+assert "$(./graphene -d . get_next test_1 now)"           "2234567890.123 0.2"
+assert "$(./graphene -d . get_next test_1 NoW)"           "2234567890.123 0.2"
+assert "$(./graphene -d . get_next test_1 NoW_s)"         "2234567890.123 0.2"
 assert "$(./graphene -d . get_next test_1 inf)"           ""
-assert "$(./graphene -d . get_next test_1 2000000000124)" "2234567890123 0.2"
-assert "$(./graphene -d . get_next test_1 3000000000000)" ""
-assert "$(./graphene -d . get_next test_1 1234567890000000)"    ""
+assert "$(./graphene -d . get_next test_1 2000000000.124)" "2234567890.123 0.2"
+assert "$(./graphene -d . get_next test_1 3000000000)" ""
+assert "$(./graphene -d . get_next test_1 1234567890000)"    ""
 
 # get_prev
-assert "$(./graphene -d . get_prev test_1)"               "2234567890123 0.2" # last
+assert "$(./graphene -d . get_prev test_1)"               "2234567890.123 0.2" # last
 assert "$(./graphene -d . get_prev test_1 0)"             ""
-assert "$(./graphene -d . get_prev test_1 1234567890000)" "1234567890000 0.1" # ==
-assert "$(./graphene -d . get_prev test_1 2234567890123)" "2234567890123 0.2" # ==
-assert "$(./graphene -d . get_prev test_1 1234567895000)" "1234567890000 0.1"
-assert "$(./graphene -d . get_prev test_1 now)"           "1234567890000 0.1"
-assert "$(./graphene -d . get_prev test_1 inf)"           "2234567890123 0.2"
-assert "$(./graphene -d . get_prev test_1 3234567895000)" "2234567890123 0.2"
+assert "$(./graphene -d . get_prev test_1 1234567890)" "1234567890 0.1" # ==
+assert "$(./graphene -d . get_prev test_1 2234567890.123)" "2234567890.123 0.2" # ==
+assert "$(./graphene -d . get_prev test_1 1234567895)" "1234567890 0.1"
+assert "$(./graphene -d . get_prev test_1 now)"           "1234567890 0.1"
+assert "$(./graphene -d . get_prev test_1 inf)"           "2234567890.123 0.2"
+assert "$(./graphene -d . get_prev test_1 3234567895)" "2234567890.123 0.2"
 
 # get_range
-assert "$(./graphene -d . get_range test_1 0 1234567880000)" ""
-assert "$(./graphene -d . get_range test_1 0 1234567880000 2)" ""
-assert "$(./graphene -d . get_range test_1 0 1234567890000)"   "1234567890000 0.1"
-assert "$(./graphene -d . get_range test_1 0 1234567890000 3)" "1234567890000 0.1"
+assert "$(./graphene -d . get_range test_1 0 1234567880)" ""
+assert "$(./graphene -d . get_range test_1 0 1234567880 2)" ""
+assert "$(./graphene -d . get_range test_1 0 1234567890)"   "1234567890 0.1"
+assert "$(./graphene -d . get_range test_1 0 1234567890 3)" "1234567890 0.1"
 
-assert "$(./graphene -d . get_range test_1 2234567891000 3234567890000)" ""
-assert "$(./graphene -d . get_range test_1 2234567891000 3234567890000 2)" ""
-assert "$(./graphene -d . get_range test_1 2234567890123 3234567890000)"   "2234567890123 0.2"
-assert "$(./graphene -d . get_range test_1 2234567890123 3234567890000 2)" "2234567890123 0.2"
+assert "$(./graphene -d . get_range test_1 2234567891 3234567890)" ""
+assert "$(./graphene -d . get_range test_1 2234567891 3234567890 2)" ""
+assert "$(./graphene -d . get_range test_1 2234567890.123 3234567890)"   "2234567890.123 0.2"
+assert "$(./graphene -d . get_range test_1 2234567890.123 3234567890 2)" "2234567890.123 0.2"
 
-assert "$(./graphene -d . get_range test_1 0 2000000000000)"   "1234567890000 0.1"
-assert "$(./graphene -d . get_range test_1 0 2000000000000 3)" "1234567890000 0.1"
-assert "$(./graphene -d . get_range test_1 2000000000000 3000000000000)"   "2234567890123 0.2"
-assert "$(./graphene -d . get_range test_1 2000000000000 3000000000000 3)" "2234567890123 0.2"
+assert "$(./graphene -d . get_range test_1 0 2000000000)"   "1234567890 0.1"
+assert "$(./graphene -d . get_range test_1 0 2000000000 3)" "1234567890 0.1"
+assert "$(./graphene -d . get_range test_1 2000000000 3000000000)"   "2234567890.123 0.2"
+assert "$(./graphene -d . get_range test_1 2000000000 3000000000 3)" "2234567890.123 0.2"
 
-assert "$(./graphene -d . get_range test_1)" "1234567890000 0.1
-2234567890123 0.2"
-assert "$(./graphene -d . get_range test_1 0 3384967290000 2)" "1234567890000 0.1
-2234567890123 0.2"
-assert "$(./graphene -d . get_range test_1 1234567890000 2234567890123 2)" "1234567890000 0.1
-2234567890123 0.2"
+assert "$(./graphene -d . get_range test_1)" "1234567890 0.1
+2234567890.123 0.2"
+assert "$(./graphene -d . get_range test_1 0 3384967290 2)" "1234567890 0.1
+2234567890.123 0.2"
+assert "$(./graphene -d . get_range test_1 1234567890 2234567890.123 2)" "1234567890 0.1
+2234567890.123 0.2"
 
-assert "$(./graphene -d . get_range test_1 1234567890000 2234567890123 1200000000000)" "1234567890000 0.1"
+assert "$(./graphene -d . get_range test_1 1234567890 2234567890.123 1200000000)" "1234567890 0.1"
 assert "$(./graphene -d . delete test_1)" ""
 
 ###########################################################################

@@ -50,18 +50,51 @@ int main() {
     }
 
     {
-      // pack/unpack timestamps
+      // pack/unpack timestamps - v1
       DBinfo hh1(DATA_DOUBLE);
       DBinfo hh2(DATA_INT16);
 
-      std::string ts  = "1234567890123";
-      string d1  = hh1.parse_time(ts);
-      ASSERT_EQ(d1.size(),  8);
-      ASSERT_EQ(hh1.print_time(d1), ts);
+      std::string ts1  = "1234567890.123";
+      std::string ts2  = "0";
+      std::string ts3  = "18446744073709551.615";
 
-      ASSERT_EQ(hh2.print_time(hh1.parse_time("0")), "0");
-      ASSERT_EQ(hh2.print_time(
-        hh1.parse_time("18446744073709551615")), "18446744073709551615"); //max
+      string d1  = hh1.parse_time_v1(ts1);
+      ASSERT_EQ(d1.size(),  8);
+      ASSERT_EQ(hh1.print_time_v1(d1), ts1);
+
+      ASSERT_EQ(hh2.print_time_v1(hh1.parse_time_v1(ts2)), ts2);
+      ASSERT_EQ(hh2.print_time_v1(hh1.parse_time_v1(ts3)), ts3); //max
+
+      ASSERT_EQ(hh2.print_time_v1(hh1.parse_time_v1("1")), "1");
+      ASSERT_EQ(hh2.print_time_v1(hh1.parse_time_v1("1.")), "1");
+      ASSERT_EQ(hh2.print_time_v1(hh1.parse_time_v1("1.000")), "1");
+      ASSERT_EQ(hh2.print_time_v1(hh1.parse_time_v1("1.123")), "1.123");
+      ASSERT_EQ(hh2.print_time_v1(hh1.parse_time_v1("1.12345")), "1.123");
+
+    }
+
+    {
+      // pack/unpack timestamps - v2
+      DBinfo hh1(DATA_DOUBLE);
+
+      std::string ts1  = "1234567890";
+      string d1  = hh1.parse_time_v2(ts1);
+      ASSERT_EQ(d1.size(),  8);
+      ASSERT_EQ(hh1.print_time_v2(d1), ts1);
+
+      ASSERT_EQ(hh1.print_time_v2(hh1.parse_time_v2("0.0")), "0");
+      ASSERT_EQ(hh1.print_time_v2(hh1.parse_time_v2("1")), "1");
+      ASSERT_EQ(hh1.print_time_v2(hh1.parse_time_v2("1.")), "1");
+      ASSERT_EQ(hh1.print_time_v2(hh1.parse_time_v2("1.1")), "1.100000000");
+      ASSERT_EQ(hh1.print_time_v2(hh1.parse_time_v2("1.001")), "1.001000000");
+      ASSERT_EQ(hh1.print_time_v2(hh1.parse_time_v2("123456789.123456789")), "123456789.123456789");
+      ASSERT_EQ(hh1.print_time_v2(hh1.parse_time_v2("123456789.12345678999")), "123456789.123456789");
+
+      ASSERT_EX(hh1.parse_time_v2(""), "Bad timestamp: can't read seconds: ");
+      ASSERT_EX(hh1.parse_time_v2("a"), "Bad timestamp: can't read seconds: a");
+      ASSERT_EX(hh1.parse_time_v2("1234567890123"), "Bad timestamp: can't read seconds: 1234567890123"); // >2^32
+      ASSERT_EX(hh1.parse_time_v2("1,"), "Bad timestamp: can't read decimal dot: 1,");
+      ASSERT_EX(hh1.parse_time_v2("1.a"), "Bad timestamp: can't read nanoseconds: 1.a");
     }
 
     {

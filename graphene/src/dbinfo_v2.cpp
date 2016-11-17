@@ -7,6 +7,7 @@
 #include <cstring> /* memset */
 #include "db.h"
 #include <ctime>
+#include <cmath>
 #include <sys/time.h>
 
 using namespace std;
@@ -29,21 +30,40 @@ DBinfo::parse_time_v2(const string & ts) const{
   if (strcasecmp(ts.c_str(), "now")==0){
     struct timeval tv;
     gettimeofday(&tv,NULL);
-    t = (uint64_t)tv.tv_usec/1000 + (uint64_t)tv.tv_sec*1000;
+    t = (uint64_t)tv.tv_sec << 32 + (uint64_t)tv.tv_usec*1000;
   }
   else if (strcasecmp(ts.c_str(), "now_s")==0){
     struct timeval tv;
     gettimeofday(&tv,NULL);
-    t = (uint64_t)tv.tv_sec*1000;
+    t = (uint64_t)tv.tv_sec << 32;
   }
   else if (strcasecmp(ts.c_str(), "inf")==0){
-    t = (uint64_t)-1;
+    t = (uint64_t)((uint32_t)-1)<<32;
+    t += (uint64_t)999999999;
   }
   else {
     istringstream s(ts);
-    s >> t;
-    if (s.bad() || s.fail() || !s.eof())
-    throw Err() << "Not a timestamp: " << ts;
+    uint32_t t1=0, t2=0;
+    s >> t1; // read seconds
+    if (s.bad() || s.fail())
+      throw Err() << "Bad timestamp: can't read seconds: " << ts;
+    if (!s.eof()){
+      char c;
+      s >> c; // read decimal dot
+      if (s.bad() || s.fail() || c!='.')
+        throw Err() << "Bad timestamp: can't read decimal dot: " << ts;
+      s >> c;
+      int i=8;
+      while (!s.eof()){
+        if (s.eof()) break;
+        if (c<'0'||c>'9')
+          throw Err() << "Bad timestamp: can't read nanoseconds: " << ts;
+        if (i>=0) t2 += (c-'0') * pow(10,i);
+        s >> c;
+        i--;
+      }
+    }
+    t = ((uint64_t)t1<<32) + t2;
   }
   string ret(sizeof(uint64_t), '\0');
   *(uint64_t *)ret.data() = t;
@@ -55,9 +75,11 @@ std::string
 DBinfo::print_time_v2(const string & s) const{
   uint64_t t = unpack_time_v2(s);
   std::ostringstream ss;
-  ss << t;
+  ss << (t>>32);
+  if (t&0xFFFFFFFF) ss << "." << setw(9) << setfill('0') << (t&0xFFFFFFFF);
   return ss.str();
 }
+
 // Compare two packed time values, return +1,0,-1 if s1>s2,s1=s2,s1<s2
 int
 DBinfo::cmp_time_v2(const std::string & s1, const std::string & s2) const{

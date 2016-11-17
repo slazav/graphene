@@ -128,8 +128,8 @@ class DBinfo {
         const std::string & k1, const std::string & k2,
         const std::string & v1, const std::string & v2);
 
-  // Version-specific functions
-  private:
+  // Version-specific functions - use only inside object or in tests
+//  private:
   // Pack/Unpack integer timestamp
   std::string pack_time_v1(const uint64_t t) const;
   uint64_t unpack_time_v1(const std::string & s) const;

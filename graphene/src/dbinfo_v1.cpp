@@ -7,6 +7,7 @@
 #include <cstring> /* memset */
 #include "db.h"
 #include <ctime>
+#include <cmath>
 #include <sys/time.h>
 
 using namespace std;
@@ -41,9 +42,26 @@ DBinfo::parse_time_v1(const string & ts) const{
   }
   else {
     istringstream s(ts);
-    s >> t;
-    if (s.bad() || s.fail() || !s.eof())
-    throw Err() << "Not a timestamp: " << ts;
+    uint64_t t1=0, t2=0;
+    s >> t1; // read seconds
+    if (s.bad() || s.fail())
+      throw Err() << "Bad timestamp: can't read seconds: " << ts;
+    if (!s.eof()){
+      char c;
+      s >> c; // read decimal dot
+      if (s.bad() || s.fail() || c!='.')
+        throw Err() << "Bad timestamp: can't read decimal dot: " << ts;
+      s >> c;
+      int i=2;
+      while (!s.eof()){
+        if (c<'0'||c>'9')
+          throw Err() << "Bad timestamp: can't read milliseconds: " << ts;
+        if (i>=0) t2 += (c-'0') * pow(10,i);
+        s >> c;
+        i--;
+      }
+    }
+    t = t1*1000+t2;
   }
   string ret(sizeof(uint64_t), '\0');
   *(uint64_t *)ret.data() = t;
@@ -55,9 +73,11 @@ std::string
 DBinfo::print_time_v1(const string & s) const{
   uint64_t t = unpack_time_v1(s);
   std::ostringstream ss;
-  ss << t;
+  ss << t/1000;
+  if (t%1000) ss << "." << setw(3) << setfill('0') << t%1000;
   return ss.str();
 }
+
 // Compare two packed time values, return +1,0,-1 if s1>s2,s1=s2,s1<s2
 int
 DBinfo::cmp_time_v1(const std::string & s1, const std::string & s2) const{
