@@ -96,11 +96,6 @@ class DBinfo {
   // can be easily converted into Berkleydb data.
   // It is not a c-string!
 
-  // Pack/Unpack integer timestamp (to be removed)
-  private:
-  std::string pack_time_v1(const uint64_t t) const;
-  uint64_t unpack_time_v1(const std::string & s) const;
-  public:
 
   // Parse timestamp from a string
   std::string parse_time(const std::string & ts) const;
@@ -129,6 +124,36 @@ class DBinfo {
   // interpolate data (for FLOAT and DOUBLE values)
   // k0,k1,k2,v1,v2 are packed strings!
   std::string interpolate(
+        const std::string & k0,
+        const std::string & k1, const std::string & k2,
+        const std::string & v1, const std::string & v2);
+
+  // Version-specific functions
+  private:
+  // Pack/Unpack integer timestamp
+  std::string pack_time_v1(const uint64_t t) const;
+  uint64_t unpack_time_v1(const std::string & s) const;
+
+  std::string parse_time_v1(const std::string & ts) const;
+  std::string print_time_v1(const std::string & s) const;
+  int cmp_time_v1(const std::string & s1, const std::string & s2) const;
+  bool is_zero_time_v1(const std::string & s1) const;
+  std::string add_time_v1(const std::string & s1, const std::string & s2) const;
+  std::string interpolate_v1(
+        const std::string & k0,
+        const std::string & k1, const std::string & k2,
+        const std::string & v1, const std::string & v2);
+
+  // Pack/Unpack timestamp
+  std::string pack_time_v2(const uint64_t t) const;
+  uint64_t unpack_time_v2(const std::string & s) const;
+
+  std::string parse_time_v2(const std::string & ts) const;
+  std::string print_time_v2(const std::string & s) const;
+  int cmp_time_v2(const std::string & s1, const std::string & s2) const;
+  bool is_zero_time_v2(const std::string & s1) const;
+  std::string add_time_v2(const std::string & s1, const std::string & s2) const;
+  std::string interpolate_v2(
         const std::string & k0,
         const std::string & k1, const std::string & k2,
         const std::string & v1, const std::string & v2);
