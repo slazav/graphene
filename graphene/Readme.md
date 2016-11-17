@@ -239,3 +239,9 @@ $ time graphene -d . get_range DB 0 -1 1000 | wc
 0inputs+0outputs (0major+292minor)pagefaults 0swaps
    3154    6308   42011
 ```
+
+###  Database versions
+
+1. Time in ms stored in 64-bit integer.
+
+
