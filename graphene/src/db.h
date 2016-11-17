@@ -112,11 +112,6 @@ class DBgr{
   // the database.
   void put(const std::string &t, const std::vector<std::string> & dat);
 
-  // interpolate data and pack it into DBT string as double array
-  std::string print_interp(const uint64_t t0,
-                           const std::string & k1, const std::string & k2,
-                           const std::string & v1, const std::string & v2);
-
   // All get* functions get some data from the database
   // and call dbo.proc_point() for each key-value pair
 

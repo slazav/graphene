@@ -123,7 +123,7 @@ class DBinfo {
   std::string unpack_data(const std::string & s, const int col=-1) const;
 
   // interpolate data (for FLOAT and DOUBLE values)
-  // k1,k2,v1,v2 are packed strings!
+  // k0,k1,k2,v1,v2 are packed strings!
   std::string interpolate(
         const std::string & k0,
         const std::string & k1, const std::string & k2,

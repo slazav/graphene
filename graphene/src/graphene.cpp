@@ -102,7 +102,10 @@ class Pars{
     }
   }
 
-  // run command, using parameters
+  // Run command, using parameters
+  // For read/write commands time is transferred as a string
+  // to db.put, db.get_* functions without change.
+  // "now", "now_s" and "inf" strings can be used.
   void run_command(){
     if (pars.size() < 1) return;
     string cmd = pars[0];
