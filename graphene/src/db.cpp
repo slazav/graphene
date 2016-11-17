@@ -149,7 +149,8 @@ DBgr::read_info(){
     db_info.version = 1; // first version can be without key=1
   else if (ret != 0)
     throw Err() << name << ".db: " << db_strerror(ret);
-  db_info.version = *((uint8_t*)v.data);
+  else
+    db_info.version = *((uint8_t*)v.data);
 
   info_is_actual = true;
   return db_info;
