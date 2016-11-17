@@ -233,6 +233,7 @@ void
 DBgr::get(const string &t, DBout & dbo){
   DBinfo info = read_info();
 
+  /* for non-float databases use get_prev */
   if (info.val!=DATA_FLOAT && info.val!=DATA_DOUBLE)
     return get_prev(t, dbo);
 
@@ -319,7 +320,7 @@ DBgr::get_range(const string &t1, const string &t2,
     if (info.cmp_time(tnp,t2p)>0) break;
 
     // if we want every point, switch to DB_NEXT and repeat
-    if (info.is_zero_time(dt)){
+    if (info.is_zero_time(dtp)){
       dbo.proc_point(&k, &v, info);
       fl=DB_NEXT;
       continue;
@@ -327,7 +328,7 @@ DBgr::get_range(const string &t1, const string &t2,
 
     // If dt >=1 we continue using fl=DB_SET_RANGE.
     // If new value the same as old
-    if (info.cmp_time(tlp,tnp)==0){
+    if (tlp.size()>0 && info.cmp_time(tlp,tnp)==0){
       // get next value
       res = curs->c_get(curs, &k, &v, DB_NEXT);
       if (res==DB_NOTFOUND) break;

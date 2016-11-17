@@ -18,6 +18,9 @@ std::string check_name(const std::string & name){
   return name;
 }
 
+/********************************************************************/
+// Time handling
+
 // Pack timestamp according with time format.
 string
 DBinfo::pack_time(const uint64_t t) const{
@@ -54,12 +57,16 @@ DBinfo::pack_time(const string & ts) const{
 uint64_t
 DBinfo::unpack_time(const string & s) const{
   if (s.size()!=sizeof(uint64_t))
-    throw Err() << "Broken database: wrong timestamp size";
+    throw Err() << "Broken database: wrong timestamp size: " << s.size();
   return *(uint64_t *)s.data();
 }
 // Compare two packed time values, return +1,0,-1 if s1>s2,s1=s2,s1<s2
 int
 DBinfo::cmp_time(const std::string & s1, const std::string & s2) const{
+  if (s1.size()!=sizeof(uint64_t))
+    throw Err() << "Broken database: wrong timestamp size: " << s1.size();
+  if (s2.size()!=sizeof(uint64_t))
+    throw Err() << "Broken database: wrong timestamp size: " << s2.size();
   uint64_t t1 = *(uint64_t *)s1.data();
   uint64_t t2 = *(uint64_t *)s2.data();
   if (t1==t2) return 0;
@@ -68,15 +75,24 @@ DBinfo::cmp_time(const std::string & s1, const std::string & s2) const{
 // Is time equals zero?
 bool
 DBinfo::is_zero_time(const std::string & s1) const {
+  if (s1.size()!=sizeof(uint64_t))
+    throw Err() << "Broken database: wrong timestamp size: " << s1.size();
   return *(uint64_t *)s1.data()==0;
 }
 // Add two packed time values, return packed string
 string
 DBinfo::add_time(const std::string & s1, const std::string & s2) const{
+  if (s1.size()!=sizeof(uint64_t))
+    throw Err() << "Broken database: wrong timestamp size: " << s1.size();
+  if (s2.size()!=sizeof(uint64_t))
+    throw Err() << "Broken database: wrong timestamp size: " << s2.size();
   uint64_t t1 = *(uint64_t *)s1.data();
   uint64_t t2 = *(uint64_t *)s2.data();
   return pack_time(t1+t2);
 }
+
+/********************************************************************/
+// Data handling
 
 // Pack data according with data format
 // string is used as a convenient data storage, which
@@ -157,6 +173,9 @@ DBinfo::unpack_data(const string & s, const int col) const{
   }
   return ostr.str();
 }
+
+/********************************************************************/
+// interpolation
 
 // interpolate data (for FLOAT and DOUBLE values)
 // s1 and s2 are _packed_ strings!
