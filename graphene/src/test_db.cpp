@@ -34,9 +34,6 @@ int main() {
       {DBout dbn(".","abc:-1"); ASSERT_EQ(dbn.col, -1);}
       {DBout dbn(".","abc:-2"); ASSERT_EQ(dbn.col, -1);}
     }
-
-
-
     {
       DBinfo hh1; // default constructor
       DBinfo hh2(DATA_INT16);
@@ -72,7 +69,6 @@ int main() {
       ASSERT_EQ(hh2.print_time_v1(hh1.parse_time_v1("1.12345")), "1.123");
 
     }
-
     {
       // pack/unpack timestamps - v2
       DBinfo hh1(DATA_DOUBLE);
@@ -96,7 +92,6 @@ int main() {
       ASSERT_EX(hh1.parse_time_v2("1,"), "Bad timestamp: can't read decimal dot: 1,");
       ASSERT_EX(hh1.parse_time_v2("1.a"), "Bad timestamp: can't read nanoseconds: 1.a");
     }
-
     {
       // cmp_time_v1
       DBinfo hh1(DATA_DOUBLE);
@@ -141,8 +136,25 @@ int main() {
       ASSERT_EQ(hh1.print_time_v2(hh1.add_time_v2(hh1.parse_time_v2("1.5"), hh1.parse_time_v2("0.5"))), "2.000000000");
       ASSERT_EQ(hh1.print_time_v2(hh1.add_time_v2(hh1.parse_time_v2("1.999"), hh1.parse_time_v2("1.999"))), "3.998000000");
       ASSERT_EQ(hh1.print_time_v2(hh1.add_time_v2(hh1.parse_time_v2("10"), hh1.parse_time_v2("10"))), "20.000000000");
+      // 2^31+2^31 >= 2^32
+      ASSERT_EX(hh1.add_time_v2(hh1.parse_time_v2("2147483648"), hh1.parse_time_v2("2147483648")), "add_time overfull");
     }
-
+    {
+      // interpolate_v2
+      DBinfo hh1(DATA_DOUBLE);
+      vector<string> d1,d2;
+      d1.push_back("0.2");
+      d1.push_back("1.2");
+      d2.push_back("1.0");
+      d2.push_back("2.0");
+      string d0 = hh1.interpolate_v2(
+        hh1.parse_time_v2("1.1"),
+        hh1.parse_time_v2("1.0"),
+        hh1.parse_time_v2("1.4"),
+        hh1.parse_data(d1),
+        hh1.parse_data(d2));
+      ASSERT_EQ(hh1.print_data(d0), "0.4 1.4");
+    }
     {
       // pack/unpack data
       DBinfo hh1(DATA_INT32);

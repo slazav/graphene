@@ -104,6 +104,7 @@ DBinfo::add_time_v2(const std::string & s1, const std::string & s2) const{
   uint64_t t2 = unpack_time_v2(s2);
   uint64_t sum1 = (t1 >> 32) + (t2 >> 32);
   uint64_t sum2 = (t1 & 0xFFFFFFFF) + (t2 & 0xFFFFFFFF);
+  if (sum1 >= ((uint64_t)1<<32) ) throw Err() << "add_time overfull";
   while (sum2 > 999999999) {sum2-=1000000000; sum1++;}
   string ret(sizeof(uint64_t), '\0');
   *(uint64_t *)ret.data() = (sum1<<32)+sum2;
@@ -132,10 +133,12 @@ DBinfo::interpolate_v2(
   uint64_t t1 = unpack_time_v2(k1);
   uint64_t t2 = unpack_time_v2(k2);
 
-  // calculate first point weight
-  uint64_t dt1 = max(t1,t0)-min(t1,t0);
-  uint64_t dt2 = max(t2,t0)-min(t2,t0);
-  double k = (double)dt2/(dt1+dt2);
+  // point weights. No need to keep perfect accuracy
+  double w1 = fabs( (double)(t1>>32) + (double)(t1&0xFFFFFFFF)/1e9
+                  - (double)(t0>>32) - (double)(t0&0xFFFFFFFF)/1e9);
+  double w2 = fabs( (double)(t2>>32) + (double)(t2&0xFFFFFFFF)/1e9
+                  - (double)(t0>>32) - (double)(t0&0xFFFFFFFF)/1e9);
+  double k = (double)w2/(w1+w2);
 
   // check for correct value size
   if (v1.size() % dsize() != 0 || v2.size() % dsize() != 0)
