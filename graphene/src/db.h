@@ -107,10 +107,13 @@ class DBgr{
   DBinfo read_info();
 
   // Put data to the database
-  // input: timestamp + vector of strings
+  // input: timestamp + vector of strings + dpolicy
   // The function can be run multiple times without reopening
   // the database.
-  void put(const std::string &t, const std::vector<std::string> & dat);
+  // dpolicy -- what to do with duplicated timestamps:
+  //   (replace, skip, error, sshift, nsshift)
+  void put(const std::string &t, const std::vector<std::string> & dat,
+           const std::string &dpolicy);
 
   // All get* functions get some data from the database
   // and call dbo.proc_point() for each key-value pair

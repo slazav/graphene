@@ -96,7 +96,6 @@ assert "$(./graphene -d . get_next test_1 1000000000.000)" "1234567890.000000000
 assert "$(./graphene -d . get_next test_1 1234567890.000)" "1234567890.000000000 0.1" # ==
 assert "$(./graphene -d . get_next test_1 1234567895.000)" "2234567890.123000000 0.2"
 assert "$(./graphene -d . get_next test_1 now)"            "2234567890.123000000 0.2"
-exit
 assert "$(./graphene -d . get_next test_1 NoW)"            "2234567890.123000000 0.2"
 assert "$(./graphene -d . get_next test_1 NoW_s)"          "2234567890.123000000 0.2"
 assert "$(./graphene -d . get_next test_1 inf)"            ""
@@ -199,7 +198,7 @@ assert "$(./graphene -d . put test_3 12 3)" ""
 assert "$(./graphene -d . put test_3 13 4)" ""
 assert "$(./graphene -d . put test_3 14 5)" ""
 assert "$(./graphene -d . put test_3 15 6)" ""
-assert "$(./graphene -d . get_range test_3 | wc)" "      6      12      54"
+assert "$(./graphene -d . get_range test_3 | wc)" "      6      12      90"
 assert "$(./graphene -d . get_next test_3 12)" "12.000000000 3"
 assert "$(./graphene -d . del test_3 12)" ""
 assert "$(./graphene -d . get_next test_3 12)" "13.000000000 4"
@@ -248,7 +247,6 @@ assert "$(./graphene -d . get_next test_4 1000)" "1000.000000000 text1" # ==
 assert "$(./graphene -d . get_next test_4 1500)" "2000.000000000 text2 2"
 assert "$(./graphene -d . get_next test_4 2000)" "2000.000000000 text2 2"
 assert "$(./graphene -d . get_next test_4 2001)" ""
-assert "$(./graphene -d . get_next test_4 1234567890000000)"    ""
 
 # get_prev
 assert "$(./graphene -d . get_prev test_4)"      "2000.000000000 text2 2" # last
@@ -293,7 +291,6 @@ assert "$(./graphene -d . delete test_4)" ""
 ###########################################################################
 # interactive mode
 
-
 # create
 assert "$(./graphene -d . interactive 1)" "Error: too many parameters"
 assert "$(printf 'x' | ./graphene -d . interactive)" "Error: Unknown command"
@@ -311,6 +308,42 @@ assert "$(printf 'create test_2
                   get test_1 15
                   get test_2 38' | ./graphene -d . interactive)"\
         "$(printf "OK\nOK\nOK\nOK\nOK\n15.000000000 5\nOK\n38.000000000 28\nOK")"
+assert "$(./graphene -d . delete test_1)" ""
+assert "$(./graphene -d . delete test_2)" ""
+
+###########################################################################
+# duplicated keys (replace by default)
+
+assert "$(./graphene -d . create test_1 UINT32)" ""
+assert "$(./graphene -d . put test_1 1  1)" ""
+assert "$(./graphene -d . put test_1 1  2)" ""
+assert "$(./graphene -d . get_range test_1)" "1.000000000 2"
+
+assert "$(./graphene -d . -D replace put test_1 1 3)" ""
+assert "$(./graphene -d . get_range test_1)" "1.000000000 3"
+
+assert "$(./graphene -d . -D skip put test_1 1 4)" ""
+assert "$(./graphene -d . get_range test_1)" "1.000000000 3"
+
+assert "$(./graphene -d . -D sshift put test_1 1 5)" ""
+assert "$(./graphene -d . -D sshift put test_1 1 6)" ""
+assert "$(./graphene -d . get_range test_1)" "\
+1.000000000 3
+2.000000000 5
+3.000000000 6"
+
+assert "$(./graphene -d . -D nsshift put test_1 1 7)" ""
+assert "$(./graphene -d . -D nsshift put test_1 1 8)" ""
+assert "$(./graphene -d . get_range test_1)" "\
+1.000000000 3
+1.000000001 7
+1.000000002 8
+2.000000000 5
+3.000000000 6"
+
+assert "$(./graphene -d . -D error put test_1 1 8)" "Error: test_1.db: DB_KEYEXIST: Key/data pair already exists"
+
+assert "$(./graphene -d . delete test_1)" ""
 
 ###########################################################################
 # remove all test databases

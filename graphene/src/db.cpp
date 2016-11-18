@@ -163,15 +163,25 @@ DBgr::read_info(){
 // the database.
 //
 void
-DBgr::put(const string &t,
-           const vector<string> & dat){
+DBgr::put(const string &t, const vector<string> & dat, const string &dpolicy){
   DBinfo info = read_info();
   string ks = info.parse_time(t);
   string vs = info.parse_data(dat);
   DBT k = mk_dbt(ks);
   DBT v = mk_dbt(vs);
-  int res = dbp->put(dbp, NULL, &k, &v, 0);
-  if (res != 0) throw Err() << name << ".db: " << db_strerror(res);
+
+  int flags = (dpolicy =="replace")? 0:DB_NOOVERWRITE;
+  int res = -1;
+  while (res!=0){
+    res = dbp->put(dbp, NULL, &k, &v, flags);
+    if (res == DB_KEYEXIST){
+      if (dpolicy =="error") throw Err() << name << ".db: " << db_strerror(res);
+      if (dpolicy =="sshift")  ks = info.add_time(ks, info.parse_time("1"));
+      if (dpolicy =="nsshift") ks = info.add_time(ks, info.parse_time("0.000000001"));
+      if (dpolicy =="skip") break;
+    }
+    else if (res != 0) throw Err() << name << ".db: " << db_strerror(res);
+  }
 }
 
 /************************************/
