@@ -75,7 +75,7 @@ DBinfo::print_time_v1(const string & s) const{
   std::ostringstream ss;
   ss << t/1000;
   //if (t%1000)
-  ss << "." << setw(3) << setfill('0') << t%1000;
+  ss << "." << setw(9) << setfill('0') << (t%1000)*1000000;
   return ss.str();
 }
 

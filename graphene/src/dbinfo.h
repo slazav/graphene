@@ -14,7 +14,7 @@
 #include <db.h>
 
 // current database version
-#define DBVERSION 1
+#define DBVERSION 2
 
 // bercleydb:
 //  http://docs.oracle.com/cd/E17076_02/html/gsg/C/index.html

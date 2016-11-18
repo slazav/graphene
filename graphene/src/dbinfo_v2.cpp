@@ -31,7 +31,7 @@ DBinfo::parse_time_v2(const string & ts) const{
   if (strcasecmp(ts.c_str(), "now")==0){
     struct timeval tv;
     gettimeofday(&tv,NULL);
-    t = (uint64_t)tv.tv_sec << 32 + (uint64_t)tv.tv_usec*1000;
+    t = ((uint64_t)tv.tv_sec << 32) + (uint64_t)tv.tv_usec*1000;
   }
   else if (strcasecmp(ts.c_str(), "now_s")==0){
     struct timeval tv;

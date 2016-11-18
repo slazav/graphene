@@ -90,53 +90,52 @@ assert "$(./graphene -d . create test_1)" ""
 assert "$(./graphene -d . put test_1 1234567890.000 0.1)" ""
 assert "$(./graphene -d . put test_1 2234567890.123 0.2)" ""
 # get_next
-assert "$(./graphene -d . get_next test_1)"                "1234567890.000 0.1" # first
-assert "$(./graphene -d . get_next test_1 0)"              "1234567890.000 0.1"
-assert "$(./graphene -d . get_next test_1 1000000000.000)" "1234567890.000 0.1"
-assert "$(./graphene -d . get_next test_1 1234567890.000)" "1234567890.000 0.1" # ==
-assert "$(./graphene -d . get_next test_1 1234567895.000)" "2234567890.123 0.2"
-assert "$(./graphene -d . get_next test_1 now)"            "2234567890.123 0.2"
-assert "$(./graphene -d . get_next test_1 NoW)"            "2234567890.123 0.2"
-assert "$(./graphene -d . get_next test_1 NoW_s)"          "2234567890.123 0.2"
+assert "$(./graphene -d . get_next test_1)"                "1234567890.000000000 0.1" # first
+assert "$(./graphene -d . get_next test_1 0)"              "1234567890.000000000 0.1"
+assert "$(./graphene -d . get_next test_1 1000000000.000)" "1234567890.000000000 0.1"
+assert "$(./graphene -d . get_next test_1 1234567890.000)" "1234567890.000000000 0.1" # ==
+assert "$(./graphene -d . get_next test_1 1234567895.000)" "2234567890.123000000 0.2"
+assert "$(./graphene -d . get_next test_1 now)"            "2234567890.123000000 0.2"
+exit
+assert "$(./graphene -d . get_next test_1 NoW)"            "2234567890.123000000 0.2"
+assert "$(./graphene -d . get_next test_1 NoW_s)"          "2234567890.123000000 0.2"
 assert "$(./graphene -d . get_next test_1 inf)"            ""
-assert "$(./graphene -d . get_next test_1 2000000000.124)" "2234567890.123 0.2"
+assert "$(./graphene -d . get_next test_1 2000000000.124)" "2234567890.123000000 0.2"
 assert "$(./graphene -d . get_next test_1 3000000000)" ""
-assert "$(./graphene -d . get_next test_1 1234567890000)"    ""
-
 # get_prev
-assert "$(./graphene -d . get_prev test_1)"                "2234567890.123 0.2" # last
+assert "$(./graphene -d . get_prev test_1)"                "2234567890.123000000 0.2" # last
 assert "$(./graphene -d . get_prev test_1 0)"              ""
-assert "$(./graphene -d . get_prev test_1 1234567890)"     "1234567890.000 0.1" # ==
-assert "$(./graphene -d . get_prev test_1 2234567890.123)" "2234567890.123 0.2" # ==
-assert "$(./graphene -d . get_prev test_1 1234567895)"     "1234567890.000 0.1"
-assert "$(./graphene -d . get_prev test_1 now)"            "1234567890.000 0.1"
-assert "$(./graphene -d . get_prev test_1 inf)"            "2234567890.123 0.2"
-assert "$(./graphene -d . get_prev test_1 3234567895)"     "2234567890.123 0.2"
+assert "$(./graphene -d . get_prev test_1 1234567890)"     "1234567890.000000000 0.1" # ==
+assert "$(./graphene -d . get_prev test_1 2234567890.123)" "2234567890.123000000 0.2" # ==
+assert "$(./graphene -d . get_prev test_1 1234567895)"     "1234567890.000000000 0.1"
+assert "$(./graphene -d . get_prev test_1 now)"            "1234567890.000000000 0.1"
+assert "$(./graphene -d . get_prev test_1 inf)"            "2234567890.123000000 0.2"
+assert "$(./graphene -d . get_prev test_1 3234567895)"     "2234567890.123000000 0.2"
 
 # get_range
 assert "$(./graphene -d . get_range test_1 0 1234567880)"   ""
 assert "$(./graphene -d . get_range test_1 0 1234567880 2)" ""
-assert "$(./graphene -d . get_range test_1 0 1234567890)"   "1234567890.000 0.1"
-assert "$(./graphene -d . get_range test_1 0 1234567890 3)" "1234567890.000 0.1"
+assert "$(./graphene -d . get_range test_1 0 1234567890)"   "1234567890.000000000 0.1"
+assert "$(./graphene -d . get_range test_1 0 1234567890 3)" "1234567890.000000000 0.1"
 
 assert "$(./graphene -d . get_range test_1 2234567891 3234567890)" ""
 assert "$(./graphene -d . get_range test_1 2234567891 3234567890 2)" ""
-assert "$(./graphene -d . get_range test_1 2234567890.123 3234567890)"   "2234567890.123 0.2"
-assert "$(./graphene -d . get_range test_1 2234567890.123 3234567890 2)" "2234567890.123 0.2"
+assert "$(./graphene -d . get_range test_1 2234567890.123 3234567890)"   "2234567890.123000000 0.2"
+assert "$(./graphene -d . get_range test_1 2234567890.123 3234567890 2)" "2234567890.123000000 0.2"
 
-assert "$(./graphene -d . get_range test_1 0 2000000000)"   "1234567890.000 0.1"
-assert "$(./graphene -d . get_range test_1 0 2000000000 3)" "1234567890.000 0.1"
-assert "$(./graphene -d . get_range test_1 2000000000 3000000000)"   "2234567890.123 0.2"
-assert "$(./graphene -d . get_range test_1 2000000000 3000000000 3)" "2234567890.123 0.2"
+assert "$(./graphene -d . get_range test_1 0 2000000000)"   "1234567890.000000000 0.1"
+assert "$(./graphene -d . get_range test_1 0 2000000000 3)" "1234567890.000000000 0.1"
+assert "$(./graphene -d . get_range test_1 2000000000 3000000000)"   "2234567890.123000000 0.2"
+assert "$(./graphene -d . get_range test_1 2000000000 3000000000 3)" "2234567890.123000000 0.2"
 
-assert "$(./graphene -d . get_range test_1)" "1234567890.000 0.1
-2234567890.123 0.2"
-assert "$(./graphene -d . get_range test_1 0 3384967290 2)" "1234567890.000 0.1
-2234567890.123 0.2"
-assert "$(./graphene -d . get_range test_1 1234567890 2234567890.123 2)" "1234567890.000 0.1
-2234567890.123 0.2"
+assert "$(./graphene -d . get_range test_1)" "1234567890.000000000 0.1
+2234567890.123000000 0.2"
+assert "$(./graphene -d . get_range test_1 0 3384967290 2)" "1234567890.000000000 0.1
+2234567890.123000000 0.2"
+assert "$(./graphene -d . get_range test_1 1234567890 2234567890.123 2)" "1234567890.000000000 0.1
+2234567890.123000000 0.2"
 
-assert "$(./graphene -d . get_range test_1 1234567890 2234567890.123 1200000000)" "1234567890.000 0.1"
+assert "$(./graphene -d . get_range test_1 1234567890 2234567890.123 1200000000)" "1234567890.000000000 0.1"
 assert "$(./graphene -d . delete test_1)" ""
 
 ###########################################################################
@@ -147,27 +146,27 @@ assert "$(./graphene -d . put test_2 1000 1 10 30)" ""
 assert "$(./graphene -d . put test_2 2000 2 20)" ""
 
 # get
-assert "$(./graphene -d . get test_2 800)"  ""
-assert "$(./graphene -d . get test_2 2200)" "2000.000 2 20"
-assert "$(./graphene -d . get test_2 1000)" "1000.000 1 10 30"
-assert "$(./graphene -d . get test_2 2000)" "2000.000 2 20"
-assert "$(./graphene -d . get test_2 1200)" "1200.000 1.2 12"
-assert "$(./graphene -d . get test_2 1800)" "1800.000 1.8 18"
-assert "$(./graphene -d . get test_2:1 1200)" "1200.000 12"
+assert "$(./graphene -d . get test_2 800)"    ""
+assert "$(./graphene -d . get test_2 2200)"   "2000.000000000 2 20"
+assert "$(./graphene -d . get test_2 1000)"   "1000.000000000 1 10 30"
+assert "$(./graphene -d . get test_2 2000)"   "2000.000000000 2 20"
+assert "$(./graphene -d . get test_2 1200)"   "1200.000000000 1.2 12"
+assert "$(./graphene -d . get test_2 1800)"   "1800.000000000 1.8 18"
+assert "$(./graphene -d . get test_2:1 1200)" "1200.000000000 12"
 
 # columns
-assert "$(./graphene -d . get_next test_2:0)" "1000.000 1"
-assert "$(./graphene -d . get_next test_2:1)" "1000.000 10"
-assert "$(./graphene -d . get_next test_2:3)" "1000.000 NaN"
-assert "$(./graphene -d . get_prev test_2:0)" "2000.000 2"
-assert "$(./graphene -d . get_prev test_2:1)" "2000.000 20"
-assert "$(./graphene -d . get_prev test_2:3)" "2000.000 NaN"
+assert "$(./graphene -d . get_next test_2:0)" "1000.000000000 1"
+assert "$(./graphene -d . get_next test_2:1)" "1000.000000000 10"
+assert "$(./graphene -d . get_next test_2:3)" "1000.000000000 NaN"
+assert "$(./graphene -d . get_prev test_2:0)" "2000.000000000 2"
+assert "$(./graphene -d . get_prev test_2:1)" "2000.000000000 20"
+assert "$(./graphene -d . get_prev test_2:3)" "2000.000000000 NaN"
 
-assert "$(./graphene -d . get_range test_2:0)" "1000.000 1
-2000.000 2"
+assert "$(./graphene -d . get_range test_2:0)" "1000.000000000 1
+2000.000000000 2"
 
-assert "$(./graphene -d . get_range test_2:3)" "1000.000 NaN
-2000.000 NaN"
+assert "$(./graphene -d . get_range test_2:3)" "1000.000000000 NaN
+2000.000000000 NaN"
 assert "$(./graphene -d . delete test_2)" ""
 
 ###########################################################################
@@ -182,10 +181,10 @@ assert "$(./graphene -d . put test_3 2000 1.2345678901234567890123456789e38)" ""
 
 assert "$(./graphene -d . put test_3 2000 1e88)" "Error: Can't put value into FLOAT database: 1e88"
 
-assert "$(./graphene -d . get_range test_2)" "1000.000 1.234567890123457
-2000.000 1.234567890123457e+88"
-assert "$(./graphene -d . get_range test_3)" "1000.000 1.2345679
-2000.000 1.2345679e+38"
+assert "$(./graphene -d . get_range test_2)" "1000.000000000 1.234567890123457
+2000.000000000 1.234567890123457e+88"
+assert "$(./graphene -d . get_range test_3)" "1000.000000000 1.2345679
+2000.000000000 1.2345679e+38"
 
 assert "$(./graphene -d . delete test_2)" ""
 assert "$(./graphene -d . delete test_3)" ""
@@ -201,13 +200,13 @@ assert "$(./graphene -d . put test_3 13 4)" ""
 assert "$(./graphene -d . put test_3 14 5)" ""
 assert "$(./graphene -d . put test_3 15 6)" ""
 assert "$(./graphene -d . get_range test_3 | wc)" "      6      12      54"
-assert "$(./graphene -d . get_next test_3 12)" "12.000 3"
+assert "$(./graphene -d . get_next test_3 12)" "12.000000000 3"
 assert "$(./graphene -d . del test_3 12)" ""
-assert "$(./graphene -d . get_next test_3 12)" "13.000 4"
+assert "$(./graphene -d . get_next test_3 12)" "13.000000000 4"
 assert "$(./graphene -d . del_range test_3 11 13)" ""
-assert "$(./graphene -d . get_range test_3)" "10.000 1
-14.000 5
-15.000 6"
+assert "$(./graphene -d . get_range test_3)" "10.000000000 1
+14.000000000 5
+15.000000000 6"
 
 assert "$(./graphene -d . delete test_3)" ""
 
@@ -223,14 +222,14 @@ assert "$(./graphene -d . put test_3 10 1 4)" ""
 assert "$(./graphene -d . put test_3 11 2 3)" ""
 assert "$(./graphene -d . put test_3 12 3 2)" ""
 assert "$(./graphene -d . put test_3 13 4 1)" ""
-assert "$(./graphene -d . get_range test_3:0)" "10.000 1
-11.000 2
-12.000 3
-13.000 4"
-assert "$(./graphene -d . get_range 'test_3:0|test_flt')" "10.000 1
-11.000 4
-12.000 9
-13.000 16"
+assert "$(./graphene -d . get_range test_3:0)" "10.000000000 1
+11.000000000 2
+12.000000000 3
+13.000000000 4"
+assert "$(./graphene -d . get_range 'test_3:0|test_flt')" "10.000000000 1
+11.000000000 4
+12.000000000 9
+13.000000000 16"
 
 rm -f test_flt
 assert "$(./graphene -d . delete test_3)" ""
@@ -243,51 +242,51 @@ assert "$(./graphene -d . put test_4 1000 text1)" ""
 assert "$(./graphene -d . put test_4 2000 "text2
 2")" "" # line break will be converted to space
 # get_next
-assert "$(./graphene -d . get_next test_4)"      "1000.000 text1" # first
-assert "$(./graphene -d . get_next test_4 0)"    "1000.000 text1"
-assert "$(./graphene -d . get_next test_4 1000)" "1000.000 text1" # ==
-assert "$(./graphene -d . get_next test_4 1500)" "2000.000 text2 2"
-assert "$(./graphene -d . get_next test_4 2000)" "2000.000 text2 2"
+assert "$(./graphene -d . get_next test_4)"      "1000.000000000 text1" # first
+assert "$(./graphene -d . get_next test_4 0)"    "1000.000000000 text1"
+assert "$(./graphene -d . get_next test_4 1000)" "1000.000000000 text1" # ==
+assert "$(./graphene -d . get_next test_4 1500)" "2000.000000000 text2 2"
+assert "$(./graphene -d . get_next test_4 2000)" "2000.000000000 text2 2"
 assert "$(./graphene -d . get_next test_4 2001)" ""
 assert "$(./graphene -d . get_next test_4 1234567890000000)"    ""
 
 # get_prev
-assert "$(./graphene -d . get_prev test_4)"      "2000.000 text2 2" # last
+assert "$(./graphene -d . get_prev test_4)"      "2000.000000000 text2 2" # last
 assert "$(./graphene -d . get_prev test_4 0)"    ""
-assert "$(./graphene -d . get_prev test_4 1000)" "1000.000 text1" # ==
-assert "$(./graphene -d . get_prev test_4 2000)" "2000.000 text2 2" # ==
-assert "$(./graphene -d . get_prev test_4 1500)" "1000.000 text1"
-assert "$(./graphene -d . get_prev test_4 2001)" "2000.000 text2 2"
+assert "$(./graphene -d . get_prev test_4 1000)" "1000.000000000 text1" # ==
+assert "$(./graphene -d . get_prev test_4 2000)" "2000.000000000 text2 2" # ==
+assert "$(./graphene -d . get_prev test_4 1500)" "1000.000000000 text1"
+assert "$(./graphene -d . get_prev test_4 2001)" "2000.000000000 text2 2"
 
 # get - same
-assert "$(./graphene -d . get test_4)"      "2000.000 text2 2" # last
+assert "$(./graphene -d . get test_4)"      "2000.000000000 text2 2" # last
 assert "$(./graphene -d . get test_4 0)"    ""
-assert "$(./graphene -d . get test_4 1000)" "1000.000 text1" # ==
-assert "$(./graphene -d . get test_4 2000)" "2000.000 text2 2" # ==
-assert "$(./graphene -d . get test_4 1500)" "1000.000 text1"
-assert "$(./graphene -d . get test_4 2001)" "2000.000 text2 2"
+assert "$(./graphene -d . get test_4 1000)" "1000.000000000 text1" # ==
+assert "$(./graphene -d . get test_4 2000)" "2000.000000000 text2 2" # ==
+assert "$(./graphene -d . get test_4 1500)" "1000.000000000 text1"
+assert "$(./graphene -d . get test_4 2001)" "2000.000000000 text2 2"
 
 # get_range
 assert "$(./graphene -d . get_range test_4 0 999)" ""
 assert "$(./graphene -d . get_range test_4 0 999 2)" ""
-assert "$(./graphene -d . get_range test_4 0 1000)"   "1000.000 text1"
-assert "$(./graphene -d . get_range test_4 0 1000 3)" "1000.000 text1"
+assert "$(./graphene -d . get_range test_4 0 1000)"   "1000.000000000 text1"
+assert "$(./graphene -d . get_range test_4 0 1000 3)" "1000.000000000 text1"
 
 assert "$(./graphene -d . get_range test_4 2001 3000)" ""
 assert "$(./graphene -d . get_range test_4 2001 3000 2)" ""
-assert "$(./graphene -d . get_range test_4 2000 3000)" "2000.000 text2 2"
-assert "$(./graphene -d . get_range test_4 2000 3000 2)" "2000.000 text2 2"
+assert "$(./graphene -d . get_range test_4 2000 3000)" "2000.000000000 text2 2"
+assert "$(./graphene -d . get_range test_4 2000 3000 2)" "2000.000000000 text2 2"
 
-assert "$(./graphene -d . get_range test_4)" "1000.000 text1
-2000.000 text2 2"
-assert "$(./graphene -d . get_range test_4 1000 2000)" "1000.000 text1
-2000.000 text2 2"
-assert "$(./graphene -d . get_range test_4 1000 2000 1000)" "1000.000 text1
-2000.000 text2 2"
-assert "$(./graphene -d . get_range test_4 1000 2000 1001)" "1000.000 text1"
+assert "$(./graphene -d . get_range test_4)" "1000.000000000 text1
+2000.000000000 text2 2"
+assert "$(./graphene -d . get_range test_4 1000 2000)" "1000.000000000 text1
+2000.000000000 text2 2"
+assert "$(./graphene -d . get_range test_4 1000 2000 1000)" "1000.000000000 text1
+2000.000000000 text2 2"
+assert "$(./graphene -d . get_range test_4 1000 2000 1001)" "1000.000000000 text1"
 
 # columns are not important
-assert "$(./graphene -d . get_next test_4:5)" "1000.000 text1"
+assert "$(./graphene -d . get_next test_4:5)" "1000.000000000 text1"
 assert "$(./graphene -d . delete test_4)" ""
 
 
@@ -311,7 +310,7 @@ assert "$(printf 'create test_2
                   put test_2 40 30
                   get test_1 15
                   get test_2 38' | ./graphene -d . interactive)"\
-        "$(printf "OK\nOK\nOK\nOK\nOK\n15.000 5\nOK\n38.000 28\nOK")"
+        "$(printf "OK\nOK\nOK\nOK\nOK\n15.000000000 5\nOK\n38.000000000 28\nOK")"
 
 ###########################################################################
 # remove all test databases

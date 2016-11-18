@@ -51,9 +51,9 @@ int main() {
       DBinfo hh1(DATA_DOUBLE);
       DBinfo hh2(DATA_INT16);
 
-      std::string ts1  = "1234567890.123";
-      std::string ts2  = "0.000";
-      std::string ts3  = "18446744073709551.615";
+      std::string ts1  = "1234567890.123000000";
+      std::string ts2  = "0.000000000";
+      std::string ts3  = "18446744073709551.615000000";
 
       string d1  = hh1.parse_time_v1(ts1);
       ASSERT_EQ(d1.size(),  8);
@@ -62,11 +62,11 @@ int main() {
       ASSERT_EQ(hh2.print_time_v1(hh1.parse_time_v1(ts2)), ts2);
       ASSERT_EQ(hh2.print_time_v1(hh1.parse_time_v1(ts3)), ts3); //max
 
-      ASSERT_EQ(hh2.print_time_v1(hh1.parse_time_v1("1")), "1.000");
-      ASSERT_EQ(hh2.print_time_v1(hh1.parse_time_v1("1.")), "1.000");
-      ASSERT_EQ(hh2.print_time_v1(hh1.parse_time_v1("1.000")), "1.000");
-      ASSERT_EQ(hh2.print_time_v1(hh1.parse_time_v1("1.123")), "1.123");
-      ASSERT_EQ(hh2.print_time_v1(hh1.parse_time_v1("1.12345")), "1.123");
+      ASSERT_EQ(hh2.print_time_v1(hh1.parse_time_v1("1")), "1.000000000");
+      ASSERT_EQ(hh2.print_time_v1(hh1.parse_time_v1("1.")), "1.000000000");
+      ASSERT_EQ(hh2.print_time_v1(hh1.parse_time_v1("1.000")), "1.000000000");
+      ASSERT_EQ(hh2.print_time_v1(hh1.parse_time_v1("1.123")), "1.123000000");
+      ASSERT_EQ(hh2.print_time_v1(hh1.parse_time_v1("1.12345")), "1.123000000");
 
     }
     {
@@ -126,9 +126,9 @@ int main() {
     {
       // add_time_v1
       DBinfo hh1(DATA_DOUBLE);
-      ASSERT_EQ(hh1.print_time_v1(hh1.add_time_v1(hh1.parse_time_v1("1.5"), hh1.parse_time_v1("0.5"))), "2.000");
-      ASSERT_EQ(hh1.print_time_v1(hh1.add_time_v1(hh1.parse_time_v1("1.999"), hh1.parse_time_v1("1.999"))), "3.998");
-      ASSERT_EQ(hh1.print_time_v1(hh1.add_time_v1(hh1.parse_time_v1("10"), hh1.parse_time_v1("10"))), "20.000");
+      ASSERT_EQ(hh1.print_time_v1(hh1.add_time_v1(hh1.parse_time_v1("1.5"), hh1.parse_time_v1("0.5"))), "2.000000000");
+      ASSERT_EQ(hh1.print_time_v1(hh1.add_time_v1(hh1.parse_time_v1("1.999"), hh1.parse_time_v1("1.999"))), "3.998000000");
+      ASSERT_EQ(hh1.print_time_v1(hh1.add_time_v1(hh1.parse_time_v1("10"), hh1.parse_time_v1("10"))), "20.000000000");
     }
     {
       // add_time_v2
