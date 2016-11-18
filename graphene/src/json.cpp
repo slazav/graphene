@@ -8,6 +8,7 @@
 
 #include <string>
 #include <sstream>
+#include <iomanip>
 
 #include <cstdlib>
 #include <ctime>
@@ -19,7 +20,7 @@
 
 using namespace std;
 
-/* Convert string with time to milliseconds, return 0 on error.
+/* Convert string with time to <seconds>.<ms fraction>, return "" on error.
    Input format: "2016-05-02T11:20:36.356Z"
    Positions:     012345678901234567890123
 */
@@ -67,11 +68,11 @@ string convert_time(const string & tstr){
   if (t<0) return "";
 
   ostringstream ret;
-  ret << (1000*(uint64_t)t + ms);
+  ret << t << "." << setw(3) << setfill('0') << ms;
   return ret.str();
 }
 
-/* Convert string with time interval to milliseconds, return "" on error.
+/* Convert string with time interval to <seconds>.<ms fraction>, return "" on error.
    Input format: <integer number><suffix>, where suffix can be: ms, s, m, h, d
 */
 string convert_interval(const string & tstr){
@@ -86,7 +87,7 @@ string convert_interval(const string & tstr){
   else if (strcmp(e,"d")==0)  { ms=0; s=24*3600*v;}
   else return "";
   ostringstream ret;
-  ret << (1000*s+ms);
+  ret << s << "." << setw(3) << setfill('0') << ms;
   return ret.str();
 }
 
@@ -104,21 +105,22 @@ class DBoutJSON: public DBout{
   void print_point(const std::string & str) {
     if (isnum){ //read timestamp and one value from the line:
       istringstream istr(str);
-      uint64_t t;
-      double   v;
+      double t; // we need 1ms accuracy
+      double v;
       istr >> t >> v;
       Json jpt = Json::array();
       jpt.append(v);
-      jpt.append((json_int_t)t);
+      jpt.append((json_int_t)(1000*t)); // convert to integer milliseconds
       json_buffer.append(jpt);
     }
     else{ // read timestamp, space character and all text from the line:
       istringstream istr(str);
-      uint64_t t; string v;
+      double t; // we need 1ms accuracy
+      string v;
       istr >> t; istr.get(); getline(istr, v);
       Json jpt = Json::object();
       jpt.set("title", v);
-      jpt.set("time",  (json_int_t)t);
+      jpt.set("time",  (json_int_t)(1000*t));
       json_buffer.append(jpt);
     }
   };
@@ -168,13 +170,14 @@ Json json_query(const string & dbpath, const Json & ji){
     // extract db name and column number
     DBoutJSON dbo(dbpath, ji["targets"][i]["target"].as_string(), true);
 
-    // Get data from the database
+    // open database
     DBgr db(dbpath, dbo.name, DB_RDONLY);
 
     // check DB format
     if (db.read_info().val == DATA_TEXT)
       throw Json::Err() << "Can not do query from TEXT database. Use annotations";
 
+    // Get data from the database
     db.get_range(t1,t2,dt, dbo);
 
     Json jt = Json::object();

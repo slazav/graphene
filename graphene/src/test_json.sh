@@ -22,17 +22,17 @@ assert "$(./graphene -d . create test_1 DOUBLE)" ""
 assert "$(./graphene -d . create test_2 UINT16)" ""
 assert "$(./graphene -d . create test_3 TEXT)" ""
 
-assert "$(./graphene -d . put test_1 10 0.1 0.25)" ""
-assert "$(./graphene -d . put test_1 20 0.2 0.26)" ""
-assert "$(./graphene -d . put test_1 30 0.3 0.27)" ""
+assert "$(./graphene -d . put test_1 0.010 0.1 0.25)" ""
+assert "$(./graphene -d . put test_1 0.020 0.2 0.26)" ""
+assert "$(./graphene -d . put test_1 0.030 0.3 0.27)" ""
 
-assert "$(./graphene -d . put test_2 15 1 11)" ""
-assert "$(./graphene -d . put test_2 25 2 12)" ""
-assert "$(./graphene -d . put test_2 35 3 13)" ""
+assert "$(./graphene -d . put test_2 0.015 1 11)" ""
+assert "$(./graphene -d . put test_2 0.025 2 12)" ""
+assert "$(./graphene -d . put test_2 0.035 3 13)" ""
 
-assert "$(./graphene -d . put test_3 5 1st text msg)" ""
-assert "$(./graphene -d . put test_3 27 2st text msg)" ""
-assert "$(./graphene -d . put test_3 40 3st text msg)" ""
+assert "$(./graphene -d . put test_3 0.005 1st text msg)" ""
+assert "$(./graphene -d . put test_3 0.027 2st text msg)" ""
+assert "$(./graphene -d . put test_3 0.040 3st text msg)" ""
 
 
 req='

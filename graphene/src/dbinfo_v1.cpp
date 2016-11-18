@@ -74,39 +74,31 @@ DBinfo::print_time_v1(const string & s) const{
   uint64_t t = unpack_time_v1(s);
   std::ostringstream ss;
   ss << t/1000;
-  if (t%1000) ss << "." << setw(3) << setfill('0') << t%1000;
+  //if (t%1000)
+  ss << "." << setw(3) << setfill('0') << t%1000;
   return ss.str();
 }
 
 // Compare two packed time values, return +1,0,-1 if s1>s2,s1=s2,s1<s2
 int
 DBinfo::cmp_time_v1(const std::string & s1, const std::string & s2) const{
-  if (s1.size()!=sizeof(uint64_t))
-    throw Err() << "Broken database: wrong timestamp size: " << s1.size();
-  if (s2.size()!=sizeof(uint64_t))
-    throw Err() << "Broken database: wrong timestamp size: " << s2.size();
-  uint64_t t1 = *(uint64_t *)s1.data();
-  uint64_t t2 = *(uint64_t *)s2.data();
+  uint64_t t1 = unpack_time_v1(s1);
+  uint64_t t2 = unpack_time_v1(s2);
   if (t1==t2) return 0;
   return t1>t2 ? 1:-1;
 }
+
 // Is time equals zero?
 bool
 DBinfo::is_zero_time_v1(const std::string & s1) const {
-  if (s1.size()!=sizeof(uint64_t))
-    throw Err() << "Broken database: wrong timestamp size: " << s1.size();
-  return *(uint64_t *)s1.data()==0;
+  return unpack_time_v1(s1)==0;
 }
+
 // Add two packed time values, return packed string
 string
 DBinfo::add_time_v1(const std::string & s1, const std::string & s2) const{
-  if (s1.size()!=sizeof(uint64_t))
-    throw Err() << "Broken database: wrong timestamp size: " << s1.size();
-  if (s2.size()!=sizeof(uint64_t))
-    throw Err() << "Broken database: wrong timestamp size: " << s2.size();
-  uint64_t t1 = *(uint64_t *)s1.data();
-  uint64_t t2 = *(uint64_t *)s2.data();
-
+  uint64_t t1 = unpack_time_v1(s1);
+  uint64_t t2 = unpack_time_v1(s2);
   string ret(sizeof(uint64_t), '\0');
   *(uint64_t *)ret.data() = t1+t2;
   return ret;
