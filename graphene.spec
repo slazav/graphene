@@ -1,5 +1,5 @@
 Name:         graphene
-Version:      1.1
+Version:      2.0
 Release:      alt1
 
 Summary:      Simple time series database.
@@ -17,7 +17,7 @@ Requires:      libmicrohttpd libjansson
 Conflicts:    tcl-xblt tcl-gpib
 
 %description
-graphene -- a simple time series database
+graphene -- a simple time series database with nanosecond precision for scientific applications
 
 %prep
 %setup -q
@@ -53,6 +53,13 @@ done
 %_libdir/tcl/*
 
 %changelog
+* Fri Nov 18 2016 Vladislav Zavjalov <slazav@altlinux.org> 2.0-alt1
+- v2.0
+  - improved interactive mode
+  - <seconds>.<nanoseconds> time format
+  - v2 databases with nanosecond precision (v1 databases still work)
+  - tcl packages
+
 * Sun Jun 05 2016 Vladislav Zavjalov <slazav@altlinux.org> 1.1-alt1
 - v1.1
   - rename: stsdb -> graphene
