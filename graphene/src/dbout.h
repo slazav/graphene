@@ -95,7 +95,7 @@ class DBout {
   // and call print_point()
   void proc_point(DBT *k, DBT *v, const DBinfo & info) {
     // check for correct key size (do not parse DB info)
-    if (k->size!=sizeof(uint64_t)) return;
+    if (k->size!=sizeof(uint64_t) && k->size!=sizeof(uint32_t) ) return;
     // convert DBT to strings
     std::string ks((char *)k->data, (char *)k->data+k->size);
     std::string vs((char *)v->data, (char *)v->data+v->size);

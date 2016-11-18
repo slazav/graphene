@@ -24,8 +24,8 @@ not `../temperature` for your dataset. Currently all subfolders have to
 be created manually.
 
 Data are stored as a set of sorted key-value pairs. Key is a timestamp,
-a pair of 32-bit unsigned integers: one is a number of seconds counted
-from 1970-01-01 UTC, and another is a nanosecond fraction. Duplicated
+one or two 32-bit unsigned integers: a number of seconds
+from 1970-01-01 UTC, and optional number of nanoseconds. Duplicated
 timestamps are not allowed, but user can choose what to do
 with duplicates (see -D option of the graphene program):
  replace -- replace the old record (default),
@@ -190,7 +190,7 @@ let's create a database DB and put all these points at once:
 ```
 $ graphene -d . create DB
 $ for t in $(seq 3153600); do printf "put DB $t $RANDOM\n"; done |
-    ./graphene -d . interactive
+    ./graphene -d . interactive &>/dev/null
 ```
 
 This takes about 1 minute at my computer. Note that I use interactive
@@ -200,24 +200,28 @@ with command-line interface it takes about 10 hours:
 $ for t in $(seq 3153600); do ./graphene -d . put DB "$t" "$RANDOM"; done
 ```
 
-Size of the database is 86 Mb, 28.6 bytes/point. Gzip can make in
-smaller (17.5 Mb, 5.81 bytes/point), xz even smaller (8.8 Mb, 2.94
+Size of the database is 73.6 Mb, 24.5 bytes/point. Gzip can make in
+smaller (17.3 Mb, 5.74 bytes/point), xz even smaller (10.3 Mb, 3.41
 bytes/point).
+
+If you use non-integer seconds for timestamps the size will increase by
+4 bytes per point.
 
 If you have a few parameters which do not need separate timestamps, you
 can put them into a multi-column data points (put DB $t $par1 $par2 ...)
 saving some space. Database size grows by 8 bytes per additional column.
 
+
 You can also configure the database to store 4-byte float values instead
 of 8-byte doubles. It will save 4 bytes per data column.
 
-Reading of all the points takes 15s:
+Reading of all the points takes 23s:
 
 ```
 $ time graphene -d . get_range DB | wc
-15.81user 0.07system 0:15.90elapsed 99%CPU (0avgtext+0avgdata 5208maxresident)k
-0inputs+0outputs (0major+293minor)pagefaults 0swaps
-3153600 6307200 41969235
+23.18user 0.10system 0:23.27elapsed 100%CPU (0avgtext+0avgdata 5168maxresident)k
+0inputs+0outputs (0major+289minor)pagefaults 0swaps
+3153600 6307200 73507308
 ```
 
 Reading of last 3000 points, first 3000 points, every 1000th point takes

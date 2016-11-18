@@ -59,7 +59,10 @@ int main() {
       ASSERT_EQ(d1.size(),  8);
       ASSERT_EQ(hh1.print_time_v1(d1), ts1);
 
-      ASSERT_EQ(hh2.print_time_v1(hh1.parse_time_v1(ts2)), ts2);
+      string d2  = hh1.parse_time_v1(ts2);
+      ASSERT_EQ(d2.size(),  8);
+      ASSERT_EQ(hh1.print_time_v1(d2), ts2);
+
       ASSERT_EQ(hh2.print_time_v1(hh1.parse_time_v1(ts3)), ts3); //max
 
       ASSERT_EQ(hh2.print_time_v1(hh1.parse_time_v1("1")), "1.000000000");
@@ -74,9 +77,13 @@ int main() {
       DBinfo hh1(DATA_DOUBLE);
 
       std::string ts1  = "1234567890.000000000";
+      std::string ts2  = "1234567890.123456789";
       string d1  = hh1.parse_time_v2(ts1);
-      ASSERT_EQ(d1.size(),  8);
+      ASSERT_EQ(d1.size(),  4);
       ASSERT_EQ(hh1.print_time_v2(d1), ts1);
+      string d2  = hh1.parse_time_v2(ts2);
+      ASSERT_EQ(d2.size(),  8);
+      ASSERT_EQ(hh1.print_time_v2(d2), ts2);
 
       ASSERT_EQ(hh1.print_time_v2(hh1.parse_time_v2("0.0")), "0.000000000");
       ASSERT_EQ(hh1.print_time_v2(hh1.parse_time_v2("1")), "1.000000000");

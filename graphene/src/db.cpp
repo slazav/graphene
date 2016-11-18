@@ -20,6 +20,16 @@ int cmpfunc(DB *dbp, const DBT *a, const DBT *b){
     v1 = *(uint64_t*)a->data;
     v2 = *(uint64_t*)b->data; }
   else
+  if (a->size == sizeof(uint64_t) && b->size == sizeof(uint32_t)){
+    v1 = *(uint64_t*)a->data;
+    v2 = *(uint32_t*)b->data;
+    v2 = v2 << 32; }
+  else
+  if (a->size == sizeof(uint32_t) && b->size == sizeof(uint64_t)){
+    v1 = *(uint32_t*)a->data;
+    v2 = *(uint64_t*)b->data;
+    v1 = v1 << 32; }
+  else
   if (a->size == sizeof(uint32_t) && b->size == sizeof(uint32_t)){
     v1 = *(uint32_t*)a->data;
     v2 = *(uint32_t*)b->data; }

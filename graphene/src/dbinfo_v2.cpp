@@ -19,9 +19,25 @@ using namespace std;
 // Unpack timestamp
 uint64_t
 DBinfo::unpack_time_v2(const string & s) const{
-  if (s.size()!=sizeof(uint64_t))
-    throw Err() << "Broken database: wrong timestamp size: " << s.size();
-  return *(uint64_t *)s.data();
+  if (s.size()==sizeof(uint64_t))
+    return *(uint64_t *)s.data();
+  if (s.size()==sizeof(uint32_t))
+    return (uint64_t)(*(uint32_t *)s.data())<<32;
+  throw Err() << "Broken database: wrong timestamp size: " << s.size();
+}
+
+string
+DBinfo::pack_time_v2(const uint64_t t) const{
+  if (t&0xFFFFFFFF){
+    string ret(sizeof(uint64_t), '\0');
+    *(uint64_t *)ret.data() = t;
+    return ret;
+  }
+  else {
+    string ret(sizeof(uint32_t), '\0');
+    *(uint32_t *)ret.data() = t>>32;
+    return ret;
+  }
 }
 
 // Parse timestemp from a string
@@ -66,9 +82,7 @@ DBinfo::parse_time_v2(const string & ts) const{
     }
     t = ((uint64_t)t1<<32) + t2;
   }
-  string ret(sizeof(uint64_t), '\0');
-  *(uint64_t *)ret.data() = t;
-  return ret;
+  return pack_time_v2(t);
 }
 
 // Print timestamp
@@ -106,9 +120,7 @@ DBinfo::add_time_v2(const std::string & s1, const std::string & s2) const{
   uint64_t sum2 = (t1 & 0xFFFFFFFF) + (t2 & 0xFFFFFFFF);
   if (sum1 >= ((uint64_t)1<<32) ) throw Err() << "add_time overfull";
   while (sum2 > 999999999) {sum2-=1000000000; sum1++;}
-  string ret(sizeof(uint64_t), '\0');
-  *(uint64_t *)ret.data() = (sum1<<32)+sum2;
-  return ret;
+  return pack_time_v2((sum1<<32)+sum2);
 }
 
 /********************************************************************/
@@ -125,8 +137,8 @@ DBinfo::interpolate_v2(
         const string & v1, const string & v2){
 
   // check for correct key size (do not parse DB info)
-  if (k1.size()!=sizeof(uint64_t)) return "";
-  if (k2.size()!=sizeof(uint64_t)) return "";
+  if (k1.size()!=sizeof(uint64_t) && k1.size()!=sizeof(uint32_t)) return "";
+  if (k2.size()!=sizeof(uint64_t) && k2.size()!=sizeof(uint32_t)) return "";
 
   // unpack time
   uint64_t t0 = unpack_time_v2(k0);
