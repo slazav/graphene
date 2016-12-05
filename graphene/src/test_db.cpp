@@ -34,9 +34,6 @@ int main() {
       {DBout dbn(".","abc:-1"); ASSERT_EQ(dbn.col, -1);}
       {DBout dbn(".","abc:-2"); ASSERT_EQ(dbn.col, -1);}
     }
-
-
-
     {
       DBinfo hh1; // default constructor
       DBinfo hh2(DATA_INT16);
@@ -50,20 +47,121 @@ int main() {
     }
 
     {
-      // pack/unpack timestamps
+      // pack/unpack timestamps - v1
       DBinfo hh1(DATA_DOUBLE);
       DBinfo hh2(DATA_INT16);
 
-      uint64_t ts  = 1234567890123;
-      string d1  = hh1.pack_time(ts);
+      std::string ts1  = "1234567890.123000000";
+      std::string ts2  = "0.000000000";
+      std::string ts3  = "18446744073709551.615000000";
+
+      string d1  = hh1.parse_time_v1(ts1);
       ASSERT_EQ(d1.size(),  8);
-      ASSERT_EQ(hh1.unpack_time(d1),   ts);
+      ASSERT_EQ(hh1.print_time_v1(d1), ts1);
 
-      ASSERT_EQ(hh2.unpack_time(hh1.pack_time(0)), 0);
-      ASSERT_EQ(hh2.unpack_time(
-        hh1.pack_time(0xFFFFFFFFFFFFFFFF)), 0xFFFFFFFFFFFFFFFF); //max
+      string d2  = hh1.parse_time_v1(ts2);
+      ASSERT_EQ(d2.size(),  8);
+      ASSERT_EQ(hh1.print_time_v1(d2), ts2);
+
+      ASSERT_EQ(hh2.print_time_v1(hh1.parse_time_v1(ts3)), ts3); //max
+
+      ASSERT_EQ(hh2.print_time_v1(hh1.parse_time_v1("1")), "1.000000000");
+      ASSERT_EQ(hh2.print_time_v1(hh1.parse_time_v1("1.")), "1.000000000");
+      ASSERT_EQ(hh2.print_time_v1(hh1.parse_time_v1("1.000")), "1.000000000");
+      ASSERT_EQ(hh2.print_time_v1(hh1.parse_time_v1("1.123")), "1.123000000");
+      ASSERT_EQ(hh2.print_time_v1(hh1.parse_time_v1("1.12345")), "1.123000000");
+
     }
+    {
+      // pack/unpack timestamps - v2
+      DBinfo hh1(DATA_DOUBLE);
 
+      std::string ts1  = "1234567890.000000000";
+      std::string ts2  = "1234567890.123456789";
+      string d1  = hh1.parse_time_v2(ts1);
+      ASSERT_EQ(d1.size(),  4);
+      ASSERT_EQ(hh1.print_time_v2(d1), ts1);
+      string d2  = hh1.parse_time_v2(ts2);
+      ASSERT_EQ(d2.size(),  8);
+      ASSERT_EQ(hh1.print_time_v2(d2), ts2);
+
+      ASSERT_EQ(hh1.print_time_v2(hh1.parse_time_v2("0.0")), "0.000000000");
+      ASSERT_EQ(hh1.print_time_v2(hh1.parse_time_v2("1")), "1.000000000");
+      ASSERT_EQ(hh1.print_time_v2(hh1.parse_time_v2("1.")), "1.000000000");
+      ASSERT_EQ(hh1.print_time_v2(hh1.parse_time_v2("1.1")), "1.100000000");
+      ASSERT_EQ(hh1.print_time_v2(hh1.parse_time_v2("1.001")), "1.001000000");
+      ASSERT_EQ(hh1.print_time_v2(hh1.parse_time_v2("123456789.123456789")), "123456789.123456789");
+      ASSERT_EQ(hh1.print_time_v2(hh1.parse_time_v2("123456789.12345678999")), "123456789.123456789");
+
+      ASSERT_EX(hh1.parse_time_v2(""), "Bad timestamp: can't read seconds: ");
+      ASSERT_EX(hh1.parse_time_v2("a"), "Bad timestamp: can't read seconds: a");
+      ASSERT_EX(hh1.parse_time_v2("1234567890123"), "Bad timestamp: can't read seconds: 1234567890123"); // >2^32
+      ASSERT_EX(hh1.parse_time_v2("1,"), "Bad timestamp: can't read decimal dot: 1,");
+      ASSERT_EX(hh1.parse_time_v2("1.a"), "Bad timestamp: can't read nanoseconds: 1.a");
+    }
+    {
+      // cmp_time_v1
+      DBinfo hh1(DATA_DOUBLE);
+      ASSERT_EQ(hh1.cmp_time_v1(hh1.parse_time_v1("0.0"), hh1.parse_time_v1("0.0")), 0);
+      ASSERT_EQ(hh1.cmp_time_v1(hh1.parse_time_v1("1.2"), hh1.parse_time_v1("1.1")), 1);
+      ASSERT_EQ(hh1.cmp_time_v1(hh1.parse_time_v1("999.2"), hh1.parse_time_v1("1000.1")), -1);
+    }
+    {
+      // cmp_time_v2
+      DBinfo hh1(DATA_DOUBLE);
+      ASSERT_EQ(hh1.cmp_time_v2(hh1.parse_time_v2("0.0"), hh1.parse_time_v2("0.0")), 0);
+      ASSERT_EQ(hh1.cmp_time_v2(hh1.parse_time_v2("1.2"), hh1.parse_time_v2("1.1")), 1);
+      ASSERT_EQ(hh1.cmp_time_v2(hh1.parse_time_v2("999.2"), hh1.parse_time_v2("1000.1")), -1);
+    }
+    {
+      // is_zero_time_v1
+      DBinfo hh1(DATA_DOUBLE);
+      ASSERT_EQ(hh1.is_zero_time_v1(hh1.parse_time_v1("0.0")), 1);
+      ASSERT_EQ(hh1.is_zero_time_v1(hh1.parse_time_v1("0.001")), 0);
+      ASSERT_EQ(hh1.is_zero_time_v1(hh1.parse_time_v1("0.0001")), 1); // ms precision!
+      ASSERT_EQ(hh1.is_zero_time_v1(hh1.parse_time_v1("100")), 0);
+    }
+    {
+      // is_zero_time_v2
+      DBinfo hh1(DATA_DOUBLE);
+      ASSERT_EQ(hh1.is_zero_time_v2(hh1.parse_time_v2("0.0")), 1);
+      ASSERT_EQ(hh1.is_zero_time_v2(hh1.parse_time_v2("0.001")), 0);
+      ASSERT_EQ(hh1.is_zero_time_v2(hh1.parse_time_v2("0.0001")), 0);
+      ASSERT_EQ(hh1.is_zero_time_v2(hh1.parse_time_v2("0.0000000001")), 1); // ns precision
+      ASSERT_EQ(hh1.is_zero_time_v2(hh1.parse_time_v2("100")), 0);
+    }
+    {
+      // add_time_v1
+      DBinfo hh1(DATA_DOUBLE);
+      ASSERT_EQ(hh1.print_time_v1(hh1.add_time_v1(hh1.parse_time_v1("1.5"), hh1.parse_time_v1("0.5"))), "2.000000000");
+      ASSERT_EQ(hh1.print_time_v1(hh1.add_time_v1(hh1.parse_time_v1("1.999"), hh1.parse_time_v1("1.999"))), "3.998000000");
+      ASSERT_EQ(hh1.print_time_v1(hh1.add_time_v1(hh1.parse_time_v1("10"), hh1.parse_time_v1("10"))), "20.000000000");
+    }
+    {
+      // add_time_v2
+      DBinfo hh1(DATA_DOUBLE);
+      ASSERT_EQ(hh1.print_time_v2(hh1.add_time_v2(hh1.parse_time_v2("1.5"), hh1.parse_time_v2("0.5"))), "2.000000000");
+      ASSERT_EQ(hh1.print_time_v2(hh1.add_time_v2(hh1.parse_time_v2("1.999"), hh1.parse_time_v2("1.999"))), "3.998000000");
+      ASSERT_EQ(hh1.print_time_v2(hh1.add_time_v2(hh1.parse_time_v2("10"), hh1.parse_time_v2("10"))), "20.000000000");
+      // 2^31+2^31 >= 2^32
+      ASSERT_EX(hh1.add_time_v2(hh1.parse_time_v2("2147483648"), hh1.parse_time_v2("2147483648")), "add_time overfull");
+    }
+    {
+      // interpolate_v2
+      DBinfo hh1(DATA_DOUBLE);
+      vector<string> d1,d2;
+      d1.push_back("0.2");
+      d1.push_back("1.2");
+      d2.push_back("1.0");
+      d2.push_back("2.0");
+      string d0 = hh1.interpolate_v2(
+        hh1.parse_time_v2("1.1"),
+        hh1.parse_time_v2("1.0"),
+        hh1.parse_time_v2("1.4"),
+        hh1.parse_data(d1),
+        hh1.parse_data(d2));
+      ASSERT_EQ(hh1.print_data(d0), "0.4 1.4");
+    }
     {
       // pack/unpack data
       DBinfo hh1(DATA_INT32);
@@ -79,33 +177,33 @@ int main() {
       v3.push_back("2pi");
 
       // store in integer DB
-      ASSERT_EQ(hh1.unpack_data(hh1.pack_data(v1)), "314 628");
-      ASSERT_EX(hh1.unpack_data(hh1.pack_data(v2)), "Can't put value into INT32 database: 3.1415");
-      ASSERT_EX(hh1.unpack_data(hh1.pack_data(v3)), "Can't put value into INT32 database: pi"); //!!!
+      ASSERT_EQ(hh1.print_data(hh1.parse_data(v1)), "314 628");
+      ASSERT_EX(hh1.print_data(hh1.parse_data(v2)), "Can't put value into INT32 database: 3.1415");
+      ASSERT_EX(hh1.print_data(hh1.parse_data(v3)), "Can't put value into INT32 database: pi"); //!!!
 
       // store in double DB
-      ASSERT_EQ(hh2.unpack_data(hh2.pack_data(v1)), "314 628");
-      ASSERT_EQ(hh2.unpack_data(hh2.pack_data(v2)), "3.1415 6.283");
-      ASSERT_EX(hh2.unpack_data(hh2.pack_data(v3)), "Can't put value into DOUBLE database: pi");
+      ASSERT_EQ(hh2.print_data(hh2.parse_data(v1)), "314 628");
+      ASSERT_EQ(hh2.print_data(hh2.parse_data(v2)), "3.1415 6.283");
+      ASSERT_EX(hh2.print_data(hh2.parse_data(v3)), "Can't put value into DOUBLE database: pi");
 
       // store in text DB
-      ASSERT_EQ(hh3.unpack_data(hh3.pack_data(v1)), "314 628");
-      ASSERT_EQ(hh3.unpack_data(hh3.pack_data(v2)), "3.1415 6.2830");
-      ASSERT_EQ(hh3.unpack_data(hh3.pack_data(v3)), "pi 2pi");
+      ASSERT_EQ(hh3.print_data(hh3.parse_data(v1)), "314 628");
+      ASSERT_EQ(hh3.print_data(hh3.parse_data(v2)), "3.1415 6.2830");
+      ASSERT_EQ(hh3.print_data(hh3.parse_data(v3)), "pi 2pi");
 
       // colums
-      ASSERT_EQ(hh1.unpack_data(hh1.pack_data(v1), 0), "314");
-      ASSERT_EQ(hh1.unpack_data(hh1.pack_data(v1), 1), "628");
-      ASSERT_EQ(hh1.unpack_data(hh1.pack_data(v1), 2), "NaN");
+      ASSERT_EQ(hh1.print_data(hh1.parse_data(v1), 0), "314");
+      ASSERT_EQ(hh1.print_data(hh1.parse_data(v1), 1), "628");
+      ASSERT_EQ(hh1.print_data(hh1.parse_data(v1), 2), "NaN");
 
-      ASSERT_EQ(hh2.unpack_data(hh2.pack_data(v2), 0), "3.1415");
-      ASSERT_EQ(hh2.unpack_data(hh2.pack_data(v2), 1), "6.283");
-      ASSERT_EQ(hh2.unpack_data(hh2.pack_data(v2), 2), "NaN");
+      ASSERT_EQ(hh2.print_data(hh2.parse_data(v2), 0), "3.1415");
+      ASSERT_EQ(hh2.print_data(hh2.parse_data(v2), 1), "6.283");
+      ASSERT_EQ(hh2.print_data(hh2.parse_data(v2), 2), "NaN");
 
       // column is ignored for the text database
-      ASSERT_EQ(hh3.unpack_data(hh3.pack_data(v2), 0), "3.1415 6.2830");
-      ASSERT_EQ(hh3.unpack_data(hh3.pack_data(v2), 1), "3.1415 6.2830");
-      ASSERT_EQ(hh3.unpack_data(hh3.pack_data(v2), 2), "3.1415 6.2830");
+      ASSERT_EQ(hh3.print_data(hh3.parse_data(v2), 0), "3.1415 6.2830");
+      ASSERT_EQ(hh3.print_data(hh3.parse_data(v2), 1), "3.1415 6.2830");
+      ASSERT_EQ(hh3.print_data(hh3.parse_data(v2), 2), "3.1415 6.2830");
     }
 
     // sizes and names

@@ -1,4 +1,4 @@
-## Graphene -- a simple time-series database for scientific applications
+## Graphene -- a simple time-series database with nanosecond precision for scientific applications
 
 Source code: https://github.com/slazav/graphene
 
@@ -7,7 +7,7 @@ E-mail: Vladislav Zavjalov <slazav@altlinux.org>
 ### Features
 
 - based on BerkleyDB
-- store integer, floating point or text values with millisecond timestamps
+- store integer, floating point or text values with <seconds>.<nanoseconds> timestamps
 - fast access to data, interpolation, time ranges, downsampling
 - multi-column numerical values
 - command line interface for reading/writing data
@@ -23,18 +23,27 @@ contain symbols '.:|+ \t\n', You can use name `cryostat/temperature` but
 not `../temperature` for your dataset. Currently all subfolders have to
 be created manually.
 
-Data are stored as a set of sorted key-value pairs. Key is time in
-milliseconds (64-bit unsigned integer), counted from 1970-01-01 UTC.
-Duplicated time values are allowed (but can not be correctly shown now).
-Value can contain an array if numbers of arbitrary length (data columns)
+Data are stored as a set of sorted key-value pairs. Key is a timestamp,
+one or two 32-bit unsigned integers: a number of seconds
+from 1970-01-01 UTC, and optional number of nanoseconds. Duplicated
+timestamps are not allowed, but user can choose what to do
+with duplicates (see -D option of the graphene program):
+ replace -- replace the old record (default),
+ skip    -- skip the new record if timestamp already exists,
+ error   -- skip the new record and return error message
+ sshift  -- increase time by 1 second step until it will be possible
+            to put the record (no loss of data)
+ nsshift -- same, but with nanosecosd steps.
+
+Value can contain an array of numbers of arbitrary length (data columns)
 or some text. The data format can be chosen during the database
 creation. Possible variants are: TEXT, INT8, UINT8, INT16, UINT16,
 INT32, UINT32, INT64, UINT64, FLOAT, DOUBLE.
 
-Records with 8-bit keys are reserved for database information, for
-example the data format and database description. Records with 16-bit
-keys are reserved for arbitrary user data. These records are not
-affected by regular get/put commands.
+Records with 8-bit keys are reserved for database information: data
+format, database version, description. Records with 16-bit keys are
+reserved for arbitrary user data. These records are not affected by
+regular get/put commands.
 
 ### Known problems
 
@@ -48,13 +57,6 @@ the root database folder.
 the command line interface. In interactive mode it is not possible, because
 line breaks always mean starting of a new command. On output line breaks are
 always converted to spaces.
-- Duplicated timestamps. You can put entries with duplicated timestamps to a
-database, but now get_* commands can not read them correctly.
-- Strict timestamp format. Now you should always use milliseconds for time.
-Not seconds, not any human-readable format. Timestamp always occupies 8 bytes.
-Maybe it is possible to do more flexible format with auto-conversions,
-use only 4 bytes if 1-second precision is needed. But it is not clear how
-to do this in a good way without a mess.
 
 ### Command line interface
 
@@ -64,6 +66,8 @@ Usage: `graphene [options] <command> <parameters>`
 
 Options:
 - -d <path> -- database directory (default `/var/lib/graphene/`)
+- -D <word> -- what to do with duplicated timestamps:
+               replace, skip, error, sshift, nsshift (default: replace)
 - -h        -- write this help message and exit
 
 Commands for manipulating databases:
@@ -186,7 +190,7 @@ let's create a database DB and put all these points at once:
 ```
 $ graphene -d . create DB
 $ for t in $(seq 3153600); do printf "put DB $t $RANDOM\n"; done |
-    ./graphene -d . interactive
+    ./graphene -d . interactive &>/dev/null
 ```
 
 This takes about 1 minute at my computer. Note that I use interactive
@@ -196,24 +200,28 @@ with command-line interface it takes about 10 hours:
 $ for t in $(seq 3153600); do ./graphene -d . put DB "$t" "$RANDOM"; done
 ```
 
-Size of the database is 86 Mb, 28.6 bytes/point. Gzip can make in
-smaller (17.5 Mb, 5.81 bytes/point), xz even smaller (8.8 Mb, 2.94
+Size of the database is 73.6 Mb, 24.5 bytes/point. Gzip can make in
+smaller (17.3 Mb, 5.74 bytes/point), xz even smaller (10.3 Mb, 3.41
 bytes/point).
+
+If you use non-integer seconds for timestamps the size will increase by
+4 bytes per point.
 
 If you have a few parameters which do not need separate timestamps, you
 can put them into a multi-column data points (put DB $t $par1 $par2 ...)
 saving some space. Database size grows by 8 bytes per additional column.
 
+
 You can also configure the database to store 4-byte float values instead
 of 8-byte doubles. It will save 4 bytes per data column.
 
-Reading of all the points takes 15s:
+Reading of all the points takes 23s:
 
 ```
 $ time graphene -d . get_range DB | wc
-15.81user 0.07system 0:15.90elapsed 99%CPU (0avgtext+0avgdata 5208maxresident)k
-0inputs+0outputs (0major+293minor)pagefaults 0swaps
-3153600 6307200 41969235
+23.18user 0.10system 0:23.27elapsed 100%CPU (0avgtext+0avgdata 5168maxresident)k
+0inputs+0outputs (0major+289minor)pagefaults 0swaps
+3153600 6307200 73507308
 ```
 
 Reading of last 3000 points, first 3000 points, every 1000th point takes
@@ -239,3 +247,25 @@ $ time graphene -d . get_range DB 0 -1 1000 | wc
 0inputs+0outputs (0major+292minor)pagefaults 0swaps
    3154    6308   42011
 ```
+
+###  Database versions
+
+In v1 time was stored in milliseconds in a 64-bit integer.
+Time input and output in the command line interface used integer numbers
+of milliseconds:
+```
+$ graphene put DB 1479463946000 1.0
+$ graphene get_range DB
+1479463946000 1.0
+```
+
+In v2 time is stored as two 32-bit numbers: number of seconds
+and number of nanoseconds. On input and output a decimal dot is used:
+```
+$ graphene put DB 1479463946 1.0
+$ graphene put DB 1479463946.123456789 2.0
+$ graphene get_range DB
+1479463946.000000000 1.0
+1479463946.123456789 2.0
+```
+v1 databases are supported in v2.

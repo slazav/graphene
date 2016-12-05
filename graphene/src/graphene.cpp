@@ -23,12 +23,14 @@ using namespace std;
 class Pars{
   public:
   string dbpath;       /* path to the databases */
+  string dpolicy;      /* what to do with duplicated timestamps*/
   vector<string> pars; /* non-option parameters */
   DBpool pool;         /* database storage */
 
   // defaults
   Pars(){
-    dbpath = "/var/lib/graphene/";
+    dbpath  = "/var/lib/graphene/";
+    dpolicy = "replace";
   }
 
   // print help message and exit
@@ -38,6 +40,8 @@ class Pars{
             "Usage: graphene [options] <command> <parameters>\n"
             "Options:\n"
             "  -d <path> -- database directory (default " << p.dbpath << "\n"
+            "  -D <word> -- what to do with duplicated timestamps:\n"
+            "               replace, skip, error, sshift, nsshift (default: " << p.dpolicy << ")\n"
             "  -h        -- write this help message and exit\n"
             "Comands:\n"
             "  create <name> <data_fmt> <description>\n"
@@ -78,11 +82,12 @@ class Pars{
   void parse_cmdline_options(const int argc, char **argv){
     /* parse  options */
     int c;
-    while((c = getopt(argc, argv, "+d:h"))!=-1){
+    while((c = getopt(argc, argv, "+d:D:h"))!=-1){
       switch (c){
         case '?':
         case ':': throw Err(); /* error msg is printed by getopt*/
         case 'd': dbpath = optarg; break;
+        case 'D': dpolicy = optarg; break;
         case 'h': print_help();
       }
     }
@@ -102,7 +107,10 @@ class Pars{
     }
   }
 
-  // run command, using parameters
+  // Run command, using parameters
+  // For read/write commands time is transferred as a string
+  // to db.put, db.get_* functions without change.
+  // "now", "now_s" and "inf" strings can be used.
   void run_command(){
     if (pars.size() < 1) return;
     string cmd = pars[0];
@@ -203,7 +211,7 @@ class Pars{
       for (int i=3; i<pars.size(); i++) dat.push_back(string(pars[i]));
       // open database and write data
       DBgr db = pool.get(dbpath, pars[1]);
-      db.put(pars[2], dat);
+      db.put(pars[2], dat, dpolicy);
       return;
     }
 

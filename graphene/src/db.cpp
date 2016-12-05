@@ -20,6 +20,16 @@ int cmpfunc(DB *dbp, const DBT *a, const DBT *b){
     v1 = *(uint64_t*)a->data;
     v2 = *(uint64_t*)b->data; }
   else
+  if (a->size == sizeof(uint64_t) && b->size == sizeof(uint32_t)){
+    v1 = *(uint64_t*)a->data;
+    v2 = *(uint32_t*)b->data;
+    v2 = v2 << 32; }
+  else
+  if (a->size == sizeof(uint32_t) && b->size == sizeof(uint64_t)){
+    v1 = *(uint32_t*)a->data;
+    v2 = *(uint64_t*)b->data;
+    v1 = v1 << 32; }
+  else
   if (a->size == sizeof(uint32_t) && b->size == sizeof(uint32_t)){
     v1 = *(uint32_t*)a->data;
     v2 = *(uint32_t*)b->data; }
@@ -149,7 +159,8 @@ DBgr::read_info(){
     db_info.version = 1; // first version can be without key=1
   else if (ret != 0)
     throw Err() << name << ".db: " << db_strerror(ret);
-  db_info.version = *((uint8_t*)v.data);
+  else
+    db_info.version = *((uint8_t*)v.data);
 
   info_is_actual = true;
   return db_info;
@@ -162,15 +173,25 @@ DBgr::read_info(){
 // the database.
 //
 void
-DBgr::put(const string &t,
-           const vector<string> & dat){
+DBgr::put(const string &t, const vector<string> & dat, const string &dpolicy){
   DBinfo info = read_info();
-  string ks = info.pack_time(t);
-  string vs = info.pack_data(dat);
+  string ks = info.parse_time(t);
+  string vs = info.parse_data(dat);
   DBT k = mk_dbt(ks);
   DBT v = mk_dbt(vs);
-  int res = dbp->put(dbp, NULL, &k, &v, 0);
-  if (res != 0) throw Err() << name << ".db: " << db_strerror(res);
+
+  int flags = (dpolicy =="replace")? 0:DB_NOOVERWRITE;
+  int res = -1;
+  while (res!=0){
+    res = dbp->put(dbp, NULL, &k, &v, flags);
+    if (res == DB_KEYEXIST){
+      if (dpolicy =="error") throw Err() << name << ".db: " << db_strerror(res);
+      if (dpolicy =="sshift")  ks = info.add_time(ks, info.parse_time("1"));
+      if (dpolicy =="nsshift") ks = info.add_time(ks, info.parse_time("0.000000001"));
+      if (dpolicy =="skip") break;
+    }
+    else if (res != 0) throw Err() << name << ".db: " << db_strerror(res);
+  }
 }
 
 /************************************/
@@ -184,7 +205,7 @@ DBgr::get_next(const string &t1, DBout & dbo){
   dbp->cursor(dbp, NULL, &curs, 0);
   if (curs==NULL) throw Err() << name << ".db: can't get a cursor";
 
-  string t1p = info.pack_time(t1);
+  string t1p = info.parse_time(t1);
   DBT k = mk_dbt(t1p);
   DBT v = mk_dbt();
   int res = curs->c_get(curs, &k, &v, DB_SET_RANGE);
@@ -204,7 +225,7 @@ DBgr::get_prev(const string &t2, DBout & dbo){
   DBC *curs;
   dbp->cursor(dbp, NULL, &curs, 0);
   if (curs==NULL) throw Err() << name << ".db: can't get a cursor";
-  string t2p = info.pack_time(t2);
+  string t2p = info.parse_time(t2);
   DBT k = mk_dbt(t2p);
   DBT v = mk_dbt();
 
@@ -233,6 +254,7 @@ void
 DBgr::get(const string &t, DBout & dbo){
   DBinfo info = read_info();
 
+  /* for non-float databases use get_prev */
   if (info.val!=DATA_FLOAT && info.val!=DATA_DOUBLE)
     return get_prev(t, dbo);
 
@@ -240,7 +262,7 @@ DBgr::get(const string &t, DBout & dbo){
   DBC *curs;
   dbp->cursor(dbp, NULL, &curs, 0);
   if (curs==NULL) throw Err() << name << ".db: can't get a cursor";
-  string tp = info.pack_time(t);
+  string tp = info.parse_time(t);
   DBT k = mk_dbt(tp);
   DBT v = mk_dbt();
 
@@ -301,9 +323,9 @@ DBgr::get_range(const string &t1, const string &t2,
   dbp->cursor(dbp, NULL, &curs, 0);
   if (curs==NULL) throw Err() << name << ".db: can't get a cursor";
 
-  string t1p = info.pack_time(t1);
-  string t2p = info.pack_time(t2);
-  string dtp = info.pack_time(dt);
+  string t1p = info.parse_time(t1);
+  string t2p = info.parse_time(t2);
+  string dtp = info.parse_time(dt);
   DBT k = mk_dbt(t1p);
   DBT v = mk_dbt();
   string tlp; // last printed value
@@ -319,7 +341,7 @@ DBgr::get_range(const string &t1, const string &t2,
     if (info.cmp_time(tnp,t2p)>0) break;
 
     // if we want every point, switch to DB_NEXT and repeat
-    if (info.is_zero_time(dt)){
+    if (info.is_zero_time(dtp)){
       dbo.proc_point(&k, &v, info);
       fl=DB_NEXT;
       continue;
@@ -327,7 +349,7 @@ DBgr::get_range(const string &t1, const string &t2,
 
     // If dt >=1 we continue using fl=DB_SET_RANGE.
     // If new value the same as old
-    if (info.cmp_time(tlp,tnp)==0){
+    if (tlp.size()>0 && info.cmp_time(tlp,tnp)==0){
       // get next value
       res = curs->c_get(curs, &k, &v, DB_NEXT);
       if (res==DB_NOTFOUND) break;
@@ -351,7 +373,7 @@ DBgr::get_range(const string &t1, const string &t2,
 void
 DBgr::del(const string &t1){
   DBinfo info = read_info();
-  string t1p = info.pack_time(t1);
+  string t1p = info.parse_time(t1);
   DBT k = mk_dbt(t1p);
   int res = dbp->del(dbp, NULL, &k, 0);
   if (res!=0) throw Err() << name << ".db: " << db_strerror(res);
@@ -367,8 +389,8 @@ DBgr::del_range(const string &t1, const string &t2){
   dbp->cursor(dbp, NULL, &curs, 0);
   if (curs==NULL) throw Err() << name << ".db: can't get a cursor";
 
-  string t1p = info.pack_time(t1);
-  string t2p = info.pack_time(t2);
+  string t1p = info.parse_time(t1);
+  string t2p = info.parse_time(t2);
   DBT k = mk_dbt(t1p);
   DBT v = mk_dbt();
 
