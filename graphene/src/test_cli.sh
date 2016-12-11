@@ -91,7 +91,6 @@ assert "$(./graphene -d . put test_1 1234567890.000 0.1)" ""
 assert "$(./graphene -d . put test_1 2234567890.123 0.2)" ""
 # get_next
 assert "$(./graphene -d . get_next test_1)"                "1234567890.000000000 0.1" # first
-exit
 assert "$(./graphene -d . get_next test_1 0)"              "1234567890.000000000 0.1"
 assert "$(./graphene -d . get_next test_1 1000000000.000)" "1234567890.000000000 0.1"
 assert "$(./graphene -d . get_next test_1 1234567890.000)" "1234567890.000000000 0.1" # ==
@@ -325,7 +324,6 @@ assert "$(./graphene -d . get_range test_1)" "1.000000000 3"
 
 assert "$(./graphene -d . -D skip put test_1 1 4)" ""
 assert "$(./graphene -d . get_range test_1)" "1.000000000 3"
-
 assert "$(./graphene -d . -D sshift put test_1 1 5)" ""
 assert "$(./graphene -d . -D sshift put test_1 1 6)" ""
 assert "$(./graphene -d . get_range test_1)" "\
@@ -342,9 +340,10 @@ assert "$(./graphene -d . get_range test_1)" "\
 2.000000000 5
 3.000000000 6"
 
+assert "$(./graphene -d . -D aaa put test_1 1 8)" "Error: Unknown dpolicy setting: aaa"
+
 assert "$(./graphene -d . -D error put test_1 1 8)" "Error: test_1.db: DB_KEYEXIST: Key/data pair already exists"
 assert "$(./graphene -d . delete test_1)" ""
-
 
 ###########################################################################
 # 32- and 64-bit timestamps
@@ -356,10 +355,7 @@ assert "$(./graphene -d . put test_1 2    3)" ""
 assert "$(./graphene -d . get_range test_1)" "\
 1.000000000 1
 1.500000000 2
-2.000000000 3
-"
-
-
+2.000000000 3"
 assert "$(./graphene -d . delete test_1)" ""
 
 ###########################################################################
