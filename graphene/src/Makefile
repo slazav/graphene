@@ -30,7 +30,7 @@ tests: test_db test_json test_cli.sh
 	./test_json
 	./test_cli.sh
 	./test_json.sh
-#	./test_v1.sh
+	./test_v1.sh
 
 clean:
 	rm -f *.o test_db test_json graphene graphene_http graphene_json *.db
