@@ -7,8 +7,8 @@ E-mail: Vladislav Zavjalov <slazav@altlinux.org>
 ### Features
 
 - based on BerkleyDB
-- store integer, floating point or text values with <seconds>.<nanoseconds> timestamps
-- fast access to data, interpolation, time ranges, downsampling
+- store integer, floating point or text values with &lt;seconds&gt;.&lt;nanoseconds&gt; timestamps
+- fast access to data, interpolation, downsampling, time ranges
 - multi-column numerical values
 - command line interface for reading/writing data
 - http simple json interface for Grafana viewer
@@ -18,9 +18,9 @@ E-mail: Vladislav Zavjalov <slazav@altlinux.org>
 
 Each dataset is a separate BerkleyDB file with `.db` extension, located in
 a database directory (default `/var/lib/graphene`). Name of file represents
-the name of the dataset. Name may contain path symbols '/', but can not
-contain symbols '.:|+ \t\n', You can use name `cryostat/temperature` but
-not `../temperature` for your dataset. Currently all subfolders have to
+the name of the dataset. Name may contain path symbols `/`, but can not
+contain symbols `.:|+ \t\n`, You can use name `cryostat/temperature` but
+not `../temperature` for your dataset. All subfolders have to
 be created manually.
 
 Data are stored as a set of sorted key-value pairs. Key is a timestamp,
@@ -45,18 +45,6 @@ format, database version, description. Records with 16-bit keys are
 reserved for arbitrary user data. These records are not affected by
 regular get/put commands.
 
-### Known problems
-
-- Database names with '/'. It is conveniend to use subfolders for databases.
-You can make good structure for your data, you can separate folders with
-different permissions for different users. But now manipuating these
-names via graphene interface does not work well. Creation of a new database
-is possible only if all subfolders exist. List command shows only databases in
-the root database folder.
-- Linebreaks in text databases. You can put linebreaks in text database using
-the command line interface. In interactive mode it is not possible, because
-line breaks always mean starting of a new command. On output line breaks are
-always converted to spaces.
 
 ### Command line interface
 
@@ -68,7 +56,7 @@ Options:
 - -d <path> -- database directory (default `/var/lib/graphene/`)
 - -D <word> -- what to do with duplicated timestamps:
                replace, skip, error, sshift, nsshift (default: replace)
-- -h        -- write this help message and exit
+- -h        -- write help message and exit
 
 Commands for manipulating databases:
 
@@ -79,7 +67,7 @@ Commands for manipulating databases:
 - `rename <old_name> <new_name>` -- Rename a database file.
 
 Delete and rename commands just do simple file operations.
-A database can be renamed only if destination does not exists.
+A database can be renamed only if the destination does not exists.
 
 - `set_descr <name> <description>` -- Change database description.
 
@@ -176,9 +164,21 @@ Options:
 Nothing is ready yet. You can use something like this to get data using the
 graphene program:
 
-  [r, out] = system('graphene get_range my_dataset 1464260400000 now 60000');
+  [r, out] = system('graphene get_range my_dataset 1464260400 now 60000');
   [t val1 val2] = strread(out, '%f %f %f');
 
+### Known problems
+
+- Database names with '/'. It is conveniend to use subfolders for databases.
+You can make good structure for your data, you can separate folders with
+different permissions for different users. But now manipuating these
+names via graphene interface does not work well. Creation of a new database
+is possible only if all subfolders exist. List command shows only databases in
+the root database folder.
+- Linebreaks in text databases. You can put linebreaks in text database using
+the command line interface. In interactive mode it is not possible, because
+line breaks always mean starting of a new command. On output line breaks are
+always converted to spaces.
 
 ###  Performance
 
