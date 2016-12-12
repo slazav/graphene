@@ -92,6 +92,7 @@ int main() {
       ASSERT_EQ(hh1.print_time_v2(hh1.parse_time_v2("1.001")), "1.001000000");
       ASSERT_EQ(hh1.print_time_v2(hh1.parse_time_v2("123456789.123456789")), "123456789.123456789");
       ASSERT_EQ(hh1.print_time_v2(hh1.parse_time_v2("123456789.12345678999")), "123456789.123456789");
+      ASSERT_EQ(hh1.print_time_v2(hh1.parse_time_v2("4294967295.12345678999")), "4294967295.123456789"); // max
 
       ASSERT_EX(hh1.parse_time_v2(""), "Bad timestamp: can't read seconds: ");
       ASSERT_EX(hh1.parse_time_v2("a"), "Bad timestamp: can't read seconds: a");
