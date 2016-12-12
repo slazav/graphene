@@ -365,6 +365,7 @@ DBgr::get_range(const string &t1, const string &t2,
     // add dt to the key for the next loop:
     string sp = info.add_time(tlp, dtp);
     memcpy(k.data,sp.data(),k.size);
+    k = mk_dbt(sp);
   }
   curs->close(curs);
 }
