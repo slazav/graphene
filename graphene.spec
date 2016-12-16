@@ -1,5 +1,5 @@
 Name:         graphene
-Version:      2.1
+Version:      2.2
 Release:      alt1
 
 Summary:      Simple time series database.
@@ -37,6 +37,9 @@ install -pD -m755 %_sourcedir/graphene_http.init %buildroot%_initdir/graphene_ht
 %config %_initdir/graphene_http
 
 %changelog
+* Fri Dec 16 2016 Vladislav Zavjalov <slazav@altlinux.org> 2.2-alt1
+- fix error in get_range command
+
 * Sun Dec 11 2016 Vladislav Zavjalov <slazav@altlinux.org> 2.1-alt1
 - v2.1
   - remove tcl packages (see https://github.com/slazav/exp_tcl)
