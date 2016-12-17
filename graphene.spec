@@ -31,7 +31,7 @@ install -pD -m755 %_sourcedir/graphene_http.init %buildroot%_initdir/graphene_ht
 %preun_service graphene_http
 
 %files
-%attr(0755,root,root) %dir %_sharedstatedir/graphene
+%attr(2770,root,users) %dir %_sharedstatedir/graphene
 %_bindir/graphene
 %_bindir/graphene_http
 %config %_initdir/graphene_http
