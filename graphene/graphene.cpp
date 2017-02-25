@@ -316,7 +316,7 @@ class Pars{
     }
 
     // unknown command
-    throw Err() << "Unknown command";
+    throw Err() << "Unknown command: " << cmd;
   }
 };
 

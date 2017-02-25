@@ -23,7 +23,7 @@ assert "$(./graphene -d .)" "$help_msg"
 assert "$(./graphene -X . 2>&1)" "./graphene: invalid option -- 'X'"
 
 # unknown command
-assert "$(./graphene -d . a)" "Error: Unknown command"
+assert "$(./graphene -d . a)" "Error: Unknown command: a"
 
 
 ###########################################################################
@@ -293,7 +293,7 @@ assert "$(./graphene -d . delete test_4)" ""
 
 # create
 assert "$(./graphene -d . interactive 1)" "Error: too many parameters"
-assert "$(printf 'x' | ./graphene -d . interactive)" "Error: Unknown command"
+assert "$(printf 'x' | ./graphene -d . interactive)" "Error: Unknown command: x"
 assert "$(printf 'create' | ./graphene -d . interactive)" "Error: database name expected"
 
 assert "$(printf 'create test_1
