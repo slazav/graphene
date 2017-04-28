@@ -24,6 +24,7 @@ class Pars{
   public:
   string dbpath;       /* path to the databases */
   string dpolicy;      /* what to do with duplicated timestamps*/
+  bool interactive;    /* use interactive mode */
   vector<string> pars; /* non-option parameters */
   DBpool pool;         /* database storage */
 
@@ -31,6 +32,7 @@ class Pars{
   Pars(){
     dbpath  = "/var/lib/graphene/";
     dpolicy = "replace";
+    interactive = false;
   }
 
   // print help message and exit
@@ -43,6 +45,7 @@ class Pars{
             "  -D <word> -- what to do with duplicated timestamps:\n"
             "               replace, skip, error, sshift, nsshift (default: " << p.dpolicy << ")\n"
             "  -h        -- write this help message and exit\n"
+            "  -i        -- interactive mode, read commands from stdin\n"
             "Comands:\n"
             "  create <name> <data_fmt> <description>\n"
             "      -- create a database\n"
@@ -71,8 +74,6 @@ class Pars{
             "      -- delete one data point\n"
             "  del_range <name> <time1> <time2>\n"
             "      -- delete all points in the time range\n"
-            "  interactive\n"
-            "      -- interactive mode, commands are read from stdin\n"
             "  sync -- close all opened databases in interactive mode\n"
     ;
     throw Err();
@@ -82,17 +83,17 @@ class Pars{
   void parse_cmdline_options(const int argc, char **argv){
     /* parse  options */
     int c;
-    while((c = getopt(argc, argv, "+d:D:h"))!=-1){
+    while((c = getopt(argc, argv, "+d:D:hi"))!=-1){
       switch (c){
         case '?':
         case ':': throw Err(); /* error msg is printed by getopt*/
         case 'd': dbpath = optarg; break;
         case 'D': dpolicy = optarg; break;
         case 'h': print_help();
+        case 'i': interactive = true;
       }
     }
     pars = vector<string>(argv+optind, argv+argc);
-    if (pars.size() < 1) print_help();
   }
 
   // get parameters from a string (for interactive mode)
@@ -112,7 +113,7 @@ class Pars{
   // to db.put, db.get_* functions without change.
   // "now", "now_s" and "inf" strings can be used.
   void run_command(){
-    if (pars.size() < 1) return;
+    if (pars.size() < 1) throw Err() << "command is expected";
     string cmd = pars[0];
 
     // create new database
@@ -285,28 +286,6 @@ class Pars{
       return;
     }
 
-    // interactive mode: put/get data using stdin commands
-    // args: interactive
-    if (strcasecmp(cmd.c_str(), "interactive")==0){
-      if (pars.size()>1) throw Err() << "too many parameters";
-
-      string line;
-      while (getline(cin, line)){
-        try {
-          parse_command_string(line);
-          if (pars.size()>0 &&
-              strcasecmp(pars[0].c_str(), "interactive")==0)
-            throw Err() << "Command can not be run in interactive mode";
-          run_command();
-          cout << "OK\n";
-        }
-        catch(Err e){
-          if (e.str()!="") cout << "Error: " << e.str() << "\n";
-        }
-      }
-      return;
-    }
-
     // close all opened databases in interactive mode
     // args: sync
     if (strcasecmp(cmd.c_str(), "sync")==0){
@@ -318,6 +297,28 @@ class Pars{
     // unknown command
     throw Err() << "Unknown command: " << cmd;
   }
+
+
+  // Interactive mode.
+  void run_interactive(){
+    if (pars.size() !=0) throw Err() << "too many argumens for the interactive mode";
+    string line;
+    while (getline(cin, line)){
+      try {
+        parse_command_string(line);
+        if (pars.size()>0 &&
+            strcasecmp(pars[0].c_str(), "interactive")==0)
+          throw Err() << "Command can not be run in interactive mode";
+        run_command();
+        cout << "OK\n";
+      }
+      catch(Err e){
+        if (e.str()!="") cout << "Error: " << e.str() << "\n";
+      }
+    }
+    return;
+  }
+
 };
 
 
@@ -328,7 +329,8 @@ main(int argc, char **argv) {
   try {
     Pars p;  /* program parameters */
     p.parse_cmdline_options(argc, argv);
-    p.run_command();
+    if (p.interactive) p.run_interactive();
+    else p.run_command();
 
   } catch(Err e){
     if (e.str()!="") cout << "Error: " << e.str() << "\n";

@@ -16,8 +16,8 @@ function assert(){
 help_msg="$(./graphene -h)"
 
 # no commands - help message
-assert "$(./graphene)" "$help_msg"
-assert "$(./graphene -d .)" "$help_msg"
+assert "$(./graphene)" "Error: command is expected"
+assert "$(./graphene -d .)" "Error: command is expected"
 
 # invalid option (error printed by getopt)
 assert "$(./graphene -X . 2>&1)" "./graphene: invalid option -- 'X'"
@@ -292,12 +292,12 @@ assert "$(./graphene -d . delete test_4)" ""
 # interactive mode
 
 # create
-assert "$(./graphene -d . interactive 1)" "Error: too many parameters"
-assert "$(printf 'x' | ./graphene -d . interactive)" "Error: Unknown command: x"
-assert "$(printf 'create' | ./graphene -d . interactive)" "Error: database name expected"
+assert "$(./graphene -d . -i 1)" "Error: too many argumens for the interactive mode"
+assert "$(printf 'x' | ./graphene -d . -i)" "Error: Unknown command: x"
+assert "$(printf 'create' | ./graphene -d . -i)" "Error: database name expected"
 
 assert "$(printf 'create test_1
-                  info test_1' | ./graphene -d . interactive)"\
+                  info test_1' | ./graphene -i -d .)"\
        "$(printf "OK\nDOUBLE\nOK")"
 
 assert "$(printf 'create test_2
@@ -306,7 +306,7 @@ assert "$(printf 'create test_2
                   put test_2 30 20
                   put test_2 40 30
                   get test_1 15
-                  get test_2 38' | ./graphene -d . interactive)"\
+                  get test_2 38' | ./graphene -i -d .)"\
         "$(printf "OK\nOK\nOK\nOK\nOK\n15.000000000 5\nOK\n38.000000000 28\nOK")"
 assert "$(./graphene -d . delete test_1)" ""
 assert "$(./graphene -d . delete test_2)" ""

@@ -57,6 +57,15 @@ Options:
 - -D <word> -- what to do with duplicated timestamps:
                replace, skip, error, sshift, nsshift (default: replace)
 - -h        -- write help message and exit
+  -i        -- interactive mode, read commands from stdin
+
+Interactive mode:
+
+Use -i option to enter the interactive mode. Then commands are read from
+stdin, answers are written to stdout. This allows making many requests
+without reopening databases. Opening and closing of databases are long,
+it can be useful to open the connection once and do many
+operations. Each response ends with "OK" or "Error: <message>" line.
 
 Commands for manipulating databases:
 
@@ -80,9 +89,9 @@ Commands for reading and writing data:
 
 - `put <name> <time> <value1> ... <valueN>` -- Write a data point.
 
-- `get_next <extended name> [<time1>]` -- Get next point with t>=time1.
+- `get_next <extended name> [<time1>]` -- Get first point with t>=time1.
 
-- `get_prev <extended name> [<time2>]` -- Get previous point with t<=time2.
+- `get_prev <extended name> [<time2>]` -- Get last point with t<=time2.
 
 - `get <extended name> [<time2>]` -- For integer and text databases
   get is equivalent to get_prev. For double databases it does linear
@@ -116,23 +125,17 @@ Commands for deleting data:
 
 - `del_range  <name> [<time1>] [<time2>]` -- Delete all points in the range.
 
-Interactive mode commands:
-
-- `interactive` -- Interactive mode. Commands are read from stdin.
-Allows making many requests without reopening databases. Opening and closing of
-databases are long operations. It can be useful to open the connection once
-and do many operations. Each response ends with "OK" or "Error: <message>"
-line.
+Command for syncing databases:
 
 - `sync` -- In the command line mode it does nothing. In the
 interactive mode it closes all previously opened databases. It is useful
 if you keep a connection (for example via ssh) for a long time, but want
 to commit your changes to the databases regularly.
 
-
 Examples:
 
 See `examples/*` in the source folder
+
 
 
 ### HTTP + Simple JSON interface
