@@ -317,6 +317,7 @@ class Pars{
   void run_interactive(){
     if (pars.size() !=0) throw Err() << "too many argumens for the interactive mode";
     string line;
+    cout << "#SPP001\n"; // command-line protocol, version 001.
     cout << "Graphene database. Type cmdlist to see list of commands\n";
     cout << "#OK\n";
 

@@ -64,10 +64,14 @@ Interactive mode:
 Use -i option to enter the interactive mode. Then commands are read from
 stdin, answers are written to stdout. This allows making many requests
 without reopening databases. Opening and closing of databases are long,
-it can be useful to open the connection once and do many operations. If
-interactive mode is sucsessfully started a prompt message followed by #OK
-line is printed. Then each response ends with "#OK" or "#Error:
-<message>" line.
+it can be useful to open the connection once and do many operations.
+
+The program implements a simple pipe protocol (see somewhere in my
+tcl_exp package): When it is started sucsessfully  a prompt message is
+printed to stdout started with "#SPP001" and followed by "#OK" line. In
+case of an error "#Error: <...>" line is printed and program exits. Then
+the program reads commands from stdin and sends ansers to stdout folowed
+by "#OK" or "#Error: <...>" lines until the user  close the connection.
 
 Commands for manipulating databases:
 
