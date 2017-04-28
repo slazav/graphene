@@ -35,19 +35,9 @@ class Pars{
     interactive = false;
   }
 
-  // print help message and exit
-  void print_help(){
-    Pars p; // default parameters
-    cout << "graphene -- command line interface to Graphene time series database\n"
-            "Usage: graphene [options] <command> <parameters>\n"
-            "Options:\n"
-            "  -d <path> -- database directory (default " << p.dbpath << "\n"
-            "  -D <word> -- what to do with duplicated timestamps:\n"
-            "               replace, skip, error, sshift, nsshift (default: " << p.dpolicy << ")\n"
-            "  -h        -- write this help message and exit\n"
-            "  -i        -- interactive mode, read commands from stdin\n"
-            "Comands:\n"
-            "  create <name> <data_fmt> <description>\n"
+  // print command list (used in both -h message and interactive mode help)
+  void print_cmdlist(){
+    cout << "  create <name> <data_fmt> <description>\n"
             "      -- create a database\n"
             "  delete <name>\n"
             "      -- delete a database\n"
@@ -74,8 +64,25 @@ class Pars{
             "      -- delete one data point\n"
             "  del_range <name> <time1> <time2>\n"
             "      -- delete all points in the time range\n"
-            "  sync -- close all opened databases in interactive mode\n"
+            "  sync    -- close all opened databases in interactive mode\n"
+            "  cmdlist -- print this list of commands\n"
     ;
+  }
+
+  // print help message and exit
+  void print_help(){
+    Pars p; // default parameters
+    cout << "graphene -- command line interface to Graphene time series database\n"
+            "Usage: graphene [options] <command> <parameters>\n"
+            "Options:\n"
+            "  -d <path> -- database directory (default " << p.dbpath << "\n"
+            "  -D <word> -- what to do with duplicated timestamps:\n"
+            "               replace, skip, error, sshift, nsshift (default: " << p.dpolicy << ")\n"
+            "  -h        -- write this help message and exit\n"
+            "  -i        -- interactive mode, read commands from stdin\n"
+            "Commands:\n"
+    ;
+    print_cmdlist();
     throw Err();
   }
 
@@ -293,6 +300,13 @@ class Pars{
       pool.clear();
       return;
     }
+    // close all opened databases in interactive mode
+    // args: sync
+    if (strcasecmp(cmd.c_str(), "cmdlist")==0){
+      if (pars.size()>1) throw Err() << "too many parameters";
+      print_cmdlist();
+      return;
+    }
 
     // unknown command
     throw Err() << "Unknown command: " << cmd;
@@ -303,17 +317,18 @@ class Pars{
   void run_interactive(){
     if (pars.size() !=0) throw Err() << "too many argumens for the interactive mode";
     string line;
+    cout << "Graphene database. Type cmdlist to see list of commands\n";
+    cout << "#OK\n";
+
     while (getline(cin, line)){
       try {
+        if (line=="") continue;
         parse_command_string(line);
-        if (pars.size()>0 &&
-            strcasecmp(pars[0].c_str(), "interactive")==0)
-          throw Err() << "Command can not be run in interactive mode";
         run_command();
-        cout << "OK\n";
+        cout << "#OK\n";
       }
       catch(Err e){
-        if (e.str()!="") cout << "Error: " << e.str() << "\n";
+        if (e.str()!="") cout << "#Error: " << e.str() << "\n";
       }
     }
     return;
@@ -333,7 +348,7 @@ main(int argc, char **argv) {
     else p.run_command();
 
   } catch(Err e){
-    if (e.str()!="") cout << "Error: " << e.str() << "\n";
+    if (e.str()!="") cout << "#Error: " << e.str() << "\n";
     return 1;
   }
 }

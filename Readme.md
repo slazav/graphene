@@ -64,8 +64,10 @@ Interactive mode:
 Use -i option to enter the interactive mode. Then commands are read from
 stdin, answers are written to stdout. This allows making many requests
 without reopening databases. Opening and closing of databases are long,
-it can be useful to open the connection once and do many
-operations. Each response ends with "OK" or "Error: <message>" line.
+it can be useful to open the connection once and do many operations. If
+interactive mode is sucsessfully started a prompt message followed by #OK
+line is printed. Then each response ends with "#OK" or "#Error:
+<message>" line.
 
 Commands for manipulating databases:
 
