@@ -1,5 +1,5 @@
 Name:         graphene
-Version:      2.2
+Version:      2.3
 Release:      alt1
 
 Summary:      Simple time series database.
@@ -37,8 +37,16 @@ install -pD -m755 %_sourcedir/graphene_http.init %buildroot%_initdir/graphene_ht
 %config %_initdir/graphene_http
 
 %changelog
+* Sun Apr 30 2017 Vladislav Zavjalov <slazav@altlinux.org> 2.3-alt1
+- v2.3
+ - change communication protocol in the interactive mode
+ - interactive mode is called by -i option
+ - use attr(2770,root,users) for database folder to allow users
+   create their own databases
+
 * Fri Dec 16 2016 Vladislav Zavjalov <slazav@altlinux.org> 2.2-alt1
-- fix error in get_range command
+- v.2.2
+ - fix error in get_range command
 
 * Sun Dec 11 2016 Vladislav Zavjalov <slazav@altlinux.org> 2.1-alt1
 - v2.1

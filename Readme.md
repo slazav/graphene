@@ -71,7 +71,7 @@ tcl_exp package): When it is started sucsessfully  a prompt message is
 printed to stdout started with "#SPP001" and followed by "#OK" line. In
 case of an error "#Error: <...>" line is printed and program exits. Then
 the program reads commands from stdin and sends ansers to stdout folowed
-by "#OK" or "#Error: <...>" lines until the user  close the connection.
+by "#OK" or "#Error: <...>" lines until the user closes the connection.
 
 Commands for manipulating databases:
 

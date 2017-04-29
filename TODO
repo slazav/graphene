@@ -1,8 +1,5 @@
--- Think about duplicated times. Now you can add it, but
-   read only first point
 -- interactive commands: quoted strings are not supported
 -- user information
--- now_s and now_ms (?)
 -- control double format on output (?)
 -- allow linebreaks in text data (?)
 -- create subfolders(?)
