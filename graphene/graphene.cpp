@@ -1,6 +1,8 @@
 /*  Command-line interface for the Graphene time series database.
 */
 
+#define VERSION "2.4"
+
 #include <cstdlib>
 #include <stdint.h>
 #include <cstring>
@@ -69,6 +71,7 @@ class Pars{
             "  sync         -- sync all opened databases\n"
             "  sync <name> -- sync one database\n"
             "  cmdlist -- print this list of commands\n"
+            "  *idn?   -- print intentifier: Graphene database " << VERSION << "\n"
     ;
   }
 
@@ -314,11 +317,19 @@ class Pars{
       return;
     }
 
-    // close all opened databases in interactive mode
+    // print list of commands
     // args: cmdlist
     if (strcasecmp(cmd.c_str(), "cmdlist")==0){
       if (pars.size()>1) throw Err() << "too many parameters";
       print_cmdlist();
+      return;
+    }
+
+    // print id string
+    // args: *idn?
+    if (strcasecmp(cmd.c_str(), "*idn?")==0){
+      if (pars.size()>1) throw Err() << "too many parameters";
+      cout << "Graphene database " << VERSION << "\n";
       return;
     }
 

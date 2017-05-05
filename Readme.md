@@ -146,6 +146,12 @@ used if you want to close unused databases and sync data.
 - `close <name>` -- Same, but for one database. If database is not opened
   command does nothing and returns without error.
 
+Information:
+
+- `cmdlist` -- print list of commands.
+
+- `*idn?`   -- print intentifier: "Graphene database <version>".
+
 Examples:
 
 See `examples/*` in the source folder
