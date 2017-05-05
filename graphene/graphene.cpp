@@ -64,7 +64,10 @@ class Pars{
             "      -- delete one data point\n"
             "  del_range <name> <time1> <time2>\n"
             "      -- delete all points in the time range\n"
-            "  sync    -- close all opened databases in interactive mode\n"
+            "  close        -- close all opened databases in interactive mode\n"
+            "  close <name> -- close one database\n"
+            "  sync         -- sync all opened databases\n"
+            "  sync <name> -- sync one database\n"
             "  cmdlist -- print this list of commands\n"
     ;
   }
@@ -143,7 +146,7 @@ class Pars{
       if (pars.size()<2) throw Err() << "database name expected";
       if (pars.size()>2) throw Err() << "too many parameters";
       string name = check_name(pars[1]); // name should be always checked!
-      pool.clear();
+      pool.close(dbpath, name);
       int res = remove((dbpath + "/" + name + ".db").c_str());
       if (res) throw Err() << name <<  ".db: " << strerror(errno);
       return;
@@ -163,7 +166,7 @@ class Pars{
       int res = stat(path2.c_str(), &buf);
       if (res==0) throw Err() << "can't rename database, destination exists: " << name2 << ".db";
       // do rename
-      pool.clear();
+      pool.close(dbpath, name1);
       res = rename(path1.c_str(), path2.c_str());
       if (res) throw Err() << "can't rename database: " << strerror(errno);
       return;
@@ -294,14 +297,25 @@ class Pars{
     }
 
     // close all opened databases in interactive mode
-    // args: sync
-    if (strcasecmp(cmd.c_str(), "sync")==0){
-      if (pars.size()>1) throw Err() << "too many parameters";
-      pool.clear();
+    // args: close
+    if (strcasecmp(cmd.c_str(), "close")==0){
+      if (pars.size()>2) throw Err() << "too many parameters";
+      if (pars.size()==2) pool.close(dbpath, pars[1]);
+      else pool.close();
       return;
     }
+
     // close all opened databases in interactive mode
     // args: sync
+    if (strcasecmp(cmd.c_str(), "sync")==0){
+      if (pars.size()>2) throw Err() << "too many parameters";
+      if (pars.size()==2) pool.sync(dbpath, pars[1]);
+      else pool.sync();
+      return;
+    }
+
+    // close all opened databases in interactive mode
+    // args: cmdlist
     if (strcasecmp(cmd.c_str(), "cmdlist")==0){
       if (pars.size()>1) throw Err() << "too many parameters";
       print_cmdlist();

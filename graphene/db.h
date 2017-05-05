@@ -138,6 +138,9 @@ class DBgr{
   // delete data data from the database -- del_range
   void del_range(const std::string &t1, const std::string &t2);
 
+  // sync the database
+  void sync() {dbp->sync(dbp, 0);}
+
 };
 
 /***********************************************************/
@@ -166,7 +169,23 @@ class DBpool{
     // return the database
     return pool.find(name)->second;
   }
-  void clear(){ pool.clear(); }
+
+  // close one database, close all databases
+  void close(const std::string & dbpath, const std::string & name){
+    std::map<std::string, DBgr>::iterator i = pool.find(name);
+    if (i!=pool.end()) pool.erase(i);
+  }
+  void close(){ pool.clear(); }
+
+  // sync one database, sync all databases
+  void sync(const std::string & dbpath, const std::string & name){
+    std::map<std::string, DBgr>::iterator i = pool.find(name);
+    if (i!=pool.end()) i->second.sync();
+  }
+  void sync(){
+    std::map<std::string, DBgr>::iterator i;
+    for (i = pool.begin(); i!=pool.end(); i++) i->second.sync();
+  }
 
 };
 

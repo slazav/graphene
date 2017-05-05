@@ -131,12 +131,20 @@ Commands for deleting data:
 
 - `del_range  <name> [<time1>] [<time2>]` -- Delete all points in the range.
 
-Command for syncing databases:
+Command for syncing databases in interactive mode:
 
-- `sync` -- In the command line mode it does nothing. In the
-interactive mode it closes all previously opened databases. It is useful
-if you keep a connection (for example via ssh) for a long time, but want
-to commit your changes to the databases regularly.
+- `sync` -- This command flushes any cached information to disk. It is
+useful if you keep a connection (for example via ssh) for a long time,
+but want to commit your changes to the databases regularly.
+
+- `sync <name>` -- Same, but for one database. If database is not opened
+  command does nothing and returns without error.
+
+- `close` -- This command closes all previously opened databases. It can be
+used if you want to close unused databases and sync data.
+
+- `close <name>` -- Same, but for one database. If database is not opened
+  command does nothing and returns without error.
 
 Examples:
 

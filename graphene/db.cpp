@@ -371,7 +371,7 @@ DBgr::get_range(const string &t1, const string &t2,
 }
 
 /************************************/
-// delete data data from the database -- del_range
+// delete data data from the database -- del
 void
 DBgr::del(const string &t1){
   DBinfo info = read_info();
