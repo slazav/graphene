@@ -26,6 +26,33 @@ class DBpool{
 
   DBpool(const std::string & dbpath_): dbpath(dbpath_) {}
 
+  // create database file
+  DBgr dbcreate(const std::string & name, const int fl = 0) const {
+    return DBgr(dbpath, name, fl);
+  }
+
+  // remove database file
+  void dbremove(const std::string & name){
+    close(name);
+    int res = remove((dbpath + "/" + name + ".db").c_str());
+    if (res) throw Err() << name <<  ".db: " << strerror(errno);
+  }
+
+  // rename database file
+  void dbrename(const std::string & name1, const std::string & name2){
+    std::string path1 = dbpath + "/" + name1 + ".db";
+    std::string path2 = dbpath + "/" + name2 + ".db";
+    // check if destination exists
+    struct stat buf;
+    int res = stat(path2.c_str(), &buf);
+    if (res==0) throw Err() << "can't rename database, destination exists: " << name2 << ".db";
+    // do rename
+    close(name1);
+    res = rename(path1.c_str(), path2.c_str());
+    if (res) throw Err() << "can't rename database: " << strerror(errno);
+  }
+
+  // find database in the pool. Open/Reopen if needed
   DBgr & get(const std::string & name, const int fl = 0){
 
     std::map<std::string, DBgr>::iterator i = pool.find(name);

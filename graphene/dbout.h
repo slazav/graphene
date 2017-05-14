@@ -36,7 +36,7 @@ class DBout {
   int fd1[2], fd2[2];
 
   // constructor -- parse the dataset string, create iostream
-  DBout(const std::string & dbpath, const std::string & str){
+  DBout(const std::string & filterpath, const std::string & str){
     col  = -1;
     name = str;
 
@@ -74,7 +74,7 @@ class DBout {
           throw Err() << "can't redirect stdin";
         if (dup2(fd2[1], 1)!=1 || close(fd2[0]) != 0 || close(fd2[1]) != 0)
           throw Err() << "can't redirect stdout";
-        std::string f = dbpath + "/" + filter;
+        std::string f = filterpath + "/" + filter;
         execl(f.c_str(), f.c_str(), NULL);
         exit(0); // how to terminate process correctly?!
       }

@@ -138,7 +138,7 @@ class Pars{
          pars.size()<3 ? DEFAULT_DATAFMT : DBinfo::str2datafmt(pars[2]),
          pars.size()<4 ? "" : pars[3] );
       // todo: create folders if needed
-      DBgr db(dbpath, pars[1], DB_CREATE | DB_EXCL);
+      DBgr db = pool.dbcreate(pars[1], DB_CREATE | DB_EXCL);
       db.write_info(info);
       return;
     }
@@ -149,9 +149,7 @@ class Pars{
       if (pars.size()<2) throw Err() << "database name expected";
       if (pars.size()>2) throw Err() << "too many parameters";
       string name = check_name(pars[1]); // name should be always checked!
-      pool.close(name);
-      int res = remove((dbpath + "/" + name + ".db").c_str());
-      if (res) throw Err() << name <<  ".db: " << strerror(errno);
+      pool.dbremove(name);
       return;
     }
 
@@ -162,16 +160,7 @@ class Pars{
       if (pars.size()>3) throw Err() << "too many parameters";
       string name1 = check_name(pars[1]);
       string name2 = check_name(pars[2]);
-      string path1 = dbpath + "/" + name1 + ".db";
-      string path2 = dbpath + "/" + name2 + ".db";
-      // check if destination exists
-      struct stat buf;
-      int res = stat(path2.c_str(), &buf);
-      if (res==0) throw Err() << "can't rename database, destination exists: " << name2 << ".db";
-      // do rename
-      pool.close(name1);
-      res = rename(path1.c_str(), path2.c_str());
-      if (res) throw Err() << "can't rename database: " << strerror(errno);
+      pool.dbrename(name1, name2);
       return;
     }
 
