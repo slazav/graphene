@@ -1,6 +1,7 @@
 #!/bin/sh -u
 
-# create v1 database (use olny with old graphene program!)
+# Create v1 database (use only with old graphene program!)
+# These databases should be read/written by new versions
 
 graphene -d . create tab1 INT16  "Int-16 database"
 graphene -d . create tab2 DOUBLE "Double database"

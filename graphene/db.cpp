@@ -278,13 +278,14 @@ DBgr::get(const string &t, DBout & dbo){
       throw Err() << name << ".db: " << db_strerror(res);
     curs->close(curs); return;
   }
-  if (res!=0) throw Err() << name << ".db: " << db_strerror(res);
+  else if (res!=0) throw Err() << name << ".db: " << db_strerror(res);
 
   // if "next" record is exactly at t - return it
   string t1p((char *)k.data, (char *)k.data+k.size);
   string v1p((char *)v.data, (char *)v.data+v.size);
-  if (info.cmp_time(t1p,tp) == 0) dbo.proc_point(&k, &v, info);
-
+  if (info.cmp_time(t1p,tp) == 0){
+    dbo.proc_point(&k, &v, info);
+  }
   // get the previous value and do interpolation
   else {
     // find prev value
