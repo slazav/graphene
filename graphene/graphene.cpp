@@ -16,6 +16,7 @@
 #include <vector>
 #include <iostream>
 #include "db.h"
+#include "dbpool.h"
 #include "dbout.h"
 
 using namespace std;
