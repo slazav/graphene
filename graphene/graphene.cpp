@@ -31,11 +31,26 @@ class Pars{
   vector<string> pars; /* non-option parameters */
   DBpool pool;         /* database storage */
 
-  // defaults
-  Pars(){
+  // get options and parameters from argc/argv
+  Pars(const int argc, char **argv){
     dbpath  = "/var/lib/graphene/";
     dpolicy = "replace";
     interactive = false;
+    if (argc<1) return; // needed for print_help()
+    /* parse  options */
+    int c;
+    while((c = getopt(argc, argv, "+d:D:hi"))!=-1){
+      switch (c){
+        case '?':
+        case ':': throw Err(); /* error msg is printed by getopt*/
+        case 'd': dbpath = optarg; break;
+        case 'D': dpolicy = optarg; break;
+        case 'h': print_help();
+        case 'i': interactive = true;
+      }
+    }
+    pars = vector<string>(argv+optind, argv+argc);
+    pool = DBpool(dbpath);
   }
 
   // print command list (used in both -h message and interactive mode help)
@@ -78,7 +93,7 @@ class Pars{
 
   // print help message and exit
   void print_help(){
-    Pars p; // default parameters
+    Pars p(0, NULL); // default parameters
     cout << "graphene -- command line interface to Graphene time series database\n"
             "Usage: graphene [options] <command> <parameters>\n"
             "Options:\n"
@@ -93,22 +108,6 @@ class Pars{
     throw Err();
   }
 
-  // get options and parameters from argc/argv
-  void parse_cmdline_options(const int argc, char **argv){
-    /* parse  options */
-    int c;
-    while((c = getopt(argc, argv, "+d:D:hi"))!=-1){
-      switch (c){
-        case '?':
-        case ':': throw Err(); /* error msg is printed by getopt*/
-        case 'd': dbpath = optarg; break;
-        case 'D': dpolicy = optarg; break;
-        case 'h': print_help();
-        case 'i': interactive = true;
-      }
-    }
-    pars = vector<string>(argv+optind, argv+argc);
-  }
 
   // get parameters from a string (for interactive mode)
   void parse_command_string(const string & str){
@@ -150,7 +149,7 @@ class Pars{
       if (pars.size()<2) throw Err() << "database name expected";
       if (pars.size()>2) throw Err() << "too many parameters";
       string name = check_name(pars[1]); // name should be always checked!
-      pool.close(dbpath, name);
+      pool.close(name);
       int res = remove((dbpath + "/" + name + ".db").c_str());
       if (res) throw Err() << name <<  ".db: " << strerror(errno);
       return;
@@ -170,7 +169,7 @@ class Pars{
       int res = stat(path2.c_str(), &buf);
       if (res==0) throw Err() << "can't rename database, destination exists: " << name2 << ".db";
       // do rename
-      pool.close(dbpath, name1);
+      pool.close(name1);
       res = rename(path1.c_str(), path2.c_str());
       if (res) throw Err() << "can't rename database: " << strerror(errno);
       return;
@@ -181,7 +180,7 @@ class Pars{
     if (strcasecmp(cmd.c_str(), "set_descr")==0){
       if (pars.size()<3) throw Err() << "database name and new description text expected";
       if (pars.size()>3) throw Err() << "too many parameters";
-      DBgr db = pool.get(dbpath, pars[1]);
+      DBgr db = pool.get(pars[1]);
       DBinfo info = db.read_info();
       info.descr = pars[2];
       db.write_info(info);
@@ -193,7 +192,7 @@ class Pars{
     if (strcasecmp(cmd.c_str(), "info")==0){
       if (pars.size()<2) throw Err() << "database name expected";
       if (pars.size()>2) throw Err() << "too many parameters";
-      DBgr db = pool.get(dbpath, pars[1], DB_RDONLY);
+      DBgr db = pool.get(pars[1], DB_RDONLY);
       DBinfo info = db.read_info();
       cout << DBinfo::datafmt2str(info.val);
       if (info.descr!="") cout << '\t' << info.descr;
@@ -225,7 +224,7 @@ class Pars{
       vector<string> dat;
       for (int i=3; i<pars.size(); i++) dat.push_back(string(pars[i]));
       // open database and write data
-      DBgr db = pool.get(dbpath, pars[1]);
+      DBgr db = pool.get(pars[1]);
       db.put(pars[2], dat, dpolicy);
       return;
     }
@@ -237,7 +236,7 @@ class Pars{
       if (pars.size()>3) throw Err() << "too many parameters";
       string t1 = pars.size()>2? pars[2]: "0";
       DBout dbo(dbpath, pars[1]);
-      DBgr db = pool.get(dbpath, dbo.name, DB_RDONLY);
+      DBgr db = pool.get(dbo.name, DB_RDONLY);
       db.get_next(t1, dbo);
       return;
     }
@@ -249,7 +248,7 @@ class Pars{
       if (pars.size()>3) throw Err() << "too many parameters";
       string t2 = pars.size()>2? pars[2]: "inf";
       DBout dbo(dbpath, pars[1]);
-      DBgr db = pool.get(dbpath, dbo.name, DB_RDONLY);
+      DBgr db = pool.get(dbo.name, DB_RDONLY);
       db.get_prev(t2, dbo);
       return;
     }
@@ -261,7 +260,7 @@ class Pars{
       if (pars.size()>3) throw Err() << "too many parameters";
       string t2 = pars.size()>2? pars[2]: "inf";
       DBout dbo(dbpath, pars[1]);
-      DBgr db = pool.get(dbpath, dbo.name, DB_RDONLY);
+      DBgr db = pool.get(dbo.name, DB_RDONLY);
       db.get(t2, dbo);
       return;
     }
@@ -275,7 +274,7 @@ class Pars{
       string t2 = pars.size()>3? pars[3]: "inf";
       string dt = pars.size()>4? pars[4]: "0";
       DBout dbo(dbpath, pars[1]);
-      DBgr db = pool.get(dbpath, dbo.name, DB_RDONLY);
+      DBgr db = pool.get(dbo.name, DB_RDONLY);
       db.get_range(t1,t2,dt, dbo);
       return;
     }
@@ -285,7 +284,7 @@ class Pars{
     if (strcasecmp(cmd.c_str(), "del")==0){
       if (pars.size()<3) throw Err() << "database name and time expected";
       if (pars.size()>3) throw Err() << "too many parameters";
-      DBgr db = pool.get(dbpath, pars[1]);
+      DBgr db = pool.get(pars[1]);
       db.del(pars[2]);
       return;
     }
@@ -295,7 +294,7 @@ class Pars{
     if (strcasecmp(cmd.c_str(), "del_range")==0){
       if (pars.size()<4) throw Err() << "database name and two times expected";
       if (pars.size()>4) throw Err() << "too many parameters";
-      DBgr db = pool.get(dbpath, pars[1]);
+      DBgr db = pool.get(pars[1]);
       db.del_range(pars[2],pars[3]);
       return;
     }
@@ -304,7 +303,7 @@ class Pars{
     // args: close
     if (strcasecmp(cmd.c_str(), "close")==0){
       if (pars.size()>2) throw Err() << "too many parameters";
-      if (pars.size()==2) pool.close(dbpath, pars[1]);
+      if (pars.size()==2) pool.close(pars[1]);
       else pool.close();
       return;
     }
@@ -313,7 +312,7 @@ class Pars{
     // args: sync
     if (strcasecmp(cmd.c_str(), "sync")==0){
       if (pars.size()>2) throw Err() << "too many parameters";
-      if (pars.size()==2) pool.sync(dbpath, pars[1]);
+      if (pars.size()==2) pool.sync(pars[1]);
       else pool.sync();
       return;
     }
@@ -369,8 +368,7 @@ int
 main(int argc, char **argv) {
 
   try {
-    Pars p;  /* program parameters */
-    p.parse_cmdline_options(argc, argv);
+    Pars p(argc, argv);
     if (p.interactive) p.run_interactive();
     else p.run_command();
 

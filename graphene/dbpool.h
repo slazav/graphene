@@ -17,13 +17,16 @@
 /***********************************************************/
 // class for storing many opened databases
 class DBpool{
+  std::string dbpath;
   std::map<std::string, DBgr> pool;
   public:
 
-  DBpool(){}
+  // Fake constructor. See how Pars constructor works.
+  DBpool() {}
 
-  DBgr & get(const std::string & dbpath,
-              const std::string & name, const int fl = 0){
+  DBpool(const std::string & dbpath_): dbpath(dbpath_) {}
+
+  DBgr & get(const std::string & name, const int fl = 0){
 
     std::map<std::string, DBgr>::iterator i = pool.find(name);
 
@@ -42,14 +45,14 @@ class DBpool{
   }
 
   // close one database, close all databases
-  void close(const std::string & dbpath, const std::string & name){
+  void close(const std::string & name){
     std::map<std::string, DBgr>::iterator i = pool.find(name);
     if (i!=pool.end()) pool.erase(i);
   }
   void close(){ pool.clear(); }
 
   // sync one database, sync all databases
-  void sync(const std::string & dbpath, const std::string & name){
+  void sync(const std::string & name){
     std::map<std::string, DBgr>::iterator i = pool.find(name);
     if (i!=pool.end()) i->second.sync();
   }

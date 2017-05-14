@@ -165,7 +165,7 @@ Json json_query(const string & dbpath, const Json & ji){
 
   /* parse targets and run command */
   Json out = Json::array();
-  DBpool pool;
+  DBpool pool(dbpath);
   for (int i=0; i<ji["targets"].size(); i++){
 
 
@@ -173,7 +173,7 @@ Json json_query(const string & dbpath, const Json & ji){
     DBoutJSON dbo(dbpath, ji["targets"][i]["target"].as_string(), true);
 
     // get a database
-    DBgr db = pool.get(dbpath, dbo.name, DB_RDONLY);
+    DBgr db = pool.get(dbo.name, DB_RDONLY);
 
     // check DB format
     if (db.read_info().val == DATA_TEXT)
@@ -186,7 +186,7 @@ Json json_query(const string & dbpath, const Json & ji){
     jt.set("target", ji["targets"][i]["target"]);
     jt.set("datapoints", dbo.json_buffer);
     out.append(jt);
-    pool.close(dbpath, dbo.name);
+    pool.close(dbo.name);
   }
 
   return out;
@@ -220,8 +220,8 @@ Json json_annotations(const string & dbpath, const Json & ji){
   DBoutJSON dbo(dbpath, ji["annotation"]["name"].as_string(), false);
 
   // Get a database
-  DBpool pool;
-  DBgr db = pool.get(dbpath, dbo.name, DB_RDONLY);
+  DBpool pool(dbpath);
+  DBgr db = pool.get(dbo.name, DB_RDONLY);
 
   // check DB format
   if (db.read_info().val != DATA_TEXT)
@@ -231,7 +231,7 @@ Json json_annotations(const string & dbpath, const Json & ji){
   for (size_t i=0; i<dbo.json_buffer.size(); i++){
     dbo.json_buffer[i].set("annotation", ji["annotation"]);
   }
-  pool.close(dbpath, dbo.name);
+  pool.close(dbo.name);
   return dbo.json_buffer;
 }
 
