@@ -27,19 +27,22 @@ class DBpool{
   DBpool(const std::string & dbpath_): dbpath(dbpath_) {}
 
   // create database file
-  DBgr dbcreate(const std::string & name, const int fl = 0) const {
-    return DBgr(dbpath, name, fl);
+  DBgr dbcreate(const std::string & name) const {
+    return DBgr(dbpath, name, DB_CREATE | DB_EXCL);
   }
 
   // remove database file
-  void dbremove(const std::string & name){
+  void dbremove(std::string name){
+    name = check_name(name); // check name
     close(name);
     int res = remove((dbpath + "/" + name + ".db").c_str());
     if (res) throw Err() << name <<  ".db: " << strerror(errno);
   }
 
   // rename database file
-  void dbrename(const std::string & name1, const std::string & name2){
+  void dbrename(std::string name1, std::string name2){
+    name1 = check_name(name1); // check name
+    name2 = check_name(name2); // check name
     std::string path1 = dbpath + "/" + name1 + ".db";
     std::string path2 = dbpath + "/" + name2 + ".db";
     // check if destination exists

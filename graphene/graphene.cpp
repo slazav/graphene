@@ -138,7 +138,7 @@ class Pars{
          pars.size()<3 ? DEFAULT_DATAFMT : DBinfo::str2datafmt(pars[2]),
          pars.size()<4 ? "" : pars[3] );
       // todo: create folders if needed
-      DBgr db = pool.dbcreate(pars[1], DB_CREATE | DB_EXCL);
+      DBgr db = pool.dbcreate(pars[1]);
       db.write_info(info);
       return;
     }
@@ -148,8 +148,7 @@ class Pars{
     if (strcasecmp(cmd.c_str(), "delete")==0){
       if (pars.size()<2) throw Err() << "database name expected";
       if (pars.size()>2) throw Err() << "too many parameters";
-      string name = check_name(pars[1]); // name should be always checked!
-      pool.dbremove(name);
+      pool.dbremove(pars[1]);
       return;
     }
 
@@ -158,9 +157,7 @@ class Pars{
     if (strcasecmp(cmd.c_str(), "rename")==0){
       if (pars.size()<3) throw Err() << "database old and new names expected";
       if (pars.size()>3) throw Err() << "too many parameters";
-      string name1 = check_name(pars[1]);
-      string name2 = check_name(pars[2]);
-      pool.dbrename(name1, name2);
+      pool.dbrename(pars[1], pars[2]);
       return;
     }
 
