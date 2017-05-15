@@ -14,7 +14,10 @@ function assert(){
 ###########################################################################
 
 # remove all test databases
-rm -f test*.db
+for i in *.db; do
+  [ -f $i ] || continue
+  ./graphene -d . delete ${i%.db}
+done
 
 # create and fill databases
 
@@ -103,4 +106,7 @@ assert "$(printf "%s" "$req" | ./graphene_json . /annotations)" "$ans"
 
 ###########################################################################
 # remove all test databases
-rm -f test*.db
+for i in *.db; do
+  [ -f $i ] || continue
+  ./graphene -d . delete ${i%.db}
+done

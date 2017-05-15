@@ -47,7 +47,7 @@ class DBpool{
   // create database file
   DBgr dbcreate(const std::string & name) {
     // create database
-    if (pool.count(name)) throw Err() << name << ": databese exists in the pool\n";
+    if (pool.count(name)) throw Err() << name << ": database exists in the pool\n";
     pool.insert(std::pair<std::string, DBgr>(name,
       DBgr(env, dbpath, name, DB_CREATE | DB_EXCL)));
 
@@ -59,24 +59,26 @@ class DBpool{
   void dbremove(std::string name){
     name = check_name(name); // check name
     close(name);
-    int res = remove((dbpath + "/" + name + ".db").c_str());
-    if (res) throw Err() << name <<  ".db: " << strerror(errno);
+    int res = env->dbremove(env, NULL, (name + ".db").c_str(), NULL, 0);
+    if (res!=0) throw Err() << name <<  ".db: " << db_strerror(res);
   }
 
   // rename database file
   void dbrename(std::string name1, std::string name2){
     name1 = check_name(name1); // check name
     name2 = check_name(name2); // check name
-    std::string path1 = dbpath + "/" + name1 + ".db";
-    std::string path2 = dbpath + "/" + name2 + ".db";
-    // check if destination exists
+    std::string path1 = name1 + ".db";
+    std::string path2 = name2 + ".db";
+
+    // check destination to avoid additional error messages:
     struct stat buf;
     int res = stat(path2.c_str(), &buf);
-    if (res==0) throw Err() << "can't rename database, destination exists: " << name2 << ".db";
-    // do rename
-    close(name1);
-    res = rename(path1.c_str(), path2.c_str());
-    if (res) throw Err() << "can't rename database: " << strerror(errno);
+    if (res==0) throw Err() << "renaming " << name1 <<  ".db -> "
+                            << name2 << ".db: " << "Destination exists";
+
+    res = env->dbrename(env, NULL, path1.c_str(), NULL, path2.c_str(), 0);
+    if (res!=0) throw Err() << "renaming " << name1 <<  ".db -> "
+                            << name2 << ".db: " << db_strerror(res);
   }
 
   // find database in the pool. Open/Reopen if needed

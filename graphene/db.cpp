@@ -82,8 +82,8 @@ DBgr::DBgr(DB_ENV *env,
   /* Open the database */
   ret = dbp->open(dbp,           /* Pointer to the database */
                   NULL,          /* Txn pointer */
-                  fname.c_str(), /* DB */
-                  NULL,          /* */
+                  fname.c_str(), /* file */
+                  NULL,          /* database */
                   DB_BTREE,      /* Database type (using btree) */
                   flags,         /* Open flags */
                   0644);         /* File mode*/

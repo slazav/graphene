@@ -25,8 +25,8 @@ test_db:    dbinfo.o dbinfo_v1.o dbinfo_v2.o db.o test_db.o
 test_json:  dbinfo.o dbinfo_v1.o dbinfo_v2.o db.o json.o test_json.o
 
 tests: test_db test_json test_cli.sh
+	rm -f __db.* *.db
 	./test_db
-	rm -f test.db
 	./test_json
 	./test_cli.sh
 	./test_json.sh

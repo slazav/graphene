@@ -32,7 +32,10 @@ assert "$(./graphene -d . *idn?)" "Graphene database 2.4"
 # database operations
 
 # remove all test databases
-rm -f test*.db
+for i in *.db; do
+  [ -f $i ] || continue
+  ./graphene -d . delete ${i%.db}
+done
 
 # create
 assert "$(./graphene -d . create)" "#Error: database name expected"
@@ -68,8 +71,8 @@ assert "$(./graphene -d . delete test_2)" "#Error: test_2.db: No such file or di
 assert "$(./graphene -d . rename)" "#Error: database old and new names expected"
 assert "$(./graphene -d . rename a)" "#Error: database old and new names expected"
 assert "$(./graphene -d . rename a b c)" "#Error: too many parameters"
-assert "$(./graphene -d . rename test_x test_y)" "#Error: can't rename database: No such file or directory"
-assert "$(./graphene -d . rename test_3 test_1)" "#Error: can't rename database, destination exists: test_1.db"
+assert "$(./graphene -d . rename test_x test_y)" "#Error: renaming test_x.db -> test_y.db: No such file or directory"
+assert "$(./graphene -d . rename test_3 test_1)" "#Error: renaming test_3.db -> test_1.db: Destination exists"
 assert "$(./graphene -d . rename test_3 test_2)" ""
 assert "$(./graphene -d . info test_3)" "#Error: test_3.db: No such file or directory"
 assert "$(./graphene -d . info test_2)" "UINT32	Uint 32 database"
@@ -370,4 +373,7 @@ assert "$(./graphene -d . delete test_1)" ""
 
 ###########################################################################
 # remove all test databases
-rm -f test*.db
+for i in *.db; do
+  [ -f $i ] || continue
+  ./graphene -d . delete ${i%.db}
+done
