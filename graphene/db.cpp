@@ -67,7 +67,7 @@ DBgr::DBgr(DB_ENV *env,
 
   name = check_name(name_); // check the name
   open_flags = flags;
-  string fname = path_ + "/" + name_ + ".db";
+  string fname = name_ + ".db";
 
   /* Initialize the DB handle */
   int ret = db_create(&dbp, env, 0);
@@ -82,13 +82,15 @@ DBgr::DBgr(DB_ENV *env,
   /* Open the database */
   ret = dbp->open(dbp,           /* Pointer to the database */
                   NULL,          /* Txn pointer */
-                  name.c_str(),  /* DB */
+                  fname.c_str(), /* DB */
                   NULL,          /* */
                   DB_BTREE,      /* Database type (using btree) */
                   flags,         /* Open flags */
                   0644);         /* File mode*/
-  if (ret != 0)
+  if (ret != 0){
+    destroy();
     throw Err() << name << ".db: " << db_strerror(ret);
+  }
 }
 
 /************************************/
