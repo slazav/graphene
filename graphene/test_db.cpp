@@ -4,6 +4,7 @@
 #include <string>
 
 #include "tests.h"
+#include "dbpool.h"
 #include "db.h"
 #include "dbout.h"
 
@@ -250,7 +251,8 @@ int main() {
     DBinfo hh1(DATA_INT16, "AAA");
     DBinfo hh2;
     {
-      DBgr db(".", "test", DB_CREATE | DB_TRUNCATE);
+      DBpool pool(".");
+      DBgr db = pool.get("test", DB_CREATE);
       db.write_info(hh1);
       hh2 = db.read_info();
       ASSERT_EQ(hh1.val, hh2.val);
@@ -265,7 +267,8 @@ int main() {
     }
 
     {
-      DBgr db1(".", "test", DB_RDONLY);
+      DBpool pool(".");
+      DBgr db1 = pool.get("test", DB_RDONLY);
       hh2 = db1.read_info();
       ASSERT_EQ(hh1.val, hh2.val);
       ASSERT_EQ(hh1.descr, hh2.descr);

@@ -56,7 +56,8 @@ int cmpfunc(DB *dbp, const DBT *a, const DBT *b){
 /************************************/
 // Constructor -- open a database
 //
-DBgr::DBgr(const string & path_,
+DBgr::DBgr(DB_ENV *env,
+     const string & path_,
      const string & name_,
      const int flags){
 
@@ -64,13 +65,12 @@ DBgr::DBgr(const string & path_,
   *refcounter  = 1;
   info_is_actual = false;
 
-
   name = check_name(name_); // check the name
   open_flags = flags;
   string fname = path_ + "/" + name_ + ".db";
 
   /* Initialize the DB handle */
-  int ret = db_create(&dbp, NULL, 0);
+  int ret = db_create(&dbp, env, 0);
   if (ret != 0)
     throw Err() << name << ".db: " << db_strerror(ret);
 
@@ -82,8 +82,8 @@ DBgr::DBgr(const string & path_,
   /* Open the database */
   ret = dbp->open(dbp,           /* Pointer to the database */
                   NULL,          /* Txn pointer */
-                  fname.c_str(), /* File name */
-                  NULL,          /* DB name */
+                  name.c_str(),  /* DB */
+                  NULL,          /* */
                   DB_BTREE,      /* Database type (using btree) */
                   flags,         /* Open flags */
                   0644);         /* File mode*/

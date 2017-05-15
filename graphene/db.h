@@ -94,7 +94,8 @@ class DBgr{
   // Constructor -- open a database
   // Path is a path to the database foolder.
   // Name is a database name, it can not contain some symbols (.|+ \n\t)
-  DBgr(const std::string & path_,
+  DBgr(DB_ENV *env,
+       const std::string & path_,
        const std::string & name_,
        const int flags);
 

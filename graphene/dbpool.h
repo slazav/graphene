@@ -13,22 +13,46 @@
 #include <cstring> /* memset */
 #include <db.h>
 #include "db.h"
+#include <dirent.h>
+#include <sys/stat.h>
 
 /***********************************************************/
-// class for storing many opened databases
+// Class for keeping a database environment and many opened
+// databases.
+// Note that DBpool objects can not be copied because of absence
+// of proper memory handling.
 class DBpool{
   std::string dbpath;
   std::map<std::string, DBgr> pool;
+  DB_ENV *env; // database environment
   public:
 
-  // Fake constructor. See how Pars constructor works.
-  DBpool() {}
+  // Constructor: open DB environment
+  DBpool(const std::string & dbpath_): dbpath(dbpath_) {
+    int res = db_env_create(&env, 0);
+    if (res != 0)
+      throw Err() << "creating DB_ENV: " << dbpath << ": " << db_strerror(res);
 
-  DBpool(const std::string & dbpath_): dbpath(dbpath_) {}
+    res = env->open(env, dbpath.c_str(),
+                   DB_CREATE | DB_INIT_LOCK | DB_INIT_MPOOL, 0644);
+    if (res != 0)
+      throw Err() << "opening DB_ENV: " << dbpath << ": " << db_strerror(res);
+  }
+  // Destructor: close the DB environment
+  ~DBpool(){
+     close();
+     env->close(env, 0);
+  }
 
   // create database file
-  DBgr dbcreate(const std::string & name) const {
-    return DBgr(dbpath, name, DB_CREATE | DB_EXCL);
+  DBgr dbcreate(const std::string & name) {
+    // create database
+    if (pool.count(name)) throw Err() << name << ": databese exists in the pool\n";
+    pool.insert(std::pair<std::string, DBgr>(name,
+      DBgr(env, dbpath, name, DB_CREATE | DB_EXCL)));
+
+    // return the database
+    return pool.find(name)->second;
   }
 
   // remove database file
@@ -68,7 +92,7 @@ class DBpool{
 
     // if database is not opened, open it
     if (!pool.count(name)) pool.insert(
-      std::pair<std::string, DBgr>(name, DBgr(dbpath, name, fl)));
+      std::pair<std::string, DBgr>(name, DBgr(env, dbpath, name, fl)));
 
     // return the database
     return pool.find(name)->second;

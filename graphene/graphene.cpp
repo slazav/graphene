@@ -8,8 +8,6 @@
 #include <cstring>
 #include <cstdio>
 #include <cerrno>
-#include <dirent.h>
-#include <sys/stat.h>
 
 #include <map>
 #include <string>
@@ -29,7 +27,6 @@ class Pars{
   string dpolicy;      /* what to do with duplicated timestamps*/
   bool interactive;    /* use interactive mode */
   vector<string> pars; /* non-option parameters */
-  DBpool pool;         /* database storage */
 
   // get options and parameters from argc/argv
   Pars(const int argc, char **argv){
@@ -50,7 +47,6 @@ class Pars{
       }
     }
     pars = vector<string>(argv+optind, argv+argc);
-    pool = DBpool(dbpath);
   }
 
   // print command list (used in both -h message and interactive mode help)
@@ -121,12 +117,43 @@ class Pars{
     }
   }
 
+
+  // Interactive mode.
+  void run_interactive(){
+    if (pars.size() !=0) throw Err() << "too many argumens for the interactive mode";
+    string line;
+    cout << "#SPP001\n"; // command-line protocol, version 001.
+    cout << "Graphene database. Type cmdlist to see list of commands\n";
+
+    DBpool pool(dbpath);
+    cout << "#OK\n";
+
+    while (getline(cin, line)){
+      try {
+        if (line=="") continue;
+        parse_command_string(line);
+        run_command(&pool);
+        cout << "#OK\n";
+      }
+      catch(Err e){
+        if (e.str()!="") cout << "#Error: " << e.str() << "\n";
+      }
+    }
+    return;
+  }
+
+  // Cmdline mode.
+  void run_cmdline(){
+    if (pars.size() < 1) throw Err() << "command is expected";
+    DBpool pool(dbpath);
+    run_command(&pool);
+  }
+
   // Run command, using parameters
   // For read/write commands time is transferred as a string
   // to db.put, db.get_* functions without change.
   // "now", "now_s" and "inf" strings can be used.
-  void run_command(){
-    if (pars.size() < 1) throw Err() << "command is expected";
+  void run_command(DBpool* pool){
     string cmd = pars[0];
 
     // create new database
@@ -138,7 +165,7 @@ class Pars{
          pars.size()<3 ? DEFAULT_DATAFMT : DBinfo::str2datafmt(pars[2]),
          pars.size()<4 ? "" : pars[3] );
       // todo: create folders if needed
-      DBgr db = pool.dbcreate(pars[1]);
+      DBgr db = pool->dbcreate(pars[1]);
       db.write_info(info);
       return;
     }
@@ -148,7 +175,7 @@ class Pars{
     if (strcasecmp(cmd.c_str(), "delete")==0){
       if (pars.size()<2) throw Err() << "database name expected";
       if (pars.size()>2) throw Err() << "too many parameters";
-      pool.dbremove(pars[1]);
+      pool->dbremove(pars[1]);
       return;
     }
 
@@ -157,7 +184,7 @@ class Pars{
     if (strcasecmp(cmd.c_str(), "rename")==0){
       if (pars.size()<3) throw Err() << "database old and new names expected";
       if (pars.size()>3) throw Err() << "too many parameters";
-      pool.dbrename(pars[1], pars[2]);
+      pool->dbrename(pars[1], pars[2]);
       return;
     }
 
@@ -166,7 +193,7 @@ class Pars{
     if (strcasecmp(cmd.c_str(), "set_descr")==0){
       if (pars.size()<3) throw Err() << "database name and new description text expected";
       if (pars.size()>3) throw Err() << "too many parameters";
-      DBgr db = pool.get(pars[1]);
+      DBgr db = pool->get(pars[1]);
       DBinfo info = db.read_info();
       info.descr = pars[2];
       db.write_info(info);
@@ -178,7 +205,7 @@ class Pars{
     if (strcasecmp(cmd.c_str(), "info")==0){
       if (pars.size()<2) throw Err() << "database name expected";
       if (pars.size()>2) throw Err() << "too many parameters";
-      DBgr db = pool.get(pars[1], DB_RDONLY);
+      DBgr db = pool->get(pars[1], DB_RDONLY);
       DBinfo info = db.read_info();
       cout << DBinfo::datafmt2str(info.val);
       if (info.descr!="") cout << '\t' << info.descr;
@@ -210,7 +237,7 @@ class Pars{
       vector<string> dat;
       for (int i=3; i<pars.size(); i++) dat.push_back(string(pars[i]));
       // open database and write data
-      DBgr db = pool.get(pars[1]);
+      DBgr db = pool->get(pars[1]);
       db.put(pars[2], dat, dpolicy);
       return;
     }
@@ -222,7 +249,7 @@ class Pars{
       if (pars.size()>3) throw Err() << "too many parameters";
       string t1 = pars.size()>2? pars[2]: "0";
       DBout dbo(dbpath, pars[1]);
-      DBgr db = pool.get(dbo.name, DB_RDONLY);
+      DBgr db = pool->get(dbo.name, DB_RDONLY);
       db.get_next(t1, dbo);
       return;
     }
@@ -234,7 +261,7 @@ class Pars{
       if (pars.size()>3) throw Err() << "too many parameters";
       string t2 = pars.size()>2? pars[2]: "inf";
       DBout dbo(dbpath, pars[1]);
-      DBgr db = pool.get(dbo.name, DB_RDONLY);
+      DBgr db = pool->get(dbo.name, DB_RDONLY);
       db.get_prev(t2, dbo);
       return;
     }
@@ -246,7 +273,7 @@ class Pars{
       if (pars.size()>3) throw Err() << "too many parameters";
       string t2 = pars.size()>2? pars[2]: "inf";
       DBout dbo(dbpath, pars[1]);
-      DBgr db = pool.get(dbo.name, DB_RDONLY);
+      DBgr db = pool->get(dbo.name, DB_RDONLY);
       db.get(t2, dbo);
       return;
     }
@@ -260,7 +287,7 @@ class Pars{
       string t2 = pars.size()>3? pars[3]: "inf";
       string dt = pars.size()>4? pars[4]: "0";
       DBout dbo(dbpath, pars[1]);
-      DBgr db = pool.get(dbo.name, DB_RDONLY);
+      DBgr db = pool->get(dbo.name, DB_RDONLY);
       db.get_range(t1,t2,dt, dbo);
       return;
     }
@@ -270,7 +297,7 @@ class Pars{
     if (strcasecmp(cmd.c_str(), "del")==0){
       if (pars.size()<3) throw Err() << "database name and time expected";
       if (pars.size()>3) throw Err() << "too many parameters";
-      DBgr db = pool.get(pars[1]);
+      DBgr db = pool->get(pars[1]);
       db.del(pars[2]);
       return;
     }
@@ -280,7 +307,7 @@ class Pars{
     if (strcasecmp(cmd.c_str(), "del_range")==0){
       if (pars.size()<4) throw Err() << "database name and two times expected";
       if (pars.size()>4) throw Err() << "too many parameters";
-      DBgr db = pool.get(pars[1]);
+      DBgr db = pool->get(pars[1]);
       db.del_range(pars[2],pars[3]);
       return;
     }
@@ -289,8 +316,8 @@ class Pars{
     // args: close
     if (strcasecmp(cmd.c_str(), "close")==0){
       if (pars.size()>2) throw Err() << "too many parameters";
-      if (pars.size()==2) pool.close(pars[1]);
-      else pool.close();
+      if (pars.size()==2) pool->close(pars[1]);
+      else pool->close();
       return;
     }
 
@@ -298,8 +325,8 @@ class Pars{
     // args: sync
     if (strcasecmp(cmd.c_str(), "sync")==0){
       if (pars.size()>2) throw Err() << "too many parameters";
-      if (pars.size()==2) pool.sync(pars[1]);
-      else pool.sync();
+      if (pars.size()==2) pool->sync(pars[1]);
+      else pool->sync();
       return;
     }
 
@@ -323,29 +350,6 @@ class Pars{
     throw Err() << "Unknown command: " << cmd;
   }
 
-
-  // Interactive mode.
-  void run_interactive(){
-    if (pars.size() !=0) throw Err() << "too many argumens for the interactive mode";
-    string line;
-    cout << "#SPP001\n"; // command-line protocol, version 001.
-    cout << "Graphene database. Type cmdlist to see list of commands\n";
-    cout << "#OK\n";
-
-    while (getline(cin, line)){
-      try {
-        if (line=="") continue;
-        parse_command_string(line);
-        run_command();
-        cout << "#OK\n";
-      }
-      catch(Err e){
-        if (e.str()!="") cout << "#Error: " << e.str() << "\n";
-      }
-    }
-    return;
-  }
-
 };
 
 
@@ -356,7 +360,7 @@ main(int argc, char **argv) {
   try {
     Pars p(argc, argv);
     if (p.interactive) p.run_interactive();
-    else p.run_command();
+    else p.run_cmdline();
 
   } catch(Err e){
     if (e.str()!="") cout << "#Error: " << e.str() << "\n";
