@@ -1,5 +1,5 @@
 Name:         graphene
-Version:      2.4
+Version:      2.5
 Release:      alt1
 
 Summary:      Simple time series database.
@@ -37,6 +37,10 @@ install -pD -m755 %_sourcedir/graphene_http.init %buildroot%_initdir/graphene_ht
 %config %_initdir/graphene_http
 
 %changelog
+* Mon May 15 2017 Vladislav Zavjalov <slazav@altlinux.org> 2.5-alt1
+- v2.5
+ - use database environment to allow multiple-program operation
+
 * Fri May 05 2017 Vladislav Zavjalov <slazav@altlinux.org> 2.4-alt1
 - v2.4
  - change sync command: now it does sync() instead of closing databases
