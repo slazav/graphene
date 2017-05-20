@@ -77,9 +77,10 @@ struct spars_t{
                   "                3 - write input data\n" 
                   "                4 - write output data\n" 
                   " -l <file>  -- log file, use '-' for stdout\n"
-                  "               (default /var/log/graphene.log in daemon mode, '-' in)"
-                  " -f         -- do fork and run as a daemon\n";
-                  " -h         -- write this help message and exit\n";
+                  "               (default /var/log/graphene.log in daemon mode, '-' in)\n"
+                  " -f         -- do fork and run as a daemon\n"
+                  " -h         -- write this help message and exit\n"
+        ;
         return 1;
       }
     }
