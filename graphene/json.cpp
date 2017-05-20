@@ -227,7 +227,12 @@ Json json_annotations(const string & dbpath, const Json & ji){
   if (db.read_info().val != DATA_TEXT)
     throw Json::Err() << "Annotations can be found only in TEXT databases";
 
-  db.get_range(t1,t2, "0", dbo);
+  // grafana do not ask maxDataPoints here, but we do not want to return
+  // too many annotations.
+  const int MaxAnnotations = 500;
+  ostringstream ss; ss << fixed << (atof(t2.c_str())-atof(t1.c_str()))/MaxAnnotations;
+
+  db.get_range(t1,t2, ss.str(), dbo);
   for (size_t i=0; i<dbo.json_buffer.size(); i++){
     dbo.json_buffer[i].set("annotation", ji["annotation"]);
   }
