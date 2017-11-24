@@ -160,10 +160,10 @@ class Pars{
     // args: create <name> [<data_fmt>] [<description>]
     if (strcasecmp(cmd.c_str(), "create")==0){
       if (pars.size()<2) throw Err() << "database name expected";
-      if (pars.size()>4) throw Err() << "too many parameters";
       DBinfo info(
-         pars.size()<3 ? DEFAULT_DATAFMT : DBinfo::str2datafmt(pars[2]),
-         pars.size()<4 ? "" : pars[3] );
+        pars.size()<3 ? DEFAULT_DATAFMT : DBinfo::str2datafmt(pars[2]),
+        pars.size()<4 ? "": pars[3]);
+      for (int i=4; i<pars.size(); i++) info.descr+=" "+pars[i];
       // todo: create folders if needed
       DBgr db = pool->dbcreate(pars[1]);
       db.write_info(info);
@@ -192,10 +192,10 @@ class Pars{
     // args: set_descr <name> <description>
     if (strcasecmp(cmd.c_str(), "set_descr")==0){
       if (pars.size()<3) throw Err() << "database name and new description text expected";
-      if (pars.size()>3) throw Err() << "too many parameters";
       DBgr db = pool->get(pars[1]);
       DBinfo info = db.read_info();
       info.descr = pars[2];
+      for (int i=3; i<pars.size(); i++) info.descr+=" "+pars[i];
       db.write_info(info);
       return;
     }

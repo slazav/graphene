@@ -39,12 +39,12 @@ done
 
 # create
 assert "$(./graphene -d . create)" "#Error: database name expected"
-assert "$(./graphene -d . create a dfmt descr e)" "#Error: too many parameters"
 assert "$(./graphene -d . create a dfmt)" "#Error: Unknown data format: dfmt"
 
 assert "$(./graphene -d . create test_1)" ""
 assert "$(./graphene -d . create test_2 UINT16)" ""
 assert "$(./graphene -d . create test_3 uint32 "Uint 32 database")" ""
+assert "$(./graphene -d . create test_4 uint32 Uint 32 database)" ""
 assert "$(./graphene -d . create test_1)" "#Error: test_1.db: File exists"
 
 # info
@@ -55,10 +55,11 @@ assert "$(./graphene -d . info test_x)" "#Error: test_x.db: No such file or dire
 assert "$(./graphene -d . info test_1)" "DOUBLE"
 assert "$(./graphene -d . info test_2)" "UINT16"
 assert "$(./graphene -d . info test_3)" "UINT32	Uint 32 database"
+assert "$(./graphene -d . info test_4)" "UINT32	Uint 32 database"
 
 # list
 assert "$(./graphene -d . list a)" "#Error: too many parameters"
-assert "$(./graphene -d . list | sort)" "$(printf "test_1\ntest_2\ntest_3")"
+assert "$(./graphene -d . list | sort)" "$(printf "test_1\ntest_2\ntest_3\ntest_4")"
 
 # delete
 assert "$(./graphene -d . delete)" "#Error: database name expected"
@@ -80,9 +81,10 @@ assert "$(./graphene -d . info test_2)" "UINT32	Uint 32 database"
 # set_descr
 assert "$(./graphene -d . set_descr)" "#Error: database name and new description text expected"
 assert "$(./graphene -d . set_descr a)" "#Error: database name and new description text expected"
-assert "$(./graphene -d . set_descr a b c)" "#Error: too many parameters"
 assert "$(./graphene -d . set_descr test_x a)" "#Error: test_x.db: No such file or directory"
 assert "$(./graphene -d . set_descr test_1 "Test DB number 1")" ""
+assert "$(./graphene -d . info test_1)" "DOUBLE	Test DB number 1"
+assert "$(./graphene -d . set_descr test_1 Test DB number 1)" ""
 assert "$(./graphene -d . info test_1)" "DOUBLE	Test DB number 1"
 
 assert "$(./graphene -d . delete test_1)" ""
@@ -237,6 +239,7 @@ assert "$(./graphene -d . get_range 'test_3:0|test_flt')" "10.000000000 1
 
 rm -f test_flt
 assert "$(./graphene -d . delete test_3)" ""
+assert "$(./graphene -d . delete test_4)" ""
 
 ###########################################################################
 # TEXT database
