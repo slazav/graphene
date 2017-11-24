@@ -187,7 +187,7 @@ DBgr::put(const string &t, const vector<string> & dat, const string &dpolicy){
     DBT v = mk_dbt(vs);
     res = dbp->put(dbp, NULL, &k, &v, flags);
     if (res == DB_KEYEXIST){
-      if      (dpolicy =="error") throw Err() << name << ".db: " << db_strerror(res);
+      if      (dpolicy =="error") throw Err() << name << ".db: " << "Timestamp exists";
       else if (dpolicy =="sshift")  ks = info.add_time(ks, info.parse_time("1"));
       else if (dpolicy =="nsshift") ks = info.add_time(ks, info.parse_time("0.000000001"));
       else if (dpolicy =="skip") break;

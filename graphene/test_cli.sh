@@ -355,7 +355,7 @@ assert "$(./graphene -d . get_range test_1)" "\
 
 assert "$(./graphene -d . -D aaa put test_1 1 8)" "#Error: Unknown dpolicy setting: aaa"
 
-assert "$(./graphene -d . -D error put test_1 1 8)" "#Error: test_1.db: DB_KEYEXIST: Key/data pair already exists"
+assert "$(./graphene -d . -D error put test_1 1 8)" "#Error: test_1.db: Timestamp exists"
 assert "$(./graphene -d . delete test_1)" ""
 
 ###########################################################################
