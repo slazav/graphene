@@ -2,10 +2,17 @@ LDLIBS=-lmicrohttpd -lm -ldb -ljansson
 CPPFLAGS=-g
 CC=g++
 
+bindir         ?= /usr/bin
+sharedstatedir ?= /var/lib
+initdir       ?= /etc/init.d
+
+
 all: graphene graphene_http graphene_json tests
 install: all
-	mkdir -p ${bindir} ${sharedstatedir}/graphene
+	mkdir -p ${bindir} ${initdir}
+	mkdir -m 02770 -p ${sharedstatedir}/graphene
 	install graphene graphene_http ${bindir}
+	install graphene_http.init ${initdir}/graphene_http
 
 dbinfo.o:      dbinfo.h dbinfo.cpp
 dbinfo_v1.o:   dbinfo.h dbinfo_v1.cpp

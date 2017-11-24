@@ -10,7 +10,6 @@ License:      GPL
 Packager:     Vladislav Zavjalov <slazav@altlinux.org>
 
 Source:       %name-%version.tar
-Source1:      graphene_http.init
 BuildRequires: libmicrohttpd-devel libjansson-devel libdb4.8-devel
 Requires:      libmicrohttpd libjansson libdb4.8
 
@@ -21,8 +20,7 @@ graphene -- a simple time series database with nanosecond precision for scientif
 %setup -q
 
 %build
-%makeinstall
-install -pD -m755 %_sourcedir/graphene_http.init %buildroot%_initdir/graphene_http
+%makeinstall initdir=%buildroot%_initdir
 
 %post
 %post_service graphene_http

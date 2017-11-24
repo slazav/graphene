@@ -12,7 +12,7 @@ E-mail: Vladislav Zavjalov <slazav@altlinux.org>
 - multi-column numerical values
 - command line interface for reading/writing data
 - http simple json interface for Grafana viewer
-- user filters for data processing (calibration tables etc.)
+- user filters for data processing (calibration tables etc.) -- to be removed?
 
 ### Data storage
 
