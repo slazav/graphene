@@ -11,8 +11,8 @@ Packager:     Vladislav Zavjalov <slazav@altlinux.org>
 
 Source:       %name-%version.tar
 Source1:      graphene_http.init
-BuildRequires: libmicrohttpd-devel libjansson-devel
-Requires:      libmicrohttpd libjansson
+BuildRequires: libmicrohttpd-devel libjansson-devel libdb4.8-devel
+Requires:      libmicrohttpd libjansson libdb4.8
 
 %description
 graphene -- a simple time series database with nanosecond precision for scientific applications
