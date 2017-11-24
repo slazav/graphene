@@ -1,4 +1,4 @@
-#!/bin/sh -u
+#!/bin/bash -u
 
 # test json interface ./graphene_json
 

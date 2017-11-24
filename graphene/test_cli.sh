@@ -1,4 +1,4 @@
-#!/bin/sh -u
+#!/bin/bash -u
 
 # test command line interface program ./graphene
 

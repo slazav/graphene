@@ -1,4 +1,4 @@
-#!/bin/sh -u
+#!/bin/bash -u
 
 # test if new graphene program can read v1 databases
 # correctly
