@@ -94,12 +94,23 @@ int main() {
       ASSERT_EQ(hh1.print_time_v2(hh1.parse_time_v2("123456789.123456789")), "123456789.123456789");
       ASSERT_EQ(hh1.print_time_v2(hh1.parse_time_v2("123456789.12345678999")), "123456789.123456789");
       ASSERT_EQ(hh1.print_time_v2(hh1.parse_time_v2("4294967295.12345678999")), "4294967295.123456789"); // max
+      ASSERT_EQ(hh1.print_time_v2(hh1.parse_time_v2("123456789.12345678999+")), "123456789.123456790");
+      ASSERT_EQ(hh1.print_time_v2(hh1.parse_time_v2("123456789.12345678999-")), "123456789.123456788");
+      ASSERT_EQ(hh1.print_time_v2(hh1.parse_time_v2("0+")), "0.000000001");
+      ASSERT_EQ(hh1.print_time_v2(hh1.parse_time_v2("0-")), "4294967295.999999999");
+      ASSERT_EQ(hh1.print_time_v2(hh1.parse_time_v2("0.-")), "4294967295.999999999");
+      ASSERT_EQ(hh1.print_time_v2(hh1.parse_time_v2("0.00-")), "4294967295.999999999");
+
 
       ASSERT_EX(hh1.parse_time_v2(""), "Bad timestamp: can't read seconds: ");
       ASSERT_EX(hh1.parse_time_v2("a"), "Bad timestamp: can't read seconds: a");
       ASSERT_EX(hh1.parse_time_v2("1234567890123"), "Bad timestamp: can't read seconds: 1234567890123"); // >2^32
       ASSERT_EX(hh1.parse_time_v2("1,"), "Bad timestamp: can't read decimal dot: 1,");
       ASSERT_EX(hh1.parse_time_v2("1.a"), "Bad timestamp: can't read nanoseconds: 1.a");
+      ASSERT_EX(hh1.parse_time_v2("1.+a"), "Bad timestamp: can't read nanoseconds: 1.+a");
+      ASSERT_EX(hh1.parse_time_v2("1.00-a"), "Bad timestamp: can't read nanoseconds: 1.00-a");
+      ASSERT_EX(hh1.parse_time_v2("1.00-1"), "Bad timestamp: can't read nanoseconds: 1.00-1");
+      ASSERT_EX(hh1.parse_time_v2("1.00a-"), "Bad timestamp: can't read nanoseconds: 1.00a-");
     }
     {
       // cmp_time_v1

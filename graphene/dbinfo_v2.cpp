@@ -59,7 +59,14 @@ DBinfo::parse_time_v2(const string & ts) const{
     t += (uint64_t)999999999;
   }
   else {
-    istringstream s(ts);
+    int add=0;
+    istringstream s;
+    if (ts.size()>0 && (ts[ts.size()-1] == '+' || ts[ts.size()-1] == '-')){
+      add = ts[ts.size()-1]=='+'? +1:-1;
+      s.str(string(ts.begin(), ts.end()-1));
+    }
+    else s.str(ts);
+
     uint32_t t1=0, t2=0;
     s >> t1; // read seconds
     if (s.bad() || s.fail())
@@ -72,7 +79,6 @@ DBinfo::parse_time_v2(const string & ts) const{
       s >> c;
       int i=8;
       while (!s.eof()){
-        if (s.eof()) break;
         if (c<'0'||c>'9')
           throw Err() << "Bad timestamp: can't read nanoseconds: " << ts;
         if (i>=0) t2 += (c-'0') * pow(10,i);
@@ -81,6 +87,11 @@ DBinfo::parse_time_v2(const string & ts) const{
       }
     }
     t = ((uint64_t)t1<<32) + t2;
+    if (t==0 && add<0){ // same as inf
+      t = (uint64_t)((uint32_t)-1)<<32;
+      t += (uint64_t)999999999;
+    }
+    else t+=add;
   }
   return pack_time_v2(t);
 }

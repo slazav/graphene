@@ -109,8 +109,10 @@ Commands for reading and writing data:
   only points with distance >dt between them are shown. This works fast
   for any ratio of dt and interpoint distance.
 
-You can use words "now" and "inf" as a time.
-Default value for time1 is 0, for time2 is "inf".
+You can use words "now", "now_s" and "inf" as a timestamp. You can also
+add "+" or "-" symbol to numerical value to add 1 ns. This is convenient
+if you know a timestamp of some value and want to read next or  previous
+one. Default value for time1 is 0, for time2 is "inf".
 
 Text values are printed with line breaks converted to spaces.
 
