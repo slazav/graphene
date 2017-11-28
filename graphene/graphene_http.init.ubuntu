@@ -17,6 +17,8 @@ NAME=graphene_http
 DAEMON=/usr/bin/graphene_http
 PIDFILE=/var/run/graphene_http.pid
 SCRIPTNAME=/etc/init.d/"$NAME"
+#DAEMONUSER=nano
+DAEMON_OPTS=-f
 
 test -f $DAEMON || exit 0
 
@@ -24,11 +26,15 @@ test -f $DAEMON || exit 0
 
 case "$1" in
 start)	log_daemon_msg "Starting $DESC" "$NAME"
-        start_daemon -p $PIDFILE $DAEMON -f
+        rm -f -- $PIDFILE
+        start-stop-daemon --start --quiet --pidfile $PIDFILE \
+                          --exec $DAEMON -- $DAEMON_OPTS
         log_end_msg $?
 	;;
 stop)	log_daemon_msg "Stopping $DESC" "$NAME"
-        killproc -p $PIDFILE $DAEMON
+        start-stop-daemon --stop --quiet --pidfile $PIDFILE \
+                          --retry 300 \
+                          --exec $DAEMON
         RETVAL=$?
         [ $RETVAL -eq 0 ] && [ -e "$PIDFILE" ] && rm -f $PIDFILE
         log_end_msg $RETVAL
