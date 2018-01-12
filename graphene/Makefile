@@ -17,7 +17,7 @@ install: all
 dbinfo.o:      dbinfo.h dbinfo.cpp
 dbinfo_v1.o:   dbinfo.h dbinfo_v1.cpp
 dbinfo_v2.o:   dbinfo.h dbinfo_v2.cpp
-db.o:          dbinfo.h db.h db.cpp
+db.o:          dbinfo.h dbout.h db.h db.cpp
 graphene.o:      dbpool.h dbinfo.h db.h dbout.h graphene.cpp
 test_db.o:     tests.h dbinfo.h db.h dbout.h test_db.cpp
 test_json.o:   tests.h json.h test_json.cpp
