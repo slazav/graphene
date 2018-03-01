@@ -68,6 +68,8 @@ DBinfo::add_time(const std::string & s1, const std::string & s2) const{
 // Output string is not a c-string!
 // It is used as a convenient data storage, which
 // can be easily converted into Berkleydb data.
+// For text data all arguments are joined with ' ' separator.
+// Quote argument if you want to keep original spaces!
 string
 DBinfo::parse_data(const vector<string> & strs) const{
   if (strs.size() < 1) throw Err() << "Some data expected";
@@ -105,13 +107,8 @@ DBinfo::parse_data(const vector<string> & strs) const{
 // Print data
 string
 DBinfo::print_data(const string & s, const int col) const{
-  if (val == DATA_TEXT){
-    // remove linebreaks
-    int i;
-    string ret=s;
-    while ((i=ret.find('\n'))!=string::npos) ret[i] = ' ';
-    return ret;
-  }
+  if (val == DATA_TEXT) return s;
+
   if (s.size() % dsize() != 0)
     throw Err() << "Broken database: wrong data length";
   // number of columns

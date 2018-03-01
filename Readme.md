@@ -107,14 +107,13 @@ Commands for reading and writing data:
 - `get_range <extended name> [<time1>] [<time2>] [<dt>]` -- Get
   points in the time range. If parameter dt>1 then data are filtered,
   only points with distance >dt between them are shown. This works fast
-  for any ratio of dt and interpoint distance.
+  for any ratio of dt and interpoint distance. For text data only first
+  lines are shown.
 
 You can use words "now", "now_s" and "inf" as a timestamp. You can also
 add "+" or "-" symbol to numerical value to add 1 ns. This is convenient
 if you know a timestamp of some value and want to read next or  previous
 one. Default value for time1 is 0, for time2 is "inf".
-
-Text values are printed with line breaks converted to spaces.
 
 The "extended name" used in get_* commands have the following format:
 `<name>[:<column>][|<filter>]`
@@ -202,8 +201,7 @@ is possible only if all subfolders exist. List command shows only databases in
 the root database folder.
 - Linebreaks in text databases. You can put linebreaks in text database using
 the command line interface. In interactive mode it is not possible, because
-line breaks always mean starting of a new command. On output line breaks are
-always converted to spaces.
+line breaks always mean starting of a new command.
 
 ###  Performance
 

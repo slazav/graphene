@@ -346,7 +346,7 @@ DBgr::get_range(const string &t1, const string &t2,
 
     // if we want every point, switch to DB_NEXT and repeat
     if (info.is_zero_time(dtp)){
-      dbo.proc_point(&k, &v, info);
+      dbo.proc_point(&k, &v, info, 1);
       fl=DB_NEXT;
       continue;
     }
@@ -362,7 +362,7 @@ DBgr::get_range(const string &t1, const string &t2,
       tnp = string((char *)k.data, (char *)k.data+k.size);
       if (info.cmp_time(tnp,t2p) > 0 ) break;
     }
-    dbo.proc_point(&k, &v, info);
+    dbo.proc_point(&k, &v, info, 1);
     tlp=tnp; // update last printed value
 
     // add dt to the key for the next loop:

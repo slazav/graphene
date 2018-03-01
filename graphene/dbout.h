@@ -92,21 +92,28 @@ class DBout {
   }
 
   // Process a single point (select a column, make tables, filtering)
-  // and call print_point()
-  void proc_point(DBT *k, DBT *v, const DBinfo & info) {
+  // and call print_point().
+  // <list> parameter changes output of TEXT records in a list mode
+  // (only first line is shown).
+  void proc_point(DBT *k, DBT *v, const DBinfo & info, int list=0) {
     // check for correct key size (do not parse DB info)
     if (k->size!=sizeof(uint64_t) && k->size!=sizeof(uint32_t) ) return;
     // convert DBT to strings
     std::string ks((char *)k->data, (char *)k->data+k->size);
     std::string vs((char *)v->data, (char *)v->data+v->size);
-    // print values into a string
+    // print values into a string (always \n in the end!)
     std::ostringstream str;
     str << info.print_time(ks) << " "
         << info.print_data(vs, col) << "\n";
+    std::string s = str.str();
+
+    // keep only first line (s always ends with \n - see above)
+   if (list==1 && info.val==DATA_TEXT)
+      s.resize(s.find('\n')+1);
 
     // do filtering
     if (pid>0){
-      write(fd1[1], str.str().data(), str.str().length());
+      write(fd1[1], s.data(), s.length());
       char buf[256];
       size_t n;
       std::string out;
@@ -117,7 +124,7 @@ class DBout {
       print_point(out);
     }
     else{
-      print_point(str.str());
+      print_point(s);
     }
   };
 
