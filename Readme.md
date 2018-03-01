@@ -10,7 +10,7 @@ E-mail: Vladislav Zavjalov <slazav@altlinux.org>
 - store integer, floating point or text values with &lt;seconds&gt;.&lt;nanoseconds&gt; timestamps
 - fast access to data, interpolation, downsampling, time ranges
 - multi-column numerical values
-- command line interface for reading/writing data
+- command line and socket interfaces for reading/writing data
 - http simple json interface for Grafana viewer
 - user filters for data processing (calibration tables etc.) -- to be removed?
 
@@ -58,6 +58,7 @@ Options:
                replace, skip, error, sshift, nsshift (default: replace)
 - -h        -- write help message and exit
   -i        -- interactive mode, read commands from stdin
+  -s <name> -- socket mode: use unix socket <name> for communications
 
 Interactive mode:
 
@@ -72,6 +73,10 @@ printed to stdout started with "#SPP001" and followed by "#OK" line. In
 case of an error "#Error: <...>" line is printed and program exits. Then
 the program reads commands from stdin and sends ansers to stdout folowed
 by "#OK" or "#Error: <...>" lines until the user closes the connection.
+
+Socket mode is similar to the interactive mode. Graphene program acts as
+a server which accepts connections (one at a time) through a unix-domain
+socket.
 
 Commands for manipulating databases:
 

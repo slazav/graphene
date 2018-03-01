@@ -27,7 +27,7 @@
 class DBout {
   public:
   std::string name;    // primary database name
-
+  std::ostream & out;
   int col; // column number, for the main database
 
   // filter name, pid, in/out descriptors
@@ -36,9 +36,8 @@ class DBout {
   int fd1[2], fd2[2];
 
   // constructor -- parse the dataset string, create iostream
-  DBout(const std::string & filterpath, const std::string & str){
-    col  = -1;
-    name = str;
+  DBout(const std::string & filterpath, const std::string & str, std::ostream & out):
+    col(-1), name(str), out(out){
 
     // extract filter
     size_t cp = name.rfind('|');
@@ -128,11 +127,9 @@ class DBout {
     }
   };
 
-  // print_point  -- by default it just prints the line to stdout,
+  // print_point  -- by default it just prints the line to out,
   // but this function can be overriden.
-  virtual void print_point(const std::string & str) {
-    std::cout << str;
-  };
+  virtual void print_point(const std::string & str) { out << str; }
 };
 
 #endif

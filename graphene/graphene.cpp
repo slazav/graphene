@@ -17,6 +17,11 @@
 #include "dbpool.h"
 #include "dbout.h"
 
+#include <ext/stdio_filebuf.h>
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <sys/un.h>
+
 using namespace std;
 
 /**********************************************************/
@@ -25,6 +30,7 @@ class Pars{
   public:
   string dbpath;       /* path to the databases */
   string dpolicy;      /* what to do with duplicated timestamps*/
+  string sockname;     /* socket name*/
   bool interactive;    /* use interactive mode */
   vector<string> pars; /* non-option parameters */
 
@@ -36,22 +42,23 @@ class Pars{
     if (argc<1) return; // needed for print_help()
     /* parse  options */
     int c;
-    while((c = getopt(argc, argv, "+d:D:hi"))!=-1){
+    while((c = getopt(argc, argv, "+d:D:his:"))!=-1){
       switch (c){
         case '?':
         case ':': throw Err(); /* error msg is printed by getopt*/
         case 'd': dbpath = optarg; break;
         case 'D': dpolicy = optarg; break;
         case 'h': print_help();
-        case 'i': interactive = true;
+        case 'i': interactive = true; break;
+        case 's': sockname = optarg; break;
       }
     }
     pars = vector<string>(argv+optind, argv+argc);
   }
 
   // print command list (used in both -h message and interactive mode help)
-  void print_cmdlist(){
-    cout << "  create <name> <data_fmt> <description>\n"
+  void print_cmdlist(ostream & out){
+    out <<  "  create <name> <data_fmt> <description>\n"
             "      -- create a database\n"
             "  delete <name>\n"
             "      -- delete a database\n"
@@ -98,9 +105,10 @@ class Pars{
             "               replace, skip, error, sshift, nsshift (default: " << p.dpolicy << ")\n"
             "  -h        -- write this help message and exit\n"
             "  -i        -- interactive mode, read commands from stdin\n"
+            "  -s <name> -- socket mode: use unix socket <name> for communications\n"
             "Commands:\n"
     ;
-    print_cmdlist();
+    print_cmdlist(cout);
     throw Err();
   }
 
@@ -119,41 +127,85 @@ class Pars{
 
 
   // Interactive mode.
-  void run_interactive(){
+  void run_interactive(std::istream & in, std::ostream & out){
     if (pars.size() !=0) throw Err() << "too many argumens for the interactive mode";
     string line;
-    cout << "#SPP001\n"; // command-line protocol, version 001.
-    cout << "Graphene database. Type cmdlist to see list of commands\n";
-
+    out << "#SPP001\n"; // command-line protocol, version 001.
+    out << "Graphene database. Type cmdlist to see list of commands\n";
+    out.flush();
     DBpool pool(dbpath);
-    cout << "#OK\n";
+    out << "#OK\n";
+    out.flush();
 
-    while (getline(cin, line)){
+    while (getline(in, line)){
       try {
         if (line=="") continue;
         parse_command_string(line);
-        run_command(&pool);
-        cout << "#OK\n";
+        run_command(&pool, out);
+        out << "#OK\n";
+        out.flush();
       }
       catch(Err e){
-        if (e.str()!="") cout << "#Error: " << e.str() << "\n";
+        if (e.str()!="") out << "#Error: " << e.str() << "\n";
+        out.flush();
       }
     }
     return;
   }
 
+  // Socket mode
+  void run_socket(const string & name){
+    if (pars.size() !=0) throw Err() << "too many argumens for the socket mode";
+    int sock = socket(AF_UNIX, SOCK_STREAM, 0);
+    if (sock < 0) throw Err() << "Can't create a socket";
+
+    struct sockaddr_un server;
+    server.sun_family = AF_UNIX;
+    strcpy(server.sun_path, name.c_str());
+    if (bind(sock, (struct sockaddr *) &server, sizeof(struct sockaddr_un)))
+      throw Err() << "can't bind socket to a file: " << name;
+
+    listen(sock, 10);
+    while (1) {
+
+      // wait connection on the socket or a enter on stdin
+      fd_set rfds;
+      FD_ZERO(&rfds);
+      FD_SET(sock, &rfds);
+      FD_SET(0, &rfds);
+      int ret = select(sock+1, &rfds, NULL, NULL, NULL);
+      if (ret && FD_ISSET(0, &rfds)) break;
+      if (ret == -1) throw Err() << "select error";
+
+      // accept a connection
+      int msgsock = accept(sock, 0, 0);
+      if (msgsock == -1) throw Err() << "Socket accept error";
+
+      // create in/out streams and run interactive mode
+      __gnu_cxx::stdio_filebuf<char> filebuf_in(msgsock, std::ios::in);
+      __gnu_cxx::stdio_filebuf<char> filebuf_out(msgsock, std::ios::out);
+      ostream out(&filebuf_out);
+      istream in(&filebuf_in);
+      pars.clear();
+      run_interactive(in, out);
+    }
+    close(sock);
+    unlink(name.c_str());
+  }
+
+
   // Cmdline mode.
   void run_cmdline(){
     if (pars.size() < 1) throw Err() << "command is expected";
     DBpool pool(dbpath);
-    run_command(&pool);
+    run_command(&pool, cout);
   }
 
   // Run command, using parameters
   // For read/write commands time is transferred as a string
   // to db.put, db.get_* functions without change.
   // "now", "now_s" and "inf" strings can be used.
-  void run_command(DBpool* pool){
+  void run_command(DBpool* pool, ostream & out){
     string cmd = pars[0];
 
     // create new database
@@ -208,8 +260,8 @@ class Pars{
       DBgr db = pool->get(pars[1], DB_RDONLY);
       DBinfo info = db.read_info();
       cout << DBinfo::datafmt2str(info.val);
-      if (info.descr!="") cout << '\t' << info.descr;
-      cout << "\n";
+      if (info.descr!="") out << '\t' << info.descr;
+      out << "\n";
       return;
     }
 
@@ -224,7 +276,7 @@ class Pars{
         string name(ent->d_name);
         size_t p = name.find(".db");
         if (name.size()>3 && p == name.size()-3)
-          cout << name.substr(0,p) << "\n";
+          out << name.substr(0,p) << "\n";
       }
       closedir(dir);
       return;
@@ -248,7 +300,7 @@ class Pars{
       if (pars.size()<2) throw Err() << "database name expected";
       if (pars.size()>3) throw Err() << "too many parameters";
       string t1 = pars.size()>2? pars[2]: "0";
-      DBout dbo(dbpath, pars[1]);
+      DBout dbo(dbpath, pars[1], out);
       DBgr db = pool->get(dbo.name, DB_RDONLY);
       db.get_next(t1, dbo);
       return;
@@ -260,7 +312,7 @@ class Pars{
       if (pars.size()<2) throw Err() << "database name expected";
       if (pars.size()>3) throw Err() << "too many parameters";
       string t2 = pars.size()>2? pars[2]: "inf";
-      DBout dbo(dbpath, pars[1]);
+      DBout dbo(dbpath, pars[1], out);
       DBgr db = pool->get(dbo.name, DB_RDONLY);
       db.get_prev(t2, dbo);
       return;
@@ -272,7 +324,7 @@ class Pars{
       if (pars.size()<2) throw Err() << "database name expected";
       if (pars.size()>3) throw Err() << "too many parameters";
       string t2 = pars.size()>2? pars[2]: "inf";
-      DBout dbo(dbpath, pars[1]);
+      DBout dbo(dbpath, pars[1], out);
       DBgr db = pool->get(dbo.name, DB_RDONLY);
       db.get(t2, dbo);
       return;
@@ -286,7 +338,7 @@ class Pars{
       string t1 = pars.size()>2? pars[2]: "0";
       string t2 = pars.size()>3? pars[3]: "inf";
       string dt = pars.size()>4? pars[4]: "0";
-      DBout dbo(dbpath, pars[1]);
+      DBout dbo(dbpath, pars[1], out);
       DBgr db = pool->get(dbo.name, DB_RDONLY);
       db.get_range(t1,t2,dt, dbo);
       return;
@@ -334,7 +386,7 @@ class Pars{
     // args: cmdlist
     if (strcasecmp(cmd.c_str(), "cmdlist")==0){
       if (pars.size()>1) throw Err() << "too many parameters";
-      print_cmdlist();
+      print_cmdlist(out);
       return;
     }
 
@@ -342,7 +394,7 @@ class Pars{
     // args: *idn?
     if (strcasecmp(cmd.c_str(), "*idn?")==0){
       if (pars.size()>1) throw Err() << "too many parameters";
-      cout << "Graphene database " << VERSION << "\n";
+      out << "Graphene database " << VERSION << "\n";
       return;
     }
 
@@ -359,7 +411,8 @@ main(int argc, char **argv) {
 
   try {
     Pars p(argc, argv);
-    if (p.interactive) p.run_interactive();
+    if (p.interactive) p.run_interactive(cin, cout);
+    else if (p.sockname!="") p.run_socket(p.sockname);
     else p.run_cmdline();
 
   } catch(Err e){

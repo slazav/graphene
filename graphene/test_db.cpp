@@ -26,14 +26,14 @@ int main() {
       ASSERT_EX(check_name("/abc/def\t"), e1);
       ASSERT_EX(check_name("/abc/def\n"), e1);
 
-      {DBout dbn(".","abc");    ASSERT_EQ(dbn.name, "abc");
+      {DBout dbn(".","abc",cout);    ASSERT_EQ(dbn.name, "abc");
                             ASSERT_EQ(dbn.col, -1);}
-      {DBout dbn(".","abc/");   ASSERT_EQ(dbn.name, "abc/");}
+      {DBout dbn(".","abc/",cout);   ASSERT_EQ(dbn.name, "abc/");}
 
-      {DBout dbn(".","abc:1");
+      {DBout dbn(".","abc:1",cout);
          ASSERT_EQ(dbn.name, "abc"); ASSERT_EQ(dbn.col, 1);}
-      {DBout dbn(".","abc:-1"); ASSERT_EQ(dbn.col, -1);}
-      {DBout dbn(".","abc:-2"); ASSERT_EQ(dbn.col, -1);}
+      {DBout dbn(".","abc:-1",cout); ASSERT_EQ(dbn.col, -1);}
+      {DBout dbn(".","abc:-2",cout); ASSERT_EQ(dbn.col, -1);}
     }
     {
       DBinfo hh1; // default constructor
