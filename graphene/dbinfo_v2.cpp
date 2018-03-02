@@ -16,7 +16,7 @@ using namespace std;
 /********************************************************************/
 // Time handling
 
-// Unpack timestamp
+// Unpack timestamp (string as in DB -> int64_t)
 uint64_t
 DBinfo::unpack_time_v2(const string & s) const{
   if (s.size()==sizeof(uint64_t))
@@ -26,6 +26,7 @@ DBinfo::unpack_time_v2(const string & s) const{
   throw Err() << "Broken database: wrong timestamp size: " << s.size();
 }
 
+// Pack timestamp (int64_t -> string as in DB)
 string
 DBinfo::pack_time_v2(const uint64_t t) const{
   if (t&0xFFFFFFFF){
@@ -40,7 +41,7 @@ DBinfo::pack_time_v2(const uint64_t t) const{
   }
 }
 
-// Parse timestemp from a string
+// Parse timestemp from a string (time in seconds, words now, inf, +/- suffixes)
 string
 DBinfo::parse_time_v2(const string & ts) const{
   uint64_t t=0;
@@ -96,7 +97,7 @@ DBinfo::parse_time_v2(const string & ts) const{
   return pack_time_v2(t);
 }
 
-// Print timestamp
+// Print timestamp (DB packed string -> printed string)
 std::string
 DBinfo::print_time_v2(const string & s) const{
   uint64_t t = unpack_time_v2(s);
