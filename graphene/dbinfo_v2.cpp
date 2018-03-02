@@ -135,6 +135,19 @@ DBinfo::add_time_v2(const std::string & s1, const std::string & s2) const{
   return pack_time_v2((sum1<<32)+sum2);
 }
 
+// Subtract two packed time values, return number of seconds as a double value
+double
+DBinfo::time_diff_v2(const std::string & s1, const std::string & s2) const{
+  uint64_t t1 = unpack_time_v2(s1);
+  uint64_t t2 = unpack_time_v2(s2);
+
+  // difference in seconds and in milliseconds
+  int64_t d1 = (int64_t)(t1 >> 32) - (int64_t)(t2 >> 32);
+  int64_t d2 = (int64_t)(t1 & 0xFFFFFFFF) - (int64_t)(t2 & 0xFFFFFFFF);
+
+  return (double)d1 + (double)d2*1e-9;
+}
+
 /********************************************************************/
 // interpolation
 

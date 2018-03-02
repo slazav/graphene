@@ -61,6 +61,14 @@ DBinfo::add_time(const std::string & s1, const std::string & s2) const{
   else throw Err() << "Unknown database version: " << version;
 }
 
+// Add two packed time values, return packed string
+double
+DBinfo::time_diff(const std::string & s1, const std::string & s2) const{
+  if      (version==1) return time_diff_v1(s1,s2);
+  else if (version==2) return time_diff_v2(s1,s2);
+  else throw Err() << "Unknown database version: " << version;
+}
+
 /********************************************************************/
 // Data handling
 

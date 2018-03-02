@@ -159,6 +159,28 @@ int main() {
       // 2^31+2^31 >= 2^32
       ASSERT_EX(hh1.add_time_v2(hh1.parse_time_v2("2147483648"), hh1.parse_time_v2("2147483648")), "add_time overfull");
     }
+
+    {
+      // time_diff_v1
+      DBinfo hh1(DATA_DOUBLE);
+      ASSERT_EQ(hh1.time_diff_v1(hh1.parse_time_v1("1.5"), hh1.parse_time_v1("0.5")), 1.0);
+      ASSERT_EQ(hh1.time_diff_v1(hh1.parse_time_v1("1.999"), hh1.parse_time_v1("1.999")), 0.0);
+      ASSERT_EQ(hh1.time_diff_v1(hh1.parse_time_v1("1.999"), hh1.parse_time_v1("2.9999")), -1.0); // ms precision!
+      ASSERT_EQ(hh1.time_diff_v1(hh1.parse_time_v1("2147483648.001"), hh1.parse_time_v1("2147483648.000")), 0.001);
+    }
+    {
+      // time_diff_v2
+      DBinfo hh1(DATA_DOUBLE);
+      ASSERT_EQ(hh1.time_diff_v2(hh1.parse_time_v2("1.5"), hh1.parse_time_v2("0.5")), 1.0);
+      ASSERT_EQ(hh1.time_diff_v2(hh1.parse_time_v2("1.999"), hh1.parse_time_v2("1.999")), 0.0);
+      ASSERT_EQ(hh1.time_diff_v2(hh1.parse_time_v2("1.999"), hh1.parse_time_v2("2.9999")), -1.0009); // ns precision!
+      ASSERT_EQ(hh1.time_diff_v2(hh1.parse_time_v2("2147483648.001"), hh1.parse_time_v2("2147483648.000")), 0.001);
+      ASSERT_EQ(hh1.time_diff_v2(hh1.parse_time_v2("2147483648.000000001"), hh1.parse_time_v2("2147483648.0")), 1e-9);
+      ASSERT_EQ(hh1.time_diff_v2(hh1.parse_time_v2("2147483648"), hh1.parse_time_v2("2147483648.000000001")), -1e-9);
+      ASSERT_EQ(hh1.time_diff_v2(hh1.parse_time_v2("2147483648.999999999"), hh1.parse_time_v2("0")), 2147483648.999999999);
+      ASSERT_EQ(hh1.time_diff_v2(hh1.parse_time_v2("10"), hh1.parse_time_v2("10")), 00.0);
+    }
+
     {
       // interpolate_v2
       DBinfo hh1(DATA_DOUBLE);

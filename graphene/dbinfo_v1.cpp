@@ -104,6 +104,15 @@ DBinfo::add_time_v1(const std::string & s1, const std::string & s2) const{
   return ret;
 }
 
+// Subtract two packed time values, return number of seconds as a double value
+double
+DBinfo::time_diff_v1(const std::string & s1, const std::string & s2) const{
+  int64_t t1 = unpack_time_v1(s1);
+  int64_t t2 = unpack_time_v1(s2);
+  string ret(sizeof(uint64_t), '\0');
+  return (double)(t1-t2)/1000.0;
+}
+
 /********************************************************************/
 // interpolation
 

@@ -112,6 +112,9 @@ class DBinfo {
   // Add two packed time values, return packed string
   std::string add_time(const std::string & s1, const std::string & s2) const;
 
+  // Subtract two packed time values, return number of seconds as a double value
+  double time_diff(const std::string & s1, const std::string & s2) const;
+
   // Pack data according with data format
   // std::string is used as a convenient data storage, which
   // can be easily converted into Berkleydb data.
@@ -139,6 +142,7 @@ class DBinfo {
   int cmp_time_v1(const std::string & s1, const std::string & s2) const;
   bool is_zero_time_v1(const std::string & s1) const;
   std::string add_time_v1(const std::string & s1, const std::string & s2) const;
+  double time_diff_v1(const std::string & s1, const std::string & s2) const;
   std::string interpolate_v1(
         const std::string & k0,
         const std::string & k1, const std::string & k2,
@@ -153,6 +157,7 @@ class DBinfo {
   int cmp_time_v2(const std::string & s1, const std::string & s2) const;
   bool is_zero_time_v2(const std::string & s1) const;
   std::string add_time_v2(const std::string & s1, const std::string & s2) const;
+  double time_diff_v2(const std::string & s1, const std::string & s2) const;
   std::string interpolate_v2(
         const std::string & k0,
         const std::string & k1, const std::string & k2,
