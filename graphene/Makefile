@@ -20,12 +20,12 @@ dbinfo_v2.o:   dbinfo.h dbinfo_v2.cpp
 db.o:          dbinfo.h dbout.h db.h db.cpp
 dbpool.o:      dbpool.h db.h
 dbout.o:       dbout.h db.h
-graphene.o:    dbpool.h dbinfo.h db.h dbout.h graphene.cpp
-test_db.o:     tests.h dbinfo.h db.h dbout.h test_db.cpp
-test_json.o:   tests.h json.h test_json.cpp
-json.o:        dbinfo.h db.h dbout.h json.h json.cpp
-graphene_json.o:  dbinfo.h db.h dbout.h json.h graphene_json.cpp
-graphene_http.o:  dbinfo.h db.h dbout.h json.h graphene_http.cpp
+graphene.o:       dbinfo.h db.h dbout.h dbpool.h graphene.cpp
+test_json.o:      json.h tests.h test_json.cpp
+test_db.o:        dbinfo.h db.h dbout.h dbpool.h tests.h test_db.cpp
+json.o:           dbinfo.h db.h dbout.h dbpool.h json.h json.cpp
+graphene_json.o:  dbinfo.h db.h dbout.h dbpool.h json.h graphene_json.cpp
+graphene_http.o:  dbinfo.h db.h dbout.h dbpool.h json.h graphene_http.cpp
 
 graphene:      dbinfo.o dbinfo_v1.o dbinfo_v2.o db.o dbpool.o dbout.o graphene.o
 graphene_http: dbinfo.o dbinfo_v1.o dbinfo_v2.o db.o dbpool.o dbout.o json.o graphene_http.o

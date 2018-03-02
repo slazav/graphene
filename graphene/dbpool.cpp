@@ -17,8 +17,8 @@ DBpool::DBpool(const std::string & dbpath_): dbpath(dbpath_) {
   if (res != 0)
     throw Err() << "creating DB_ENV: " << dbpath << ": " << db_strerror(res);
 
-  res = env->open(env, dbpath.c_str(),
-                 DB_CREATE | DB_INIT_LOCK | DB_INIT_MPOOL, 0644);
+  int flags = DB_CREATE | DB_INIT_LOCK | DB_INIT_MPOOL | DB_INIT_LOG | DB_INIT_TXN;
+  res = env->open(env, dbpath.c_str(), flags, 0644);
   if (res != 0)
     throw Err() << "opening DB_ENV: " << dbpath << ": " << db_strerror(res);
 }

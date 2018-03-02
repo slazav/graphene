@@ -37,6 +37,8 @@ for i in *.db; do
   ./graphene -d . delete ${i%.db}
 done
 
+rm -f -- __db.* log.*
+
 # create
 assert "$(./graphene -d . create)" "#Error: database name expected"
 assert "$(./graphene -d . create a dfmt)" "#Error: Unknown data format: dfmt"
@@ -395,3 +397,4 @@ for i in *.db; do
   [ -f $i ] || continue
   ./graphene -d . delete ${i%.db}
 done
+rm -f -- __db.* log.*

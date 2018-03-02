@@ -18,6 +18,7 @@ for i in *.db; do
   [ -f $i ] || continue
   ./graphene -d . delete ${i%.db}
 done
+rm -f -- __db.* log.*
 
 # create and fill databases
 
@@ -110,3 +111,4 @@ for i in *.db; do
   [ -f $i ] || continue
   ./graphene -d . delete ${i%.db}
 done
+rm -f -- __db.* log.*

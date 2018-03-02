@@ -11,6 +11,7 @@ function assert(){
     exit 1
   fi
 }
+rm -f -- v1/__db.* v1/log.*
 
 prog="./graphene -d v1"
 
