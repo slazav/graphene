@@ -4,6 +4,8 @@
 #define GRAPHENE_DBOUT_H
 
 #include <string>
+#include <iomanip>
+#include <iostream>
 #include <errno.h>
 #include <wait.h>
 #include "db.h"
@@ -27,7 +29,8 @@
 class DBout {
   public:
   std::string name;    // primary database name
-  std::ostream & out;
+  std::ostream & out;  // stream for output
+  std::string time0;   // zero time for relative time output or ""
   int col; // column number, for the main database
 
   // filter name, pid, in/out descriptors
@@ -36,8 +39,11 @@ class DBout {
   int fd1[2], fd2[2];
 
   // constructor -- parse the dataset string, create iostream
-  DBout(const std::string & filterpath, const std::string & str, std::ostream & out):
-    col(-1), name(str), out(out){
+  DBout(const std::string & filterpath,
+        const std::string & str,
+        std::ostream & out = std::cout,
+        const std::string & time0 = ""):
+    col(-1), name(str), out(out), time0(time0){
 
     // extract filter
     size_t cp = name.rfind('|');
@@ -102,8 +108,10 @@ class DBout {
     std::string vs((char *)v->data, (char *)v->data+v->size);
     // print values into a string (always \n in the end!)
     std::ostringstream str;
-    str << info.print_time(ks) << " "
-        << info.print_data(vs, col) << "\n";
+
+    if (time0.size() == 0) str << info.print_time(ks); // absolute timestamp
+    else str << std::fixed << std::setprecision(9) << info.time_diff(ks, info.parse_time(time0)); // relative time
+    str << " " << info.print_data(vs, col) << "\n"; // data
     std::string s = str.str();
 
     // keep only first line (s always ends with \n - see above)

@@ -108,6 +108,7 @@ assert "$(./graphene -d . get_next test_1 NoW_s)"          "2234567890.123000000
 assert "$(./graphene -d . get_next test_1 inf)"            ""
 assert "$(./graphene -d . get_next test_1 2000000000.124)" "2234567890.123000000 0.2"
 assert "$(./graphene -d . get_next test_1 3000000000)" ""
+assert "$(./graphene -r -d . get_next test_1 2000000000.124)" "234567889.999000013 0.2" # relative (note the rounding error)
 # get_prev
 assert "$(./graphene -d . get_prev test_1)"                "2234567890.123000000 0.2" # last
 assert "$(./graphene -d . get_prev test_1 0)"              ""
@@ -117,6 +118,7 @@ assert "$(./graphene -d . get_prev test_1 1234567895)"     "1234567890.000000000
 assert "$(./graphene -d . get_prev test_1 now)"            "1234567890.000000000 0.1"
 assert "$(./graphene -d . get_prev test_1 inf)"            "2234567890.123000000 0.2"
 assert "$(./graphene -d . get_prev test_1 3234567895)"     "2234567890.123000000 0.2"
+assert "$(./graphene -r -d . get_prev test_1 2234567895)"     "-4.877000000 0.2" # relative
 
 # get_range
 assert "$(./graphene -d . get_range test_1 0 1234567880)"   ""
@@ -141,6 +143,9 @@ assert "$(./graphene -d . get_range test_1 0 3384967290 2)" "1234567890.00000000
 assert "$(./graphene -d . get_range test_1 1234567890 2234567890.123 2)" "1234567890.000000000 0.1
 2234567890.123000000 0.2"
 
+assert "$(./graphene -r -d . get_range test_1 2234567890 2234567890.123 2)" "0 0.1
+0.123000000 0.2" # relative
+
 assert "$(./graphene -d . get_range test_1 1234567890 2234567890.123 1200000000)" "1234567890.000000000 0.1"
 assert "$(./graphene -d . delete test_1)" ""
 
@@ -159,6 +164,8 @@ assert "$(./graphene -d . get test_2 2000)"   "2000.000000000 2 20"
 assert "$(./graphene -d . get test_2 1200)"   "1200.000000000 1.2 12"
 assert "$(./graphene -d . get test_2 1800)"   "1800.000000000 1.8 18"
 assert "$(./graphene -d . get test_2:1 1200)" "1200.000000000 12"
+assert "$(./graphene -r -d . get test_2 2200)"   "-200 2 20" # relative
+assert "$(./graphene -r -d . get test_2 1800)"   "0 1.8 18" # relative
 
 # columns
 assert "$(./graphene -d . get_next test_2:0)" "1000.000000000 1"

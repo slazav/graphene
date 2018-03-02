@@ -33,16 +33,18 @@ class Pars{
   string sockname;     /* socket name*/
   bool interactive;    /* use interactive mode */
   vector<string> pars; /* non-option parameters */
+  bool relative;       /* output relative times */
 
   // get options and parameters from argc/argv
   Pars(const int argc, char **argv){
     dbpath  = "/var/lib/graphene/";
     dpolicy = "replace";
     interactive = false;
+    relative  = false;
     if (argc<1) return; // needed for print_help()
     /* parse  options */
     int c;
-    while((c = getopt(argc, argv, "+d:D:his:"))!=-1){
+    while((c = getopt(argc, argv, "+d:D:his:r"))!=-1){
       switch (c){
         case '?':
         case ':': throw Err(); /* error msg is printed by getopt*/
@@ -51,6 +53,7 @@ class Pars{
         case 'h': print_help();
         case 'i': interactive = true; break;
         case 's': sockname = optarg; break;
+        case 'r': relative = true; break;
       }
     }
     pars = vector<string>(argv+optind, argv+argc);
@@ -106,6 +109,7 @@ class Pars{
             "  -h        -- write this help message and exit\n"
             "  -i        -- interactive mode, read commands from stdin\n"
             "  -s <name> -- socket mode: use unix socket <name> for communications\n"
+            "  -r        -- output relative times (seconds from requested time) instead of absolute timestamps\n"
             "Commands:\n"
     ;
     print_cmdlist(cout);
@@ -300,7 +304,7 @@ class Pars{
       if (pars.size()<2) throw Err() << "database name expected";
       if (pars.size()>3) throw Err() << "too many parameters";
       string t1 = pars.size()>2? pars[2]: "0";
-      DBout dbo(dbpath, pars[1], out);
+      DBout dbo(dbpath, pars[1], out, relative ? t1:"");
       DBgr db = pool->get(dbo.name, DB_RDONLY);
       db.get_next(t1, dbo);
       return;
@@ -312,7 +316,7 @@ class Pars{
       if (pars.size()<2) throw Err() << "database name expected";
       if (pars.size()>3) throw Err() << "too many parameters";
       string t2 = pars.size()>2? pars[2]: "inf";
-      DBout dbo(dbpath, pars[1], out);
+      DBout dbo(dbpath, pars[1], out, relative ? t2:"");
       DBgr db = pool->get(dbo.name, DB_RDONLY);
       db.get_prev(t2, dbo);
       return;
@@ -324,7 +328,7 @@ class Pars{
       if (pars.size()<2) throw Err() << "database name expected";
       if (pars.size()>3) throw Err() << "too many parameters";
       string t2 = pars.size()>2? pars[2]: "inf";
-      DBout dbo(dbpath, pars[1], out);
+      DBout dbo(dbpath, pars[1], out, relative ? t2:"");
       DBgr db = pool->get(dbo.name, DB_RDONLY);
       db.get(t2, dbo);
       return;
@@ -338,7 +342,7 @@ class Pars{
       string t1 = pars.size()>2? pars[2]: "0";
       string t2 = pars.size()>3? pars[3]: "inf";
       string dt = pars.size()>4? pars[4]: "0";
-      DBout dbo(dbpath, pars[1], out);
+      DBout dbo(dbpath, pars[1], out, relative ? t1:"");
       DBgr db = pool->get(dbo.name, DB_RDONLY);
       db.get_range(t1,t2,dt, dbo);
       return;
