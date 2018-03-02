@@ -1,5 +1,5 @@
 Name:         graphene
-Version:      2.5
+Version:      2.6
 Release:      alt1
 
 Summary:      Simple time series database.
@@ -35,6 +35,15 @@ graphene -- a simple time series database with nanosecond precision for scientif
 %config %_initdir/graphene_http
 
 %changelog
+* Fri Mar 02 2018 Vladislav Zavjalov <slazav@altlinux.org> 2.6-alt1
+- v2.6
+ - test_cli.sh: fix test to use only local folder
+ - json interface: never return more then MaxAnnotations=500 annotations
+ - allow +/- suffixes in timestamps
+ - text databases: only first line of text is printed in get_range output, no '\n' -> ' ' conversion
+ - -s option: unix socket mode
+ - -r option: output relative times (seconds from requested time) instead of absolute timestamps
+
 * Mon May 15 2017 Vladislav Zavjalov <slazav@altlinux.org> 2.5-alt1
 - v2.5
  - use database environment to allow multiple-program operation
