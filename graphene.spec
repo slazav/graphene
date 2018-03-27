@@ -10,8 +10,8 @@ License:      GPL
 Packager:     Vladislav Zavjalov <slazav@altlinux.org>
 
 Source:       %name-%version.tar
-BuildRequires: libmicrohttpd-devel libjansson-devel libdb6.1-devel
-Requires:      libmicrohttpd libjansson libdb6.1
+BuildRequires: libmicrohttpd-devel libjansson-devel libdb4.8-devel
+Requires:      libmicrohttpd libjansson libdb4.8
 
 %description
 graphene -- a simple time series database with nanosecond precision for scientific applications

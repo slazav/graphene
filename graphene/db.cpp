@@ -14,9 +14,8 @@ using namespace std;
 // 8 bits are used for database information)
 // Shorter ints always smaller!
 // (THINKABOUT: do we want to mix 64 and 32 bit integers in one DB?)
-int cmpfunc(DB *dbp, const DBT *a, const DBT *b, size_t *locp){
+int cmpfunc(DB *dbp, const DBT *a, const DBT *b){
   uint64_t v1,v2;
-
   if (a->size == sizeof(uint64_t) && b->size == sizeof(uint64_t)){
     v1 = *(uint64_t*)a->data;
     v2 = *(uint64_t*)b->data; }
