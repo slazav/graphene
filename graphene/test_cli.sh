@@ -389,7 +389,15 @@ assert "$(./graphene -d . get_range test_1)" "\
 1.000000000 1
 1.500000000 2
 2.000000000 3"
+
+db_dump test_1.db > test_1.tmp
+./graphene -d . load test_2 test_1.tmp
+db_dump test_2.db > test_2.tmp
+assert "$(diff test_2.tmp test_1.tmp)" ""
+
 assert "$(./graphene -d . delete test_1)" ""
+assert "$(./graphene -d . delete test_2)" ""
+
 
 ###########################################################################
 # remove all test databases

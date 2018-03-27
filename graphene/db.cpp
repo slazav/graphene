@@ -2,6 +2,7 @@
 #include <string>
 #include <vector>
 #include <sstream>
+#include <fstream>
 #include <iostream>
 #include <cstring> /* memset */
 #include "db.h"
@@ -417,4 +418,61 @@ DBgr::del_range(const string &t1, const string &t2){
     fl=DB_NEXT;
   }
   curs->close(curs);
+}
+
+
+uint8_t DIG(const char c){
+  if (c>='0' && c<='9') return c-'0';
+  if (c=='a') return 10;
+  if (c=='b') return 11;
+  if (c=='c') return 12;
+  if (c=='d') return 13;
+  if (c=='e') return 14;
+  if (c=='f') return 15;
+}
+
+std::string
+strconv(const std::string &s){
+  std::string ret;
+  size_t len = s.length();
+  for (int i=0;i<len; i++){
+    if (s[i]==' ') continue;
+    if (i+1>=len) throw Err() << "bad data formatting";
+    ret.push_back((DIG(s[i])<<4) + DIG(s[++i]));
+  }
+  return ret;
+}
+
+/************************************/
+// load file in a db_dump format
+// (we can not use db_load because of user-defined comparison function)
+void
+DBgr::load(const std::string &file){
+  ifstream ff(file.c_str());
+  // skip header
+  while (1){
+    string s;
+    getline(ff, s);
+    if (ff.eof()) throw Err() << "Unexpected EOF while reading header";
+    if (s == "HEADER=END") break;
+  }
+
+  // read data
+  while (1){
+    string ks,vs;
+    getline(ff, ks);
+    getline(ff, vs);
+    if (ks == "DATA=END") break;
+    if (vs == "DATA=END") throw Err() << "Unexpected end of data";
+    if (ff.eof()) throw Err() << "Unexpected EOF while reading data";
+    if (vs=="" || ks=="") throw Err() << "Error reading data";
+    std::string kp = strconv(ks);
+    std::string vp = strconv(vs);
+    // write new data
+    DBT k = mk_dbt(kp);
+    DBT v = mk_dbt(vp);
+    int ret = dbp->put(dbp, NULL, &k, &v, 0);
+    if (ret != 0)
+      throw Err() << name << ".db: " << db_strerror(ret);
+  }
 }

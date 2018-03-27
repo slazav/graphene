@@ -83,9 +83,14 @@ Commands for manipulating databases:
 
 - `create <name> [<data_fmt>] [<description>]` -- Create a database file.
 
+- `load <name> <file>` -- Create a database and load file in db_dump format
+  (note that it is not possible to use db_load utility
+  because of non-standard comparison function in graphene databases).
+
 - `delete <name>` -- Delete a database file.
 
 - `rename <old_name> <new_name>` -- Rename a database file.
+
 
 Delete and rename commands just do simple file operations.
 A database can be renamed only if the destination does not exists.

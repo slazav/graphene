@@ -132,7 +132,6 @@ class DBgr{
   void get_range(const std::string &t1, const std::string &t2,
                  const std::string &dt, DBout & dbo);
 
-
   // delete data data from the database -- del_range
   void del(const std::string &t1);
 
@@ -141,6 +140,10 @@ class DBgr{
 
   // sync the database
   void sync() {dbp->sync(dbp, 0);}
+
+  // load file in a db_dump format
+  // (we can not use db_load because of user-defined comparison function)
+  void load(const std::string &file);
 
 };
 

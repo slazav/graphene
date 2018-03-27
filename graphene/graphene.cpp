@@ -92,6 +92,7 @@ class Pars{
             "  close <name> -- close one database\n"
             "  sync         -- sync all opened databases\n"
             "  sync <name> -- sync one database\n"
+            "  load <name> <file> -- create db and load file in a db_dump format\n"
             "  cmdlist -- print this list of commands\n"
             "  *idn?   -- print intentifier: Graphene database " << VERSION << "\n"
     ;
@@ -385,6 +386,18 @@ class Pars{
       else pool->sync();
       return;
     }
+
+    // create db and load file in db_dump format
+    // (we can not use db_load because of user-defined comparison function)
+    // args: load <name> <file>
+    if (strcasecmp(cmd.c_str(), "load")==0){
+      if (pars.size()<3) throw Err() << "database name and dump file expected";
+      if (pars.size()>3) throw Err() << "too many parameters";
+      DBgr db = pool->dbcreate(pars[1]);
+      db.load(pars[2]);
+      return;
+    }
+
 
     // print list of commands
     // args: cmdlist
