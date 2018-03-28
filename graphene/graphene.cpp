@@ -8,6 +8,7 @@
 #include <cstring>
 #include <cstdio>
 #include <cerrno>
+#include <dirent.h>
 
 #include <map>
 #include <string>

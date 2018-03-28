@@ -56,7 +56,8 @@ class DBgr{
     DB *dbp;
     DB_ENV *env;
     std::string name;    // database name
-    int open_flags;      // database open flags
+    uint32_t open_flags; // database open flags
+    uint32_t env_flags;  // environment flags
     DBinfo db_info;      // database information
     bool info_is_actual; // is the info the same as in the file?
     int *refcounter;
@@ -66,6 +67,7 @@ class DBgr{
       env        = other.env;
       name       = other.name;
       open_flags = other.open_flags;
+      env_flags  = other.env_flags;
       refcounter = other.refcounter;
       db_info    = other.db_info;
       info_is_actual = other.info_is_actual;

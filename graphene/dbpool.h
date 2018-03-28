@@ -4,8 +4,6 @@
 #ifndef GRAPHENE_DBPOOL_H
 #define GRAPHENE_DBPOOL_H
 
-#include <cassert>
-#include <cstdlib>
 #include <string>
 #include <vector>
 #include <map>
@@ -13,8 +11,6 @@
 #include <cstring> /* memset */
 #include <db.h>
 #include "db.h"
-#include <dirent.h>
-#include <sys/stat.h>
 
 /***********************************************************/
 // Class for keeping a database environment and many opened
@@ -23,12 +19,14 @@
 // of proper memory handling.
 class DBpool{
   std::string dbpath;
+  std::string env_type;
   std::map<std::string, DBgr> pool;
   DB_ENV *env; // database environment
   public:
 
   // Constructor: open DB environment
-  DBpool(const std::string & dbpath_);
+  // env_type: "none", "lock", "txn" (default)
+  DBpool(const std::string & dbpath_, const std::string & env_type = "txn");
 
   // Destructor: close the DB environment
   ~DBpool();
