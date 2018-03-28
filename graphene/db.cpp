@@ -57,23 +57,24 @@ int cmpfunc(DB *dbp, const DBT *a, const DBT *b){
 /************************************/
 // Constructor -- open a database
 //
-DBgr::DBgr(DB_ENV *env,
+DBgr::DBgr(DB_ENV *env_,
      const string & path_,
      const string & name_,
-     const int flags){
+     const int flags): env(env_) {
 
   refcounter   = new int;
   *refcounter  = 1;
   info_is_actual = false;
 
   name = check_name(name_); // check the name
-  open_flags = flags;
+  open_flags = flags | DB_AUTO_COMMIT |  DB_READ_UNCOMMITTED;
   string fname = name_ + ".db";
 
   /* Initialize the DB handle */
   int ret = db_create(&dbp, env, 0);
   if (ret != 0)
     throw Err() << name << ".db: " << db_strerror(ret);
+
 
   /* set key compare function */
   ret = dbp->set_bt_compare(dbp, cmpfunc);
@@ -86,7 +87,7 @@ DBgr::DBgr(DB_ENV *env,
                   fname.c_str(), /* file */
                   NULL,          /* database */
                   DB_BTREE,      /* Database type (using btree) */
-                  flags,         /* Open flags */
+                  open_flags,    /* Open flags */
                   0644);         /* File mode*/
   if (ret != 0){
     destroy();
@@ -101,33 +102,55 @@ DBgr::DBgr(DB_ENV *env,
 //
 void
 DBgr::write_info(const DBinfo &info){
+  int ret;
+
+  // do everything in a single transaction
+  // start a transaction
+  DB_TXN *txn = NULL;
+  ret = env->txn_begin(env, NULL, &txn, 0);
+  if (ret != 0) Err() << name << ".db: " << db_strerror(ret);
+
   // key = 0
   // remove the info entry if it exists
   uint8_t x=0;
   DBT k = mk_dbt(&x);
-  int ret = dbp->del(dbp, NULL, &k, 0);
-  if (ret != 0 && ret != DB_NOTFOUND)
+  ret = dbp->del(dbp, txn, &k, 0);
+  if (ret != 0 && ret != DB_NOTFOUND){
+    txn->abort(txn);
     throw Err() << name << ".db: " << db_strerror(ret);
+  }
+
   // write new data
   string vs = string(1, (char)info.val)
                  + info.descr;
   DBT v = mk_dbt(vs);
-  ret = dbp->put(dbp, NULL, &k, &v, 0);
-  if (ret != 0)
+  ret = dbp->put(dbp, txn, &k, &v, 0);
+  if (ret != 0){
+    txn->abort(txn);
     throw Err() << name << ".db: " << db_strerror(ret);
+  }
 
   // key = 1
   // remove the info entry if it exists
   x=1;
   k = mk_dbt(&x);
-  ret = dbp->del(dbp, NULL, &k, 0);
-  if (ret != 0 && ret != DB_NOTFOUND)
+  ret = dbp->del(dbp, txn, &k, 0);
+  if (ret != 0 && ret != DB_NOTFOUND){
+    txn->abort(txn);
     throw Err() << name << ".db: " << db_strerror(ret);
+  }
+
   // write new data
   v = mk_dbt(&info.version);
-  ret = dbp->put(dbp, NULL, &k, &v, 0);
-  if (ret != 0)
+  ret = dbp->put(dbp, txn, &k, &v, 0);
+  if (ret != 0){
+    txn->abort(txn);
     throw Err() << name << ".db: " << db_strerror(ret);
+  }
+
+  // commit the transaction
+  ret = txn->commit(txn, 0);
+  if (ret != 0) Err() << name << ".db: " << db_strerror(ret);
 
   db_info = info;
   info_is_actual = true;
@@ -181,21 +204,39 @@ DBgr::put(const string &t, const vector<string> & dat, const string &dpolicy){
   string ks = info.parse_time(t);
   string vs = info.parse_data(dat);
 
+  // start a transaction
+  DB_TXN *txn = NULL;
+  int ret = env->txn_begin(env, NULL, &txn, 0);
+  if (ret != 0) Err() << name << ".db: " << db_strerror(ret);
+
   int flags = (dpolicy =="replace")? 0:DB_NOOVERWRITE;
   int res = -1;
   while (res!=0){
     DBT k = mk_dbt(ks);
     DBT v = mk_dbt(vs);
-    res = dbp->put(dbp, NULL, &k, &v, flags);
+    res = dbp->put(dbp, txn, &k, &v, flags);
     if (res == DB_KEYEXIST){
-      if      (dpolicy =="error") throw Err() << name << ".db: " << "Timestamp exists";
+      if      (dpolicy =="error"){
+         txn->abort(txn);
+         throw Err() << name << ".db: " << "Timestamp exists";
+      }
       else if (dpolicy =="sshift")  ks = info.add_time(ks, info.parse_time("1"));
       else if (dpolicy =="nsshift") ks = info.add_time(ks, info.parse_time("0.000000001"));
       else if (dpolicy =="skip") break;
-      else throw Err() << "Unknown dpolicy setting: " << dpolicy;
+      else {
+        txn->abort(txn);
+        throw Err() << "Unknown dpolicy setting: " << dpolicy;
+      }
     }
-    else if (res != 0) throw Err() << name << ".db: " << db_strerror(res);
+    else if (res != 0){
+      txn->abort(txn);
+      throw Err() << name << ".db: " << db_strerror(res);
+    }
   }
+
+  // commit the transaction
+  ret = txn->commit(txn, 0);
+  if (ret != 0) Err() << name << ".db: " << db_strerror(ret);
 }
 
 /************************************/
@@ -378,11 +419,16 @@ DBgr::get_range(const string &t1, const string &t2,
 // delete data data from the database -- del
 void
 DBgr::del(const string &t1){
+  int ret;
   DBinfo info = read_info();
   string t1p = info.parse_time(t1);
   DBT k = mk_dbt(t1p);
-  int res = dbp->del(dbp, NULL, &k, 0);
-  if (res!=0) throw Err() << name << ".db: " << db_strerror(res);
+
+  // delete data
+  // auto transaction is enough
+  ret = dbp->del(dbp, NULL, &k, 0);
+  if (ret!=0)
+    throw Err() << name << ".db: " << db_strerror(ret);
 }
 
 /************************************/
@@ -390,10 +436,20 @@ DBgr::del(const string &t1){
 void
 DBgr::del_range(const string &t1, const string &t2){
   DBinfo info = read_info();
+
+  // cursor needs explicit transaciton handler
+  // start a transaction
+  DB_TXN *txn = NULL;
+  int ret = env->txn_begin(env, NULL, &txn, 0);
+  if (ret != 0) Err() << name << ".db: " << db_strerror(ret);
+
   /* Get a cursor */
   DBC *curs;
-  dbp->cursor(dbp, NULL, &curs, 0);
-  if (curs==NULL) throw Err() << name << ".db: can't get a cursor";
+  dbp->cursor(dbp, txn, &curs, 0);
+  if (curs==NULL) {
+    txn->abort(txn);
+    throw Err() << name << ".db: can't get a cursor";
+  }
 
   string t1p = info.parse_time(t1);
   string t2p = info.parse_time(t2);
@@ -404,7 +460,11 @@ DBgr::del_range(const string &t1, const string &t2){
   while (1){
     int res = curs->c_get(curs, &k, &v, fl);
     if (res==DB_NOTFOUND) break;
-    if (res!=0) throw Err() << name << ".db: " << db_strerror(res);
+    if (res!=0){
+      curs->close(curs);
+      txn->abort(txn);
+      throw Err() << name << ".db: " << db_strerror(res);
+    }
 
     // get packed time value and check the range
     string tp((char *)k.data, (char *)k.data+k.size);
@@ -412,12 +472,22 @@ DBgr::del_range(const string &t1, const string &t2){
 
     // delete the point
     res = curs->del(curs, 0);
-    if (res!=0) throw Err() << name << ".db: " << db_strerror(res);
+    if (res!=0){
+      curs->close(curs);
+      txn->abort(txn);
+      throw Err() << name << ".db: " << db_strerror(res);
+    }
 
     // we want to delete every point, so switch to DB_NEXT and repeat
     fl=DB_NEXT;
   }
+
   curs->close(curs);
+
+  // commit the transaction
+  ret = txn->commit(txn, 0);
+  if (ret != 0) Err() << name << ".db: " << db_strerror(ret);
+
 }
 
 

@@ -54,6 +54,7 @@ class DBgr{
   /************************************/
   /* data and memory management */
     DB *dbp;
+    DB_ENV *env;
     std::string name;    // database name
     int open_flags;      // database open flags
     DBinfo db_info;      // database information
@@ -62,6 +63,7 @@ class DBgr{
 
     void copy(const DBgr & other){
       dbp        = other.dbp;
+      env        = other.env;
       name       = other.name;
       open_flags = other.open_flags;
       refcounter = other.refcounter;
