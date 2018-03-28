@@ -43,18 +43,6 @@ DBpool::~DBpool(){
    if (env) env->close(env, 0);
 }
 
-// create database file
-DBgr
-DBpool::dbcreate(const std::string & name) {
-  // create database
-  if (pool.count(name)) throw Err() << name << ": database exists in the pool\n";
-  pool.insert(std::pair<std::string, DBgr>(name,
-    DBgr(env, dbpath, name, DB_CREATE | DB_EXCL)));
-
-  // return the database
-  return pool.find(name)->second;
-}
-
 // remove database file
 void
 DBpool::dbremove(std::string name){

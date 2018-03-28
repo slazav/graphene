@@ -31,16 +31,13 @@ class DBpool{
   // Destructor: close the DB environment
   ~DBpool();
 
-  // create database file
-  DBgr dbcreate(const std::string & name);
-
   // remove database file
   void dbremove(std::string name);
 
   // rename database file
   void dbrename(std::string name1, std::string name2);
 
-  // find database in the pool. Open/Reopen if needed
+  // find database in the pool. Create/Open/Reopen if needed
   DBgr & get(const std::string & name, const int fl = 0);
 
   // close one database, close all databases

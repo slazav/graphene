@@ -223,7 +223,7 @@ class Pars{
         pars.size()<4 ? "": pars[3]);
       for (int i=4; i<pars.size(); i++) info.descr+=" "+pars[i];
       // todo: create folders if needed
-      DBgr db = pool->dbcreate(pars[1]);
+      DBgr db = pool->get(pars[1], DB_CREATE | DB_EXCL);
       db.write_info(info);
       return;
     }
@@ -394,7 +394,7 @@ class Pars{
     if (strcasecmp(cmd.c_str(), "load")==0){
       if (pars.size()<3) throw Err() << "database name and dump file expected";
       if (pars.size()>3) throw Err() << "too many parameters";
-      DBgr db = pool->dbcreate(pars[1]);
+      DBgr db = pool->get(pars[1], DB_CREATE | DB_EXCL);
       db.load(pars[2]);
       return;
     }
