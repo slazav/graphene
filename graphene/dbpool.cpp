@@ -25,7 +25,7 @@ DBpool::DBpool(const std::string & dbpath_, const std::string & env_type_): dbpa
   if (res != 0)
     throw Err() << "creating DB_ENV: " << dbpath << ": " << db_strerror(res);
 
-  env->set_lg_max(env, 1<<18);
+  env->set_lg_max(env, GRAPHENE_LOGSIZE);
 
   int flags;
   if (env_type == "txn") flags = DB_CREATE | DB_INIT_LOCK | DB_INIT_MPOOL | DB_INIT_LOG | DB_INIT_TXN;

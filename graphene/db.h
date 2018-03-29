@@ -19,6 +19,11 @@
 //  http://docs.oracle.com/cd/E17076_02/html/gsg/C/index.html
 //  https://web.stanford.edu/class/cs276a/projects/docs/berkeleydb/reftoc.html
 
+#define GRAPHENE_LOGSIZE 1<<20
+#define GRAPHENE_DEF_ENV "txn"
+#define GRAPHENE_DEF_DPOLICY "replace"
+#define GRAPHENE_DEF_DBPATH  "/var/lib/graphene/"
+
 
 /***********************************************************/
 // type for data processing function.

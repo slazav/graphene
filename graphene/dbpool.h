@@ -26,7 +26,7 @@ class DBpool{
 
   // Constructor: open DB environment
   // env_type: "none", "lock", "txn" (default)
-  DBpool(const std::string & dbpath_, const std::string & env_type = "txn");
+  DBpool(const std::string & dbpath_, const std::string & env_type = GRAPHENE_DEF_ENV);
 
   // Destructor: close the DB environment
   ~DBpool();

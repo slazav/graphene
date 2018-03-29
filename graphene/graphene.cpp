@@ -38,8 +38,8 @@ class Pars{
 
   // get options and parameters from argc/argv
   Pars(const int argc, char **argv){
-    dbpath  = "/var/lib/graphene/";
-    dpolicy = "replace";
+    dbpath  = GRAPHENE_DEF_DBPATH;
+    dpolicy = GRAPHENE_DEF_DPOLICY;
     interactive = false;
     relative  = false;
     if (argc<1) return; // needed for print_help()
