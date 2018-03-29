@@ -32,6 +32,11 @@ DBpool::DBpool(const std::string & dbpath_, const std::string & env_type_): dbpa
   else if (env_type == "lock") flags = DB_CREATE | DB_INIT_LOCK | DB_INIT_MPOOL | DB_INIT_LOG;
   else throw Err() << "unknown env_type";
 
+  // deadlock detection
+  res = env->set_lk_detect(env, DB_LOCK_MINWRITE);
+  if (res != 0)
+    throw Err() << "Error setting lock detect: " << db_strerror(res);
+
   res = env->open(env, dbpath.c_str(), flags, 0644);
   if (res != 0)
     throw Err() << "opening DB_ENV: " << dbpath << ": " << db_strerror(res);
