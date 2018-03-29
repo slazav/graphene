@@ -9,9 +9,7 @@
 
 DBout::DBout(const std::string & filterpath,
       const std::string & str,
-      std::ostream & out,
-      const std::string & time0):
-  col(-1), name(str), out(out), time0(time0){
+      std::ostream & out):  col(-1), name(str), out(out){
 
   // extract filter
   size_t cp = name.rfind('|');
@@ -105,5 +103,20 @@ DBout::proc_point(DBT *k, DBT *v, const DBinfo & info, int list) {
 
 
 void
-DBout::print_point(const std::string & str) { out << str; }
+DBout::print_point(const std::string & str) {
+  if (interactive) {
+    size_t nb=0, ne=0;
+    // print line by line
+    while ((ne = str.find('\n', nb)) != std::string::npos) {
+      if (str.length()>nb && str[nb]=='#') out << '#';
+      out << str.substr(nb, ne-nb+1);
+      nb=ne+1;
+    }
+    if (str.length()>nb && str[nb]=='#') out << '#';
+    out << str.substr(nb, std::string::npos);
+  }
+  else {
+    out << str;
+  }
+}
 
