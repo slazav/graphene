@@ -60,13 +60,13 @@ int cmpfunc(DB *dbp, const DBT *a, const DBT *b){
 DBgr::DBgr(DB_ENV *env_,
      const string & path_,
      const string & name_,
-     const int flags): env(env_) {
+     const int flags): env(env_), name(name_){
 
   refcounter   = new int;
   *refcounter  = 1;
   info_is_actual = false;
 
-  name = check_name(name_); // check the name
+  check_name(name); // check the name
 
   // get environment flags
   env_flags = 0;

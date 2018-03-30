@@ -60,7 +60,7 @@ const static size_t data_fmt_sizes[LAST_DATAFMT+1] =
 // Check database or filter name
 // All names (not only for reading/writing, but
 // also for moving or deleting should be checked).
-std::string check_name(const std::string & name);
+void check_name(const std::string & name);
 
 /***********************************************************/
 // Class for the database information.

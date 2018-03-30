@@ -51,7 +51,7 @@ DBpool::~DBpool(){
 // remove database file
 void
 DBpool::dbremove(std::string name){
-  name = check_name(name); // check name
+  check_name(name); // check name
   close(name);
   if (env) {
     int res = env->dbremove(env, NULL, (name + ".db").c_str(), NULL, 0);
@@ -66,8 +66,8 @@ DBpool::dbremove(std::string name){
 // rename database file
 void
 DBpool::dbrename(std::string name1, std::string name2){
-  name1 = check_name(name1); // check name
-  name2 = check_name(name2); // check name
+  check_name(name1); // check name
+  check_name(name2); // check name
   std::string path1 = name1 + ".db";
   std::string path2 = name2 + ".db";
   std::string fpath1 = dbpath + "/" + path1;

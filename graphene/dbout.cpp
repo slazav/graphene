@@ -29,8 +29,8 @@ DBout::DBout(const std::string & filterpath,
     else col = -1;
   }
   if (col < -1) col = -1;
-  name   = check_name(name);
-  filter = check_name(filter);
+  check_name(name);
+  check_name(filter);
 
   fd1[0]=fd1[1]=fd2[0]=fd2[1]=-1;
   pid = -1;
