@@ -9,7 +9,7 @@
 
 DBout::DBout(const std::string & filterpath,
       const std::string & str,
-      std::ostream & out):  col(-1), name(str), out(out){
+      std::ostream & out):  col(-1), name(str), out(out), interactive(false) {
 
   // extract filter
   size_t cp = name.rfind('|');
