@@ -416,7 +416,7 @@ DBgr::get_range(const string &t1, const string &t2,
       continue;
     }
 
-    // If dt >=1 we continue using fl=DB_SET_RANGE.
+    // If dt >0 we continue using fl=DB_SET_RANGE.
     // If new value the same as old
     if (tlp.size()>0 && info.cmp_time(tlp,tnp)==0){
       // get next value

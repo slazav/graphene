@@ -16,12 +16,19 @@ E-mail: Vladislav Zavjalov <slazav@altlinux.org>
 
 ### Data storage
 
-Each dataset is a separate BerkleyDB file with `.db` extension, located in
-a database directory (default `/var/lib/graphene`). Name of file represents
-the name of the dataset. Name may contain path symbols `/`, but can not
-contain symbols `.:|+ \t\n`, You can use name `cryostat/temperature` but
-not `../temperature` for your dataset. All subfolders have to
-be created manually.
+Data is stored in any folder (now default is `/var/lib/graphene`, but it
+can be selected via a command line argument). The folder contains a
+BerkleyDB environment with databases and some other database-specific
+files. Each dataset is a separate database, it's name can not contain
+symbols `.:|+ \t\n/`. By default a full transaction support is turn on for
+the database environment. If needed it can be turned off during
+compilation. Then you can have no environment at all (each dataset is a
+single db file, but only one program can work with it at a time), or a
+simple environment with locking. Also note that due to a custom sorting
+function not all standard BerkleyDB tools can be used for Graphene
+databases. For example dumps created by db_dump can be loaded only by
+graphene load command but not db_load utility.
+
 
 Data are stored as a set of sorted key-value pairs. Key is a timestamp,
 one or two 32-bit unsigned integers: a number of seconds
@@ -57,9 +64,9 @@ Options:
 - -D <word> -- what to do with duplicated timestamps:
                replace, skip, error, sshift, nsshift (default: replace)
 - -h        -- write help message and exit
-  -i        -- interactive mode, read commands from stdin
-  -s <name> -- socket mode: use unix socket <name> for communications
-  -r        -- output relative times (seconds from requested time) instead of absolute timestamps
+- -i        -- interactive mode, read commands from stdin
+- -s <name> -- socket mode: use unix socket <name> for communications
+- -r        -- output relative times (seconds from requested time) instead of absolute timestamps
 
 Interactive mode:
 
@@ -69,7 +76,7 @@ without reopening databases. Opening and closing of databases are long,
 it can be useful to open the connection once and do many operations.
 
 The program implements a simple pipe protocol (see somewhere in my
-tcl_exp package): When it is started sucsessfully  a prompt message is
+tcl_device package): When it is started sucsessfully  a prompt message is
 printed to stdout started with "#SPP001" and followed by "#OK" line. In
 case of an error "#Error: <...>" line is printed and program exits. Then
 the program reads commands from stdin and sends ansers to stdout folowed
@@ -79,7 +86,8 @@ Socket mode is similar to the interactive mode. Graphene program acts as
 a server which accepts connections (one at a time) through a unix-domain
 socket.
 
-Commands for manipulating databases:
+
+####Commands for manipulating databases:
 
 - `create <name> [<data_fmt>] [<description>]` -- Create a database file.
 
@@ -87,13 +95,10 @@ Commands for manipulating databases:
   (note that it is not possible to use db_load utility
   because of non-standard comparison function in graphene databases).
 
-- `delete <name>` -- Delete a database file.
+- `delete <name>` -- Delete a database.
 
-- `rename <old_name> <new_name>` -- Rename a database file.
-
-
-Delete and rename commands just do simple file operations.
-A database can be renamed only if the destination does not exists.
+- `rename <old_name> <new_name>` -- Rename a database.
+   A database can be renamed only if the destination does not exists.
 
 - `set_descr <name> <description>` -- Change database description.
 
@@ -102,7 +107,7 @@ A database can be renamed only if the destination does not exists.
 - `list` -- List all databases in the data directory.
 
 
-Commands for reading and writing data:
+####Commands for reading and writing data:
 
 - `put <name> <time> <value1> ... <valueN>` -- Write a data point.
 
@@ -113,10 +118,10 @@ Commands for reading and writing data:
 - `get <extended name> [<time2>]` -- For integer and text databases
   get is equivalent to get_prev. For double databases it does linear
   interpolation between points, or return the last point if time is
-  larger then that of the newest point.
+  larger then that of the latest point.
 
 - `get_range <extended name> [<time1>] [<time2>] [<dt>]` -- Get
-  points in the time range. If parameter dt>1 then data are filtered,
+  points in the time range. If parameter dt>0 then data are filtered,
   only points with distance >dt between them are shown. This works fast
   for any ratio of dt and interpoint distance. For text data only first
   lines are shown.
@@ -135,15 +140,16 @@ long enough, a "NaN" value is returned. Columns are ignored for text data.
 
 `<filter>` is a name of filter program, if it exists, the program is run and
 data is filtered through it. The program should be located in the
-database directory, program name can not contain '.:|+ \t\n' symbols.
+database directory, program name can not contain '.:|+ \t\n/' symbols.
+`TODO: remove this feature?`
 
-Commands for deleting data:
+####Commands for deleting data:
 
 - `del <name> <time>` -- Delete a data point.
 
 - `del_range  <name> [<time1>] [<time2>]` -- Delete all points in the range.
 
-Command for syncing databases in interactive mode:
+####Command for syncing databases in interactive mode:
 
 - `sync` -- This command flushes any cached information to disk. It is
 useful if you keep a connection (for example via ssh) for a long time,
@@ -172,7 +178,7 @@ See `examples/*` in the source folder
 
 ### HTTP + Simple JSON interface
 
-The simple JSON interface can be used with grafana frontend to access
+The simple JSON interface can be used with Grafana frontend to access
 data (simple_json plugin is needed). Text databases can be viewed as
 annotations, and numerical as metrics. Columns can be specified after
 database name: <name>:<column>, default column is 0.
@@ -204,17 +210,14 @@ graphene program:
 
 ### Known problems
 
-- Database names with '/'. It is conveniend to use subfolders for databases.
-You can make good structure for your data, you can separate folders with
-different permissions for different users. But now manipuating these
-names via graphene interface does not work well. Creation of a new database
-is possible only if all subfolders exist. List command shows only databases in
-the root database folder.
 - Linebreaks in text databases. You can put linebreaks in text database using
 the command line interface. In interactive mode it is not possible, because
 line breaks always mean starting of a new command.
 
 ###  Performance
+
+NOTE: this was written for a Graphene database without BerkleyBD
+environment.
 
 Consider a situation: we want to measure some parameter for a year with
 10 s period and put 8-byte double values into the database. This means 3.15

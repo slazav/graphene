@@ -344,6 +344,22 @@ assert "$(printf 'create test_2
 assert "$(./graphene -d . delete test_1)" ""
 assert "$(./graphene -d . delete test_2)" ""
 
+# #symbols in interactive text mode
+assert "$(./graphene -d . create text_3 text)" ""
+assert "$(./graphene -d . put text_3 10 AAA)" ""
+assert "$(./graphene -d . put text_3 20 \#BBB)" ""
+assert "$(./graphene -d . put text_3 30 '#BBB
+#CCC
+#DDD #EEE')" ""
+
+assert "$(./graphene -d . get text_3)" "30.000000000 #BBB
+#CCC
+#DDD #EEE"
+
+assert "$(printf 'get text_3' | ./graphene -i -d .)"\
+  "$(printf "$prompt\n30.000000000 #BBB\n##CCC\n##DDD #EEE\n#OK")"
+
+
 ###########################################################################
 # duplicated keys (replace by default)
 

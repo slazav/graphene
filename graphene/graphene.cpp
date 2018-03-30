@@ -306,7 +306,9 @@ class Pars{
       if (pars.size()<2) throw Err() << "database name expected";
       if (pars.size()>3) throw Err() << "too many parameters";
       string t1 = pars.size()>2? pars[2]: "0";
-      DBout dbo(dbpath, pars[1], out, relative ? t1:"");
+      DBout dbo(dbpath, pars[1], out);
+      if (relative) dbo.set_relative(t1);
+      if (interactive) dbo.set_interactive();
       DBgr db = pool->get(dbo.name, DB_RDONLY);
       db.get_next(t1, dbo);
       return;
@@ -318,7 +320,9 @@ class Pars{
       if (pars.size()<2) throw Err() << "database name expected";
       if (pars.size()>3) throw Err() << "too many parameters";
       string t2 = pars.size()>2? pars[2]: "inf";
-      DBout dbo(dbpath, pars[1], out, relative ? t2:"");
+      DBout dbo(dbpath, pars[1], out);
+      if (relative) dbo.set_relative(t2);
+      if (interactive) dbo.set_interactive();
       DBgr db = pool->get(dbo.name, DB_RDONLY);
       db.get_prev(t2, dbo);
       return;
@@ -330,7 +334,9 @@ class Pars{
       if (pars.size()<2) throw Err() << "database name expected";
       if (pars.size()>3) throw Err() << "too many parameters";
       string t2 = pars.size()>2? pars[2]: "inf";
-      DBout dbo(dbpath, pars[1], out, relative ? t2:"");
+      DBout dbo(dbpath, pars[1], out);
+      if (relative) dbo.set_relative(t2);
+      if (interactive) dbo.set_interactive();
       DBgr db = pool->get(dbo.name, DB_RDONLY);
       db.get(t2, dbo);
       return;
@@ -344,7 +350,9 @@ class Pars{
       string t1 = pars.size()>2? pars[2]: "0";
       string t2 = pars.size()>3? pars[3]: "inf";
       string dt = pars.size()>4? pars[4]: "0";
-      DBout dbo(dbpath, pars[1], out, relative ? t1:"");
+      DBout dbo(dbpath, pars[1], out);
+      if (relative) dbo.set_relative(t1);
+      if (interactive) dbo.set_interactive();
       DBgr db = pool->get(dbo.name, DB_RDONLY);
       db.get_range(t1,t2,dt, dbo);
       return;

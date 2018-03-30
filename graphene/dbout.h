@@ -26,6 +26,7 @@ class DBout {
   std::string name;    // primary database name
   std::ostream & out;  // stream for output
   std::string time0;   // zero time for relative time output or ""
+  bool interactive;    // interactive mode
   int col; // column number, for the main database
 
   // filter name, pid, in/out descriptors
@@ -36,8 +37,7 @@ class DBout {
   // constructor -- parse the dataset string, create iostream
   DBout(const std::string & filterpath,
         const std::string & str,
-        std::ostream & out = std::cout,
-        const std::string & time0 = "");
+        std::ostream & out = std::cout);
   ~DBout();
 
   // Process a single point (select a column, make tables, filtering)
@@ -49,6 +49,9 @@ class DBout {
   // print_point  -- by default it just prints the line to out,
   // but this function can be overriden.
   virtual void print_point(const std::string & str);
+
+  void set_interactive(const bool state=true) {interactive = state;}
+  void set_relative(const std::string & time0_="") {time0 = time0_;}
 };
 
 #endif
