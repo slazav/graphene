@@ -14,7 +14,7 @@ using namespace std;
 void check_name(const std::string & name_){
   static const char *reject = ".:+| \n\t/";
   if (strcspn(name_.c_str(), reject)!=name_.length())
-    throw Err() << "symbols '.:+| \\n\\t/' are not allowed in the database name";
+    throw Err() << "symbols '.:+| \\n\\t/' are not allowed in the database name: " << name_;
 }
 
 /********************************************************************/
