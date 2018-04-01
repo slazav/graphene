@@ -16,19 +16,32 @@ E-mail: Vladislav Zavjalov <slazav@altlinux.org>
 
 ### Data storage
 
-Data is stored in any folder (now default is `/var/lib/graphene`, but it
-can be selected via a command line argument). The folder contains a
-BerkleyDB environment with databases and some other database-specific
-files. Each dataset is a separate database, it's name can not contain
-symbols `.:|+ \t\n/`. By default a full transaction support is turn on for
-the database environment. If needed it can be turned off during
-compilation. Then you can have no environment at all (each dataset is a
-single db file, but only one program can work with it at a time), or a
-simple environment with locking. Also note that due to a custom sorting
-function not all standard BerkleyDB tools can be used for Graphene
-databases. For example dumps created by db_dump can be loaded only by
-graphene load command but not db_load utility.
+Data is stored in any folder (default is `.`, but it can be selected via
+a command line option -d). The folder contains a BerkleyDB environment
+with databases and some other database-specific files. Each dataset is a
+separate database, it's name can not contain symbols `.:|+ \t\n/`. By
+default a full transaction support is turn on for the database
+environment. If needed it can be turned off during compilation. Then you
+can have no environment at all (each dataset is a single db file, but
+only one program can work with it at a time), or a simple environment
+with locking.
 
+### Some BerkleyDB notes
+
+* Documentation can be found here:
+ - `https://docs.oracle.com/cd/E17076_05/html/gsg/C/index.html`
+ - `https://docs.oracle.com/cd/E17076_05/html/gsg_txn/C/index.html`
+
+* Due to a custom sorting function not all standard BerkleyDB tools can
+be used for Graphene databases. For example dumps created by `db_dump` can
+be loaded only by graphene `load` command but not by `db_load` utility.
+
+* Do not use environments located on remote filesystems.
+
+* Do not use `db_recover` utility when other program is using a database.
+
+
+### Data structure
 
 Data are stored as a set of sorted key-value pairs. Key is a timestamp,
 one or two 32-bit unsigned integers: a number of seconds
@@ -60,7 +73,7 @@ The program `graphene` is used to access data from command line.
 Usage: `graphene [options] <command> <parameters>`
 
 Options:
-- -d <path> -- database directory (default `/var/lib/graphene/`)
+- -d <path> -- database directory (default `.`)
 - -D <word> -- what to do with duplicated timestamps:
                replace, skip, error, sshift, nsshift (default: replace)
 - -h        -- write help message and exit
@@ -75,12 +88,14 @@ stdin, answers are written to stdout. This allows making many requests
 without reopening databases. Opening and closing of databases are long,
 it can be useful to open the connection once and do many operations.
 
-The program implements a simple pipe protocol (see somewhere in my
-tcl_device package): When it is started sucsessfully  a prompt message is
+The program implements a Simple Pipe Protocol (see somewhere in my
+`tcl_device` package): When it is started sucsessfully  a prompt message is
 printed to stdout started with "#SPP001" and followed by "#OK" line. In
 case of an error "#Error: <...>" line is printed and program exits. Then
 the program reads commands from stdin and sends ansers to stdout folowed
 by "#OK" or "#Error: <...>" lines until the user closes the connection.
+If answer contains symbol "#" in the begining of a line, it is protected
+with a second "#".
 
 Socket mode is similar to the interactive mode. Graphene program acts as
 a server which accepts connections (one at a time) through a unix-domain
