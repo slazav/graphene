@@ -44,22 +44,22 @@ DBpool::DBpool(const std::string & dbpath_, const std::string & env_type_): dbpa
   if (res != 0)
     throw Err() << "Error setting lock detect: " << db_strerror(res);
 
-  // Support snapshot isolation
-  res = env->set_flags(env, DB_MULTIVERSION, 1);
-  if (res != 0)
-    throw Err() << "Error setting env flags: " << db_strerror(res);
-
   int flags;
   if (env_type == "txn")
     flags = DB_CREATE |
             DB_INIT_LOCK |
             DB_INIT_MPOOL |
-            DB_INIT_LOG |
-            DB_INIT_TXN |
-            DB_REGISTER |
-            DB_RECOVER;
+            DB_INIT_LOG |     // logging
+            DB_INIT_TXN |     // transactions
+            DB_REGISTER |     // register processes to know when recover is possible/needed
+            DB_RECOVER  |     // run recover if possible/needed
+            DB_MULTIVERSION;  // for snapshot isolation
 
-  else if (env_type == "simple") flags = DB_CREATE | DB_INIT_LOCK | DB_INIT_MPOOL;
+  else if (env_type == "simple")
+    flags = DB_CREATE |
+            DB_INIT_LOCK |
+            DB_INIT_MPOOL;
+
   else throw Err() << "unknown env_type";
 
   // open environment
