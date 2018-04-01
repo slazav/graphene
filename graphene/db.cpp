@@ -544,6 +544,13 @@ strconv(const std::string &s){
 /************************************/
 // load file in a db_dump format
 // (we can not use db_load because of user-defined comparison function)
+// Note:
+// - db_dump header is ignored now. We always assume
+//   format=bytevalue
+//   type=btree
+// - load command is used without BerkleyDB environment!
+//   (see how it is called in graphene.cpp)
+
 void
 DBgr::load(const std::string &file){
   ifstream ff(file.c_str());

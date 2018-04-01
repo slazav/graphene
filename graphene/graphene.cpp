@@ -402,7 +402,8 @@ class Pars{
     if (strcasecmp(cmd.c_str(), "load")==0){
       if (pars.size()<3) throw Err() << "database name and dump file expected";
       if (pars.size()>3) throw Err() << "too many parameters";
-      DBgr db = pool->get(pars[1], DB_CREATE | DB_EXCL);
+      DBpool simple_pool(dbpath, "none");
+      DBgr db = simple_pool.get(pars[1], DB_CREATE | DB_EXCL);
       db.load(pars[2]);
       return;
     }
