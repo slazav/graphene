@@ -12,6 +12,15 @@
 #include <errno.h>
 #include <sys/stat.h>
 
+
+// process registration:
+// https://docs.oracle.com/cd/E17276_01/html/gsg_xml_txn/cxx/architectrecovery.html#multiprocessrecovery
+// snapshot isolation:
+// https://docs.oracle.com/cd/E17076_05/html/gsg_txn/C/isolation.html#snapshot_isolation
+
+int
+is_alive(DB_ENV *dbenv, pid_t pid, db_threadid_t tid, u_int32_t flag) { return 1;}
+
 // Constructor: open DB environment
 DBpool::DBpool(const std::string & dbpath_, const std::string & env_type_): dbpath(dbpath_), env_type(env_type_){
 
@@ -25,18 +34,35 @@ DBpool::DBpool(const std::string & dbpath_, const std::string & env_type_): dbpa
   if (res != 0)
     throw Err() << "creating DB_ENV: " << dbpath << ": " << db_strerror(res);
 
-  env->set_lg_max(env, GRAPHENE_LOGSIZE);
-
-  int flags;
-  if (env_type == "txn") flags = DB_CREATE | DB_INIT_LOCK | DB_INIT_MPOOL | DB_INIT_LOG | DB_INIT_TXN;
-  else if (env_type == "simple") flags = DB_CREATE | DB_INIT_LOCK | DB_INIT_MPOOL;
-  else throw Err() << "unknown env_type";
+  // set logfile size
+  res = env->set_lg_max(env, GRAPHENE_LOGSIZE);
+  if (res != 0)
+    throw Err() << "set_lg_max failed: " << db_strerror(res);
 
   // deadlock detection
   res = env->set_lk_detect(env, DB_LOCK_MINWRITE);
   if (res != 0)
     throw Err() << "Error setting lock detect: " << db_strerror(res);
 
+  // Support snapshot isolation
+  res = env->set_flags(env, DB_MULTIVERSION, 1);
+  if (res != 0)
+    throw Err() << "Error setting env flags: " << db_strerror(res);
+
+  int flags;
+  if (env_type == "txn")
+    flags = DB_CREATE |
+            DB_INIT_LOCK |
+            DB_INIT_MPOOL |
+            DB_INIT_LOG |
+            DB_INIT_TXN |
+            DB_REGISTER |
+            DB_RECOVER;
+
+  else if (env_type == "simple") flags = DB_CREATE | DB_INIT_LOCK | DB_INIT_MPOOL;
+  else throw Err() << "unknown env_type";
+
+  // open environment
   res = env->open(env, dbpath.c_str(), flags, 0644);
   if (res != 0)
     throw Err() << "opening DB_ENV: " << dbpath << ": " << db_strerror(res);
@@ -44,8 +70,8 @@ DBpool::DBpool(const std::string & dbpath_, const std::string & env_type_): dbpa
 
 // Destructor: close the DB environment
 DBpool::~DBpool(){
-   close();
-   if (env) env->close(env, 0);
+  close();
+  if (env) env->close(env, 0);
 }
 
 // remove database file

@@ -110,6 +110,33 @@ DBgr::DBgr(DB_ENV *env_,
 }
 
 /************************************/
+// Simple transaction wrappers:
+// For simple environments env can be NULL, txn can be null.
+DB_TXN *
+DBgr::txn_begin(int flags){
+  DB_TXN *txn = NULL;
+  if (env && (env_flags & DB_INIT_TXN)) {
+    int ret = env->txn_begin(env, NULL, &txn, flags);
+    if (ret != 0) Err() << "Can't create a transaction: " << name << ".db: " << db_strerror(ret);
+  }
+  return txn;
+}
+
+void
+DBgr::txn_commit(DB_TXN *txn){
+  if (!txn) return;
+  int ret = txn->commit(txn, 0);
+  if (ret != 0) Err() << "Can't commit a transaction: " << name << ".db: " << db_strerror(ret);
+}
+
+void
+DBgr::txn_abort(DB_TXN *txn){
+  if (!txn) return;
+  int ret = txn->abort(txn);
+  if (ret != 0) Err() << "Can't abort a transaction: " << name << ".db: " << db_strerror(ret);
+}
+
+/************************************/
 // Write database information.
 // key = (uint8_t)0 (1byte), value = data_fmt (1byte) + description
 // key = (uint8_t)1 (1byte), value = version  (1byte)
@@ -119,57 +146,45 @@ DBgr::write_info(const DBinfo &info){
   int ret;
 
   // do everything in a single transaction
-  // start a transaction
-  DB_TXN *txn = NULL;
-  if (env && (env_flags & DB_INIT_TXN)) {
-    ret = env->txn_begin(env, NULL, &txn, 0);
-    if (ret != 0) Err() << name << ".db: " << db_strerror(ret);
+  DB_TXN *txn = txn_begin();
+  try {
+
+    // key = 0
+    // remove the info entry if it exists
+    uint8_t x=0;
+    DBT k = mk_dbt(&x);
+    ret = dbp->del(dbp, txn, &k, 0);
+    if (ret != 0 && ret != DB_NOTFOUND)
+      throw Err() << name << ".db: " << db_strerror(ret);
+
+    // write new data
+    string vs = string(1, (char)info.val)
+                   + info.descr;
+    DBT v = mk_dbt(vs);
+    ret = dbp->put(dbp, txn, &k, &v, 0);
+    if (ret != 0)
+      throw Err() << name << ".db: " << db_strerror(ret);
+
+    // key = 1
+    // remove the info entry if it exists
+    x=1;
+    k = mk_dbt(&x);
+    ret = dbp->del(dbp, txn, &k, 0);
+    if (ret != 0 && ret != DB_NOTFOUND)
+      throw Err() << name << ".db: " << db_strerror(ret);
+
+    // write new data
+    v = mk_dbt(&info.version);
+    ret = dbp->put(dbp, txn, &k, &v, 0);
+    if (ret != 0)
+      throw Err() << name << ".db: " << db_strerror(ret);
+  }
+  catch (Err e){
+    txn_abort(txn);
+    throw e;
   }
 
-  // key = 0
-  // remove the info entry if it exists
-  uint8_t x=0;
-  DBT k = mk_dbt(&x);
-  ret = dbp->del(dbp, txn, &k, 0);
-  if (ret != 0 && ret != DB_NOTFOUND){
-    if (txn) txn->abort(txn);
-    throw Err() << name << ".db: " << db_strerror(ret);
-  }
-
-  // write new data
-  string vs = string(1, (char)info.val)
-                 + info.descr;
-  DBT v = mk_dbt(vs);
-  ret = dbp->put(dbp, txn, &k, &v, 0);
-  if (ret != 0){
-    if (txn) txn->abort(txn);
-    throw Err() << name << ".db: " << db_strerror(ret);
-  }
-
-  // key = 1
-  // remove the info entry if it exists
-  x=1;
-  k = mk_dbt(&x);
-  ret = dbp->del(dbp, txn, &k, 0);
-  if (ret != 0 && ret != DB_NOTFOUND){
-    if (txn) txn->abort(txn);
-    throw Err() << name << ".db: " << db_strerror(ret);
-  }
-
-  // write new data
-  v = mk_dbt(&info.version);
-  ret = dbp->put(dbp, txn, &k, &v, 0);
-  if (ret != 0){
-    if (txn) txn->abort(txn);
-    throw Err() << name << ".db: " << db_strerror(ret);
-  }
-
-  // commit the transaction
-  if (txn) {
-    ret = txn->commit(txn, 0);
-    if (ret != 0) Err() << name << ".db: " << db_strerror(ret);
-  }
-
+  txn_commit(txn);
   db_info = info;
   info_is_actual = true;
 }
@@ -181,31 +196,39 @@ DBinfo
 DBgr::read_info(){
   if (info_is_actual) return db_info;
 
-  // key = 0
-  uint8_t x=0;
-  DBT k = mk_dbt(&x);
-  DBT v = mk_dbt();
-  int ret = dbp->get(dbp, NULL, &k, &v, 0);
-  if (ret != 0)
-   throw Err() << name << ".db: " << db_strerror(ret);
-  uint8_t dfmt = *((uint8_t*)v.data);
-  if (dfmt<0 || dfmt > LAST_DATAFMT)
-    throw Err() << name << ".db: broken database, bad data format in the header";
-  db_info.val = static_cast<DataFMT>(dfmt);
-  db_info.descr = string((char*)v.data+1, (char*)v.data+v.size);
+  // do everything in a single transaction (with snapshot isolation)
+  DB_TXN *txn = txn_begin(DB_TXN_SNAPSHOT);
+  try {
+    // key = 0
+    uint8_t x=0;
+    DBT k = mk_dbt(&x);
+    DBT v = mk_dbt();
+    int ret = dbp->get(dbp, txn, &k, &v, 0);
+    if (ret != 0)
+     throw Err() << name << ".db: " << db_strerror(ret);
+    uint8_t dfmt = *((uint8_t*)v.data);
+    if (dfmt<0 || dfmt > LAST_DATAFMT)
+      throw Err() << name << ".db: broken database, bad data format in the header";
+    db_info.val = static_cast<DataFMT>(dfmt);
+    db_info.descr = string((char*)v.data+1, (char*)v.data+v.size);
 
-  // key = 1
-  x=1;
-  k = mk_dbt(&x);
-  v = mk_dbt();
-  ret = dbp->get(dbp, NULL, &k, &v, 0);
-  if (ret == DB_NOTFOUND)
-    db_info.version = 1; // first version can be without key=1
-  else if (ret != 0)
-    throw Err() << name << ".db: " << db_strerror(ret);
-  else
-    db_info.version = *((uint8_t*)v.data);
-
+    // key = 1
+    x=1;
+    k = mk_dbt(&x);
+    v = mk_dbt();
+    ret = dbp->get(dbp, txn, &k, &v, 0);
+    if (ret == DB_NOTFOUND)
+      db_info.version = 1; // first version can be without key=1
+    else if (ret != 0)
+      throw Err() << name << ".db: " << db_strerror(ret);
+    else
+      db_info.version = *((uint8_t*)v.data);
+  }
+  catch (Err e){
+    txn_abort(txn);
+    throw e;
+  }
+  txn_commit(txn);
   info_is_actual = true;
   return db_info;
 }
@@ -223,43 +246,32 @@ DBgr::put(const string &t, const vector<string> & dat, const string &dpolicy){
   string ks = info.parse_time(t);
   string vs = info.parse_data(dat);
 
-  // start a transaction
-  DB_TXN *txn = NULL;
-  if (env && (env_flags & DB_INIT_TXN)) {
-    ret = env->txn_begin(env, NULL, &txn, 0);
-    if (ret != 0) Err() << name << ".db: " << db_strerror(ret);
-  }
+  // do everything in a single transaction
+  DB_TXN *txn = txn_begin();
+  try {
 
-  int flags = (dpolicy =="replace")? 0:DB_NOOVERWRITE;
-  int res = -1;
-  while (res!=0){
-    DBT k = mk_dbt(ks);
-    DBT v = mk_dbt(vs);
-    res = dbp->put(dbp, txn, &k, &v, flags);
-    if (res == DB_KEYEXIST){
-      if (dpolicy =="error"){
-         if (txn) txn->abort(txn);
-         throw Err() << name << ".db: " << "Timestamp exists";
+    int flags = (dpolicy =="replace")? 0:DB_NOOVERWRITE;
+    int res = -1;
+    while (res!=0){
+      DBT k = mk_dbt(ks);
+      DBT v = mk_dbt(vs);
+      res = dbp->put(dbp, txn, &k, &v, flags);
+      if (res == DB_KEYEXIST){
+        if (dpolicy =="error") throw Err() << name << ".db: " << "Timestamp exists";
+        else if (dpolicy =="sshift")  ks = info.add_time(ks, info.parse_time("1"));
+        else if (dpolicy =="nsshift") ks = info.add_time(ks, info.parse_time("0.000000001"));
+        else if (dpolicy =="skip") break;
+        else throw Err() << "Unknown dpolicy setting: " << dpolicy;
       }
-      else if (dpolicy =="sshift")  ks = info.add_time(ks, info.parse_time("1"));
-      else if (dpolicy =="nsshift") ks = info.add_time(ks, info.parse_time("0.000000001"));
-      else if (dpolicy =="skip") break;
-      else {
-        if (txn) txn->abort(txn);
-        throw Err() << "Unknown dpolicy setting: " << dpolicy;
-      }
-    }
-    else if (res != 0){
-      if (txn) txn->abort(txn);
-      throw Err() << name << ".db: " << db_strerror(res);
+      else if (res != 0)
+        throw Err() << name << ".db: " << db_strerror(res);
     }
   }
-
-  // commit the transaction
-  if (txn) {
-    ret = txn->commit(txn, 0);
-    if (ret != 0) Err() << name << ".db: " << db_strerror(ret);
+  catch (Err e){
+    txn_abort(txn);
+    throw e;
   }
+  txn_commit(txn);
 }
 
 /************************************/
@@ -268,19 +280,38 @@ DBgr::put(const string &t, const vector<string> & dat, const string &dpolicy){
 void
 DBgr::get_next(const string &t1, DBout & dbo){
   DBinfo info = read_info();
-  /* Get a cursor */
-  DBC *curs;
-  dbp->cursor(dbp, NULL, &curs, 0);
-  if (curs==NULL) throw Err() << name << ".db: can't get a cursor";
-
   string t1p = info.parse_time(t1);
   DBT k = mk_dbt(t1p);
   DBT v = mk_dbt();
-  int res = curs->c_get(curs, &k, &v, DB_SET_RANGE);
-  if (res==DB_NOTFOUND) { curs->close(curs); return; }
-  if (res!=0) throw Err() << name << ".db: " << db_strerror(res);
-  dbo.proc_point(&k, &v, info);
-  curs->close(curs);
+
+  // do everything in a single transaction (with snapshot isolation)
+  DB_TXN *txn = txn_begin(DB_TXN_SNAPSHOT);
+  DBC *curs = NULL;
+  try {
+
+    /* Get a cursor */
+    dbp->cursor(dbp, txn, &curs, 0);
+    if (curs==NULL)
+      throw Err() << name << ".db: can't get a cursor";
+
+    int res = curs->c_get(curs, &k, &v, DB_SET_RANGE);
+
+    if (res!=0 && res!=DB_NOTFOUND)
+      throw Err() << name << ".db: " << db_strerror(res);
+
+    if (res!=DB_NOTFOUND)
+      dbo.proc_point(&k, &v, info);
+
+    curs->close(curs);
+  }
+  catch (Err e){
+    if (curs) curs->close(curs);
+    txn_abort(txn);
+    throw e;
+  }
+  txn_commit(txn);
+
+
 }
 
 /************************************/
@@ -289,30 +320,45 @@ DBgr::get_next(const string &t1, DBout & dbo){
 void
 DBgr::get_prev(const string &t2, DBout & dbo){
   DBinfo info = read_info();
-  /* Get a cursor */
-  DBC *curs;
-  dbp->cursor(dbp, NULL, &curs, 0);
-  if (curs==NULL) throw Err() << name << ".db: can't get a cursor";
+
   string t2p = info.parse_time(t2);
   DBT k = mk_dbt(t2p);
   DBT v = mk_dbt();
 
-  int res = curs->c_get(curs, &k, &v, DB_SET_RANGE);
-  if (res!=0 && res!=DB_NOTFOUND)
-    throw Err() << name << ".db: " << db_strerror(res);
+  // do everything in a single transaction (with snapshot isolation)
+  DB_TXN *txn = txn_begin(DB_TXN_SNAPSHOT);
+  DBC *curs = NULL;
+  try {
 
-  // unpack time
-  string tp((char *)k.data, (char *)k.data+k.size);
+    /* Get a cursor */
+    dbp->cursor(dbp, txn, &curs, 0);
+    if (curs==NULL) throw Err() << name << ".db: can't get a cursor";
 
-  // if needed, get previous record:
-  if (info.cmp_time(tp,t2p)>0 || res==DB_NOTFOUND){
-    res = curs->c_get(curs, &k, &v, DB_PREV);
-    if (res==DB_NOTFOUND) { curs->close(curs); return; }
-    if (res!=0) throw Err() << name << ".db: " << db_strerror(res);
+    int res = curs->c_get(curs, &k, &v, DB_SET_RANGE);
+    if (res!=0 && res!=DB_NOTFOUND)
+      throw Err() << name << ".db: " << db_strerror(res);
+
+    // unpack time
+    string tp((char *)k.data, (char *)k.data+k.size);
+
+    // if needed, get previous record:
+    if (info.cmp_time(tp,t2p)>0 || res==DB_NOTFOUND){
+      res = curs->c_get(curs, &k, &v, DB_PREV);
+      if (res!=0 && res!=DB_NOTFOUND)
+        throw Err() << name << ".db: " << db_strerror(res);
+    }
+
+    if (res!=DB_NOTFOUND)
+      dbo.proc_point(&k, &v, info);
+
+    curs->close(curs);
   }
-
-  dbo.proc_point(&k, &v, info);
-  curs->close(curs);
+  catch (Err e){
+    if (curs) curs->close(curs);
+    txn_abort(txn);
+    throw e;
+  }
+  txn_commit(txn);
 }
 
 /************************************/
@@ -326,49 +372,66 @@ DBgr::get(const string &t, DBout & dbo){
   if (info.val!=DATA_FLOAT && info.val!=DATA_DOUBLE)
     return get_prev(t, dbo);
 
-  /* Get a cursor */
-  DBC *curs;
-  dbp->cursor(dbp, NULL, &curs, 0);
-  if (curs==NULL) throw Err() << name << ".db: can't get a cursor";
   string tp = info.parse_time(t);
   DBT k = mk_dbt(tp);
   DBT v = mk_dbt();
+  string t1p, v1p, t2p, v2p, vp;
 
-  // find next value
-  int res = curs->c_get(curs, &k, &v, DB_SET_RANGE);
+  // do everything in a single transaction (with snapshot isolation)
+  DB_TXN *txn = txn_begin(DB_TXN_SNAPSHOT);
+  DBC *curs = NULL;
+  try {
 
-  // if there is no next value - give the last value if any
-  if (res==DB_NOTFOUND) {
-    res = curs->c_get(curs, &k, &v, DB_PREV);
-    if (res==0) dbo.proc_point(&k, &v, info);
+    /* Get a cursor */
+    dbp->cursor(dbp, txn, &curs, 0);
+    if (curs==NULL) throw Err() << name << ".db: can't get a cursor";
+
+    // find next value
+    int res = curs->c_get(curs, &k, &v, DB_SET_RANGE);
     if (res!=0 && res!=DB_NOTFOUND)
       throw Err() << name << ".db: " << db_strerror(res);
-    curs->close(curs); return;
-  }
-  else if (res!=0) throw Err() << name << ".db: " << db_strerror(res);
 
-  // if "next" record is exactly at t - return it
-  string t1p((char *)k.data, (char *)k.data+k.size);
-  string v1p((char *)v.data, (char *)v.data+v.size);
-  if (info.cmp_time(t1p,tp) == 0){
-    dbo.proc_point(&k, &v, info);
-  }
-  // get the previous value and do interpolation
-  else {
+    // if there is no next value - give the last value if any
+    if (res==DB_NOTFOUND) {
+      res = curs->c_get(curs, &k, &v, DB_PREV);
+      if (res!=0 && res!=DB_NOTFOUND)
+        throw Err() << name << ".db: " << db_strerror(res);
+
+      if (res==0) dbo.proc_point(&k, &v, info);
+      goto finish;
+    }
+
+    // if "next" record is exactly at t - return it
+    t1p = string((char *)k.data, (char *)k.data+k.size);
+    v1p = string((char *)v.data, (char *)v.data+v.size);
+    if (info.cmp_time(t1p,tp) == 0){
+      dbo.proc_point(&k, &v, info);
+      goto finish;
+    }
+
+    // get the previous value and do interpolation
     // find prev value
     res = curs->c_get(curs, &k, &v, DB_PREV);
-    if (res==DB_NOTFOUND) { curs->close(curs); return; }
+    if (res==DB_NOTFOUND) goto finish;
     if (res!=0) throw Err() << name << ".db: " << db_strerror(res);
-    string t2p((char *)k.data, (char *)k.data+k.size);
-    string v2p((char *)v.data, (char *)v.data+v.size);
-    string vp = info.interpolate(tp, t1p, t2p, v1p, v2p);
+    t2p = string((char *)k.data, (char *)k.data+k.size);
+    v2p = string((char *)v.data, (char *)v.data+v.size);
+    vp = info.interpolate(tp, t1p, t2p, v1p, v2p);
     if (vp!=""){
       DBT k0 = mk_dbt(tp);
       DBT v0 = mk_dbt(vp);
       dbo.proc_point(&k0, &v0, info);
     }
+
+    finish:
+    curs->close(curs);
   }
-  curs->close(curs);
+  catch (Err e){
+    if (curs) curs->close(curs);
+    txn_abort(txn);
+    throw e;
+  }
+  txn_commit(txn);
 }
 
 /************************************/
@@ -387,10 +450,6 @@ DBgr::get_range(const string &t1, const string &t2,
                 const string &dt, DBout & dbo){
 
   DBinfo info = read_info();
-  /* Get a cursor */
-  DBC *curs;
-  dbp->cursor(dbp, NULL, &curs, 0);
-  if (curs==NULL) throw Err() << name << ".db: can't get a cursor";
 
   string t1p = info.parse_time(t1);
   string t2p = info.parse_time(t2);
@@ -399,43 +458,62 @@ DBgr::get_range(const string &t1, const string &t2,
   DBT v = mk_dbt();
   string tlp; // last printed value
 
-  int fl = DB_SET_RANGE; // first get t >= t1
-  while (1){
-    int res = curs->c_get(curs, &k, &v, fl);
-    if (res==DB_NOTFOUND) break;
-    if (res!=0) throw Err() << name << ".db: " << db_strerror(res);
+  // do everything in a single transaction (with snapshot isolation)
+  DB_TXN *txn = txn_begin(DB_TXN_SNAPSHOT);
+  DBC *curs = NULL;
+  try {
 
-    // unpack new time value and check the range
-    string tnp((char *)k.data, (char *)k.data+k.size);
-    if (info.cmp_time(tnp,t2p)>0) break;
+    // Get a cursor
+    dbp->cursor(dbp, txn, &curs, 0);
+    if (curs==NULL) throw Err() << name << ".db: can't get a cursor";
 
-    // if we want every point, switch to DB_NEXT and repeat
-    if (info.is_zero_time(dtp)){
-      dbo.proc_point(&k, &v, info, 1);
-      fl=DB_NEXT;
-      continue;
-    }
-
-    // If dt >0 we continue using fl=DB_SET_RANGE.
-    // If new value the same as old
-    if (tlp.size()>0 && info.cmp_time(tlp,tnp)==0){
-      // get next value
-      res = curs->c_get(curs, &k, &v, DB_NEXT);
+    int fl = DB_SET_RANGE; // first get t >= t1
+    while (1){
+      int res = curs->c_get(curs, &k, &v, fl);
       if (res==DB_NOTFOUND) break;
-      if (res!=0) throw Err() << name << ".db: " << db_strerror(res);
-      // unpack new time value and check the range
-      tnp = string((char *)k.data, (char *)k.data+k.size);
-      if (info.cmp_time(tnp,t2p) > 0 ) break;
-    }
-    dbo.proc_point(&k, &v, info, 1);
-    tlp=tnp; // update last printed value
+      if (res!=0)
+        throw Err() << name << ".db: " << db_strerror(res);
 
-    // add dt to the key for the next loop:
-    string sp = info.add_time(tlp, dtp);
-    memcpy(k.data,sp.data(),k.size);
-    k = mk_dbt(sp);
+      // unpack new time value and check the range
+      string tnp((char *)k.data, (char *)k.data+k.size);
+      if (info.cmp_time(tnp,t2p)>0) break;
+
+      // if we want every point, switch to DB_NEXT and repeat
+      if (info.is_zero_time(dtp)){
+        dbo.proc_point(&k, &v, info, 1);
+        fl=DB_NEXT;
+        continue;
+      }
+
+      // If dt >0 we continue using fl=DB_SET_RANGE.
+      // If new value the same as old
+      if (tlp.size()>0 && info.cmp_time(tlp,tnp)==0){
+        // get next value
+        res = curs->c_get(curs, &k, &v, DB_NEXT);
+        if (res==DB_NOTFOUND) break;
+        if (res!=0)
+          throw Err() << name << ".db: " << db_strerror(res);
+        // unpack new time value and check the range
+        tnp = string((char *)k.data, (char *)k.data+k.size);
+        if (info.cmp_time(tnp,t2p) > 0 ) break;
+      }
+      dbo.proc_point(&k, &v, info, 1);
+      tlp=tnp; // update last printed value
+
+      // add dt to the key for the next loop:
+      string sp = info.add_time(tlp, dtp);
+      memcpy(k.data,sp.data(),k.size);
+      k = mk_dbt(sp);
+    }
+    curs->close(curs);
   }
-  curs->close(curs);
+  catch (Err e){
+    if (curs) curs->close(curs);
+    txn_abort(txn);
+    throw e;
+  }
+  txn_commit(txn);
+
 }
 
 /************************************/
@@ -447,11 +525,14 @@ DBgr::del(const string &t1){
   string t1p = info.parse_time(t1);
   DBT k = mk_dbt(t1p);
 
+  DB_TXN *txn = txn_begin();
   // delete data
-  // auto transaction is enough
-  ret = dbp->del(dbp, NULL, &k, 0);
-  if (ret!=0)
+  ret = dbp->del(dbp, txn, &k, 0);
+  if (ret!=0){
+    txn_abort(txn);
     throw Err() << name << ".db: " << db_strerror(ret);
+  }
+  txn_commit(txn);
 }
 
 /************************************/
@@ -461,64 +542,51 @@ DBgr::del_range(const string &t1, const string &t2){
   int ret;
   DBinfo info = read_info();
 
-  // cursor needs explicit transaciton handler
-  // start a transaction
-  DB_TXN *txn = NULL;
-  if (env && (env_flags & DB_INIT_TXN)) {
-    ret = env->txn_begin(env, NULL, &txn, 0);
-    if (ret != 0) Err() << name << ".db: " << db_strerror(ret);
-  }
-
-  /* Get a cursor */
-  DBC *curs;
-  dbp->cursor(dbp, txn, &curs, 0);
-  if (curs==NULL) {
-    if (txn) txn->abort(txn);
-    throw Err() << name << ".db: can't get a cursor";
-  }
-
   string t1p = info.parse_time(t1);
   string t2p = info.parse_time(t2);
   DBT k = mk_dbt(t1p);
   DBT v = mk_dbt();
 
-  int fl = DB_SET_RANGE; // first get t >= t1
-  while (1){
-    int res = curs->c_get(curs, &k, &v, fl);
-    if (res==DB_NOTFOUND) break;
-    if (res!=0){
-      curs->close(curs);
-      if (txn) txn->abort(txn);
-      throw Err() << name << ".db: " << db_strerror(res);
+  DB_TXN *txn = txn_begin();
+  DBC *curs = NULL;
+  try {
+
+    /* Get a cursor */
+    dbp->cursor(dbp, txn, &curs, 0);
+    if (curs==NULL) throw Err() << name << ".db: can't get a cursor";
+
+    int fl = DB_SET_RANGE; // first get t >= t1
+    while (1){
+      int res = curs->c_get(curs, &k, &v, fl);
+      if (res==DB_NOTFOUND) break;
+      if (res!=0)
+        throw Err() << name << ".db: " << db_strerror(res);
+
+      // get packed time value and check the range
+      string tp((char *)k.data, (char *)k.data+k.size);
+      if (info.cmp_time(tp,t2p)>0) break;
+
+      // delete the point
+      res = curs->del(curs, 0);
+      if (res!=0)
+        throw Err() << name << ".db: " << db_strerror(res);
+
+      // we want to delete every point, so switch to DB_NEXT and repeat
+      fl=DB_NEXT;
     }
 
-    // get packed time value and check the range
-    string tp((char *)k.data, (char *)k.data+k.size);
-    if (info.cmp_time(tp,t2p)>0) break;
-
-    // delete the point
-    res = curs->del(curs, 0);
-    if (res!=0){
-      curs->close(curs);
-      if (txn) txn->abort(txn);
-      throw Err() << name << ".db: " << db_strerror(res);
-    }
-
-    // we want to delete every point, so switch to DB_NEXT and repeat
-    fl=DB_NEXT;
+    curs->close(curs);
   }
-
-  curs->close(curs);
-
-  // commit the transaction
-  if (txn) {
-    ret = txn->commit(txn, 0);
-    if (ret != 0) Err() << name << ".db: " << db_strerror(ret);
+  catch (Err e){
+    if (curs) curs->close(curs);
+    txn_abort(txn);
+    throw e;
   }
-
+  txn_commit(txn);
 }
 
-
+/************************************/
+// functions for DBgr::load method
 uint8_t DIG(const char c){
   if (c>='0' && c<='9') return c-'0';
   if (c=='a') return 10;
@@ -544,6 +612,7 @@ strconv(const std::string &s){
 /************************************/
 // load file in a db_dump format
 // (we can not use db_load because of user-defined comparison function)
+// alwaysused without environment, without transactions.
 void
 DBgr::load(const std::string &file){
   ifstream ff(file.c_str());
