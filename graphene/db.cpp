@@ -137,6 +137,17 @@ DBgr::txn_abort(DB_TXN *txn){
 }
 
 /************************************/
+// Simple put/get/del wrappers:
+
+bool
+DBgr::c_get(DBC *curs, DBT *k, DBT *v, int flags) {
+  int res = curs->c_get(curs, k, v, flags);
+  if (res!=0 && res!=DB_NOTFOUND)
+    throw Err() << name << ".db: " << db_strerror(res);
+  return res==0;
+}
+
+/************************************/
 // Write database information.
 // key = (uint8_t)0 (1byte), value = data_fmt (1byte) + description
 // key = (uint8_t)1 (1byte), value = version  (1byte)
@@ -294,12 +305,7 @@ DBgr::get_next(const string &t1, DBout & dbo){
     if (curs==NULL)
       throw Err() << name << ".db: can't get a cursor";
 
-    int res = curs->c_get(curs, &k, &v, DB_SET_RANGE);
-
-    if (res!=0 && res!=DB_NOTFOUND)
-      throw Err() << name << ".db: " << db_strerror(res);
-
-    if (res!=DB_NOTFOUND)
+    if (c_get(curs, &k, &v, DB_SET_RANGE))
       dbo.proc_point(&k, &v, info);
 
     curs->close(curs);
@@ -334,22 +340,16 @@ DBgr::get_prev(const string &t2, DBout & dbo){
     dbp->cursor(dbp, txn, &curs, 0);
     if (curs==NULL) throw Err() << name << ".db: can't get a cursor";
 
-    int res = curs->c_get(curs, &k, &v, DB_SET_RANGE);
-    if (res!=0 && res!=DB_NOTFOUND)
-      throw Err() << name << ".db: " << db_strerror(res);
+    bool found = c_get(curs, &k, &v, DB_SET_RANGE);
 
     // unpack time
     string tp((char *)k.data, (char *)k.data+k.size);
 
     // if needed, get previous record:
-    if (info.cmp_time(tp,t2p)>0 || res==DB_NOTFOUND){
-      res = curs->c_get(curs, &k, &v, DB_PREV);
-      if (res!=0 && res!=DB_NOTFOUND)
-        throw Err() << name << ".db: " << db_strerror(res);
-    }
+    if (info.cmp_time(tp,t2p)>0 || !found)
+      found=c_get(curs, &k, &v, DB_PREV);
 
-    if (res!=DB_NOTFOUND)
-      dbo.proc_point(&k, &v, info);
+    if (found) dbo.proc_point(&k, &v, info);
 
     curs->close(curs);
   }
@@ -387,17 +387,12 @@ DBgr::get(const string &t, DBout & dbo){
     if (curs==NULL) throw Err() << name << ".db: can't get a cursor";
 
     // find next value
-    int res = curs->c_get(curs, &k, &v, DB_SET_RANGE);
-    if (res!=0 && res!=DB_NOTFOUND)
-      throw Err() << name << ".db: " << db_strerror(res);
+    bool found = c_get(curs, &k, &v, DB_SET_RANGE);
 
     // if there is no next value - give the last value if any
-    if (res==DB_NOTFOUND) {
-      res = curs->c_get(curs, &k, &v, DB_PREV);
-      if (res!=0 && res!=DB_NOTFOUND)
-        throw Err() << name << ".db: " << db_strerror(res);
-
-      if (res==0) dbo.proc_point(&k, &v, info);
+    if (!found) {
+      if (c_get(curs, &k, &v, DB_PREV))
+        dbo.proc_point(&k, &v, info);
       goto finish;
     }
 
@@ -411,9 +406,9 @@ DBgr::get(const string &t, DBout & dbo){
 
     // get the previous value and do interpolation
     // find prev value
-    res = curs->c_get(curs, &k, &v, DB_PREV);
-    if (res==DB_NOTFOUND) goto finish;
-    if (res!=0) throw Err() << name << ".db: " << db_strerror(res);
+    found = c_get(curs, &k, &v, DB_PREV);
+    if (!found) goto finish;
+
     t2p = string((char *)k.data, (char *)k.data+k.size);
     v2p = string((char *)v.data, (char *)v.data+v.size);
     vp = info.interpolate(tp, t1p, t2p, v1p, v2p);
@@ -469,10 +464,8 @@ DBgr::get_range(const string &t1, const string &t2,
 
     int fl = DB_SET_RANGE; // first get t >= t1
     while (1){
-      int res = curs->c_get(curs, &k, &v, fl);
-      if (res==DB_NOTFOUND) break;
-      if (res!=0)
-        throw Err() << name << ".db: " << db_strerror(res);
+
+      if (!c_get(curs, &k, &v, fl)) break;
 
       // unpack new time value and check the range
       string tnp((char *)k.data, (char *)k.data+k.size);
@@ -489,10 +482,7 @@ DBgr::get_range(const string &t1, const string &t2,
       // If new value the same as old
       if (tlp.size()>0 && info.cmp_time(tlp,tnp)==0){
         // get next value
-        res = curs->c_get(curs, &k, &v, DB_NEXT);
-        if (res==DB_NOTFOUND) break;
-        if (res!=0)
-          throw Err() << name << ".db: " << db_strerror(res);
+        if (!c_get(curs, &k, &v, DB_NEXT)) break;
         // unpack new time value and check the range
         tnp = string((char *)k.data, (char *)k.data+k.size);
         if (info.cmp_time(tnp,t2p) > 0 ) break;
@@ -557,17 +547,15 @@ DBgr::del_range(const string &t1, const string &t2){
 
     int fl = DB_SET_RANGE; // first get t >= t1
     while (1){
-      int res = curs->c_get(curs, &k, &v, fl);
-      if (res==DB_NOTFOUND) break;
-      if (res!=0)
-        throw Err() << name << ".db: " << db_strerror(res);
+
+      if (!c_get(curs, &k, &v, fl)) break;
 
       // get packed time value and check the range
       string tp((char *)k.data, (char *)k.data+k.size);
       if (info.cmp_time(tp,t2p)>0) break;
 
       // delete the point
-      res = curs->del(curs, 0);
+      int res = curs->del(curs, 0);
       if (res!=0)
         throw Err() << name << ".db: " << db_strerror(res);
 

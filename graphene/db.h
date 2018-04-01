@@ -108,20 +108,27 @@ class DBgr{
        const std::string & name_,
        const int flags);
 
-
+  /****************************/
   // Simple transaction wrappers:
-  DB_TXN *txn_begin(int flags=0);
-  void txn_commit(DB_TXN *txn);
-  void txn_abort(DB_TXN *txn);
+  private:
+    DB_TXN *txn_begin(int flags=0);
+    void txn_commit(DB_TXN *txn);
+    void txn_abort(DB_TXN *txn);
 
-  // Write database information.
+  /****************************/
+  // Simple put/get/del wrappers:
+  private:
+    bool c_get(DBC *curs, DBT *k, DBT *v, int flags);
+
+  /****************************/
+  // Read/Write database information.
   // key = (uint8_t)0 (1byte),  value = data_fmt (1byte) + description
   // key = (uint8_t)1 (1byte),  value = version  (1byte)
-  void write_info(const DBinfo &info);
+  public:
+    void write_info(const DBinfo &info);
+    DBinfo read_info();
 
-  // Get database information
-  DBinfo read_info();
-
+  /****************************/
   // Put data to the database
   // input: timestamp + vector of strings + dpolicy
   // The function can be run multiple times without reopening
