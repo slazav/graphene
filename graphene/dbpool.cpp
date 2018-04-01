@@ -29,7 +29,7 @@ DBpool::DBpool(const std::string & dbpath_, const std::string & env_type_): dbpa
 
   int flags;
   if (env_type == "txn") flags = DB_CREATE | DB_INIT_LOCK | DB_INIT_MPOOL | DB_INIT_LOG | DB_INIT_TXN;
-  else if (env_type == "lock") flags = DB_CREATE | DB_INIT_LOCK | DB_INIT_MPOOL | DB_INIT_LOG;
+  else if (env_type == "simple") flags = DB_CREATE | DB_INIT_LOCK | DB_INIT_MPOOL;
   else throw Err() << "unknown env_type";
 
   // deadlock detection
