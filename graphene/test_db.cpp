@@ -17,14 +17,14 @@ int main() {
 
     {  // check names and extract column numbers
       check_name("abc");
-      const char *e1 = "symbols '.:+| \\n\\t/' are not allowed in the database name";
-      ASSERT_EX(check_name("abc/def"), e1);
-      ASSERT_EX(check_name("./abc/def"), e1);
-      ASSERT_EX(check_name("/abc/def:1"), e1);
-      ASSERT_EX(check_name("/abc/def+1"), e1);
-      ASSERT_EX(check_name("/abc/def 1"), e1);
-      ASSERT_EX(check_name("/abc/def\t"), e1);
-      ASSERT_EX(check_name("/abc/def\n"), e1);
+      std::string e1("symbols '.:+| \\n\\t/' are not allowed in the database name: ");
+      ASSERT_EX(check_name("abc/def"), e1+"abc/def");
+      ASSERT_EX(check_name("./abc/def" ), e1+"./abc/def" );
+      ASSERT_EX(check_name("/abc/def:1"), e1+"/abc/def:1");
+      ASSERT_EX(check_name("/abc/def+1"), e1+"/abc/def+1");
+      ASSERT_EX(check_name("/abc/def 1"), e1+"/abc/def 1");
+      ASSERT_EX(check_name("/abc/def\t"), e1+"/abc/def\t");
+      ASSERT_EX(check_name("/abc/def\n"), e1+"/abc/def\n");
 
       {DBout dbn(".","abc",cout);    ASSERT_EQ(dbn.name, "abc");
                             ASSERT_EQ(dbn.col, -1);}

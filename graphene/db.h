@@ -108,6 +108,12 @@ class DBgr{
        const std::string & name_,
        const int flags);
 
+
+  // Simple transaction wrappers:
+  DB_TXN *txn_begin(int flags=0);
+  void txn_commit(DB_TXN *txn);
+  void txn_abort(DB_TXN *txn);
+
   // Write database information.
   // key = (uint8_t)0 (1byte),  value = data_fmt (1byte) + description
   // key = (uint8_t)1 (1byte),  value = version  (1byte)
