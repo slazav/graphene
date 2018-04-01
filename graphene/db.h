@@ -116,8 +116,9 @@ class DBgr{
     void txn_abort(DB_TXN *txn);
 
   /****************************/
-  // Simple put/get/del wrappers:
+  // Simple wrappers for cursor operations:
   private:
+    void get_cursor(DB *dbp, DB_TXN *txn, DBC **curs, int flags);
     bool c_get(DBC *curs, DBT *k, DBT *v, int flags);
 
   /****************************/

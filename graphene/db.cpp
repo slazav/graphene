@@ -137,7 +137,16 @@ DBgr::txn_abort(DB_TXN *txn){
 }
 
 /************************************/
-// Simple put/get/del wrappers:
+// Simple wrappers for cursor actions:
+
+/* Get a cursor */
+void
+DBgr::get_cursor(DB *dbp, DB_TXN *txn, DBC **curs, int flags) {
+  *curs=NULL;
+  dbp->cursor(dbp, txn, curs, flags);
+  if (*curs==NULL)
+    throw Err() << name << ".db: can't get a cursor";
+}
 
 bool
 DBgr::c_get(DBC *curs, DBT *k, DBT *v, int flags) {
@@ -146,6 +155,8 @@ DBgr::c_get(DBC *curs, DBT *k, DBT *v, int flags) {
     throw Err() << name << ".db: " << db_strerror(res);
   return res==0;
 }
+
+
 
 /************************************/
 // Write database information.
@@ -299,11 +310,8 @@ DBgr::get_next(const string &t1, DBout & dbo){
   DB_TXN *txn = txn_begin(DB_TXN_SNAPSHOT);
   DBC *curs = NULL;
   try {
-
     /* Get a cursor */
-    dbp->cursor(dbp, txn, &curs, 0);
-    if (curs==NULL)
-      throw Err() << name << ".db: can't get a cursor";
+    get_cursor(dbp, txn, &curs, 0);
 
     if (c_get(curs, &k, &v, DB_SET_RANGE))
       dbo.proc_point(&k, &v, info);
@@ -335,10 +343,8 @@ DBgr::get_prev(const string &t2, DBout & dbo){
   DB_TXN *txn = txn_begin(DB_TXN_SNAPSHOT);
   DBC *curs = NULL;
   try {
-
     /* Get a cursor */
-    dbp->cursor(dbp, txn, &curs, 0);
-    if (curs==NULL) throw Err() << name << ".db: can't get a cursor";
+    get_cursor(dbp, txn, &curs, 0);
 
     bool found = c_get(curs, &k, &v, DB_SET_RANGE);
 
@@ -383,8 +389,7 @@ DBgr::get(const string &t, DBout & dbo){
   try {
 
     /* Get a cursor */
-    dbp->cursor(dbp, txn, &curs, 0);
-    if (curs==NULL) throw Err() << name << ".db: can't get a cursor";
+    get_cursor(dbp, txn, &curs, 0);
 
     // find next value
     bool found = c_get(curs, &k, &v, DB_SET_RANGE);
@@ -459,8 +464,7 @@ DBgr::get_range(const string &t1, const string &t2,
   try {
 
     // Get a cursor
-    dbp->cursor(dbp, txn, &curs, 0);
-    if (curs==NULL) throw Err() << name << ".db: can't get a cursor";
+    get_cursor(dbp, txn, &curs, 0);
 
     int fl = DB_SET_RANGE; // first get t >= t1
     while (1){
@@ -542,8 +546,7 @@ DBgr::del_range(const string &t1, const string &t2){
   try {
 
     /* Get a cursor */
-    dbp->cursor(dbp, txn, &curs, 0);
-    if (curs==NULL) throw Err() << name << ".db: can't get a cursor";
+    get_cursor(dbp, txn, &curs, 0);
 
     int fl = DB_SET_RANGE; // first get t >= t1
     while (1){
