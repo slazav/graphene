@@ -21,8 +21,12 @@ mkdir -p test_backup/b
 db_hotbackup -h test_backup/a -b test_backup/b
 
 ./graphene -d test_backup/a put db1 now 0.13
+./graphene -d test_backup/a put db1 now 0.14
+./graphene -d test_backup/a put db1 now 0.15
+./graphene -d test_backup/a put db1 now 0.16
 
-db_hotbackup -h test_backup/a -b test_backup/b -u
+#db_hotbackup -h test_backup/a -b test_backup/b -u
+cp -f test_backup/a/log.* test_backup/b/
 
 assert\
   "$(./graphene -d test_backup/a get db1)"\
