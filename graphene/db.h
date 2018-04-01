@@ -22,7 +22,7 @@
 #define GRAPHENE_LOGSIZE 1<<20
 #define GRAPHENE_DEF_ENV "txn"
 #define GRAPHENE_DEF_DPOLICY "replace"
-#define GRAPHENE_DEF_DBPATH  "/var/lib/graphene/"
+#define GRAPHENE_DEF_DBPATH  "."
 
 
 /***********************************************************/

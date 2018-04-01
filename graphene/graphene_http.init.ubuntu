@@ -15,10 +15,9 @@ PATH=/bin:/usr/bin:/sbin:/usr/sbin
 DESC="graphene_http: SimpleJson data source for Graphene database"
 NAME=graphene_http
 DAEMON=/usr/bin/graphene_http
+DAEMON_OPTS="-f -d /var/lib/graphene"
 PIDFILE=/var/run/graphene_http.pid
 SCRIPTNAME=/etc/init.d/"$NAME"
-#DAEMONUSER=nano
-DAEMON_OPTS=-f
 
 test -f $DAEMON || exit 0
 

@@ -13,20 +13,24 @@ WITHOUT_RC_COMPAT=1
 # Source function library.
 . /etc/init.d/functions
 
+DAEMON=/usr/bin/graphene_http
+DAEMON_OPTS="-f -d /var/lib/graphene"
 PIDFILE=/var/run/graphene_http.pid
 LOCKFILE=/var/lock/subsys/graphene_http
 RETVAL=0
 USER=root
 
 start() {
-	start_daemon --pidfile "$PIDFILE" --lockfile "$LOCKFILE" --user $USER -- graphene_http -f $EXTRAOPTIONS
+	start_daemon --pidfile "$PIDFILE" --lockfile "$LOCKFILE"\
+                     --user $USER -- $DAEMON $DAEMON_OPTS $EXTRAOPTIONS
 	RETVAL=$?
 	return $RETVAL
 }
 
 stop()
 {
-	stop_daemon --pidfile "$PIDFILE" --lockfile "$LOCKFILE" --expect-user $USER -- graphene_http
+	stop_daemon --pidfile "$PIDFILE" --lockfile "$LOCKFILE"\
+                    --expect-user $USER -- $DAEMON
 	RETVAL=$?
 	return $RETVAL
 }
