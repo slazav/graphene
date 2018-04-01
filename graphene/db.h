@@ -82,8 +82,11 @@ class DBgr{
     void destroy(void){
       (*refcounter)--;
       if (*refcounter<=0){
-        int ret = dbp->close(dbp, 0); // close db
-        if (ret!=0) throw Err() << name << ".db: " << db_strerror(ret);
+        dbp->close(dbp, 0); // close db
+        // We do not want to check result and throw an exception
+        // here in the destructor.
+        // If this destructor is called from another exception, then
+        // program just terminates here.
         delete refcounter;
       }
     }
