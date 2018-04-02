@@ -7,41 +7,32 @@ E-mail: Vladislav Zavjalov <slazav@altlinux.org>
 ### Features
 
 - based on BerkleyDB
-- store integer, floating point or text values with &lt;seconds&gt;.&lt;nanoseconds&gt; timestamps
+- store integer, floating point or text values with nanosecond-precision timestamps
 - fast access to data, interpolation, downsampling, time ranges
 - multi-column numerical values
 - command line and socket interfaces for reading/writing data
 - http simple json interface for Grafana viewer
-- user filters for data processing (calibration tables etc.) -- to be removed?
+- user filters for data processing, calibration tables etc. (to be removed?)
 
 ### Data storage
 
-Data is stored in any folder (default is `.`, but it can be selected via
-a command line option -d). The folder contains a BerkleyDB environment
-with databases and some other database-specific files. Each dataset is a
-separate database, it's name can not contain symbols `.:|+ \t\n/`. By
-default a full transaction support is turn on for the database
-environment. If needed it can be turned off during compilation. Then you
-can have no environment at all (each dataset is a single db file, but
-only one program can work with it at a time), or a simple environment
-with locking.
+Data are stored as databases inside a BerkleyDB environment directory (which
+can be chousen via `-d` command-line option). Database name can not
+contain symbols `.:|+ \t\n/`. [Some BerkleyDB notes](BerkleyDB.md)
 
-# Some BerkleyDB notes
-[BerkleyDB.md]
+Each database contains a set of sorted key-value pairs. Key is a
+timestamp, one or two 32-bit unsigned integers: a number of seconds from
+1970-01-01 UTC, and optional number of nanoseconds. Largest possible
+timestamp is on 2106-02-07.
 
-### Data structure
-
-Data are stored as a set of sorted key-value pairs. Key is a timestamp,
-one or two 32-bit unsigned integers: a number of seconds
-from 1970-01-01 UTC, and optional number of nanoseconds. Duplicated
-timestamps are not allowed, but user can choose what to do
+Duplicated timestamps are not allowed, but user can choose what to do
 with duplicates (see -D option of the graphene program):
- replace -- replace the old record (default),
- skip    -- skip the new record if timestamp already exists,
- error   -- skip the new record and return error message
- sshift  -- increase time by 1 second step until it will be possible
-            to put the record (no loss of data)
- nsshift -- same, but with nanosecosd steps.
+- replace -- replace the old record (default),
+- skip    -- skip the new record if timestamp already exists,
+- error   -- skip the new record and return error message
+- sshift  -- increase time by 1 second step until it will be possible
+             to put the record (no loss of data)
+- nsshift -- same, but with nanosecosd steps.
 
 Value can contain an array of numbers of arbitrary length (data columns)
 or some text. The data format can be chosen during the database
