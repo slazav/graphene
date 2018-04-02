@@ -51,16 +51,17 @@ The program `graphene` is used to access data from command line.
 
 Usage: `graphene [options] <command> <parameters>`
 
-Options:
-- -d <path> -- database directory (default `.`)
-- -D <word> -- what to do with duplicated timestamps:
-               replace, skip, error, sshift, nsshift (default: replace)
-- -h        -- write help message and exit
-- -i        -- interactive mode, read commands from stdin
-- -s <name> -- socket mode: use unix socket <name> for communications
-- -r        -- output relative times (seconds from requested time) instead of absolute timestamps
+#### Options:
 
-Interactive mode:
+- `-d <path> --` database directory (default `.`)
+- `-D <word> --` what to do with duplicated timestamps:
+                 replace, skip, error, sshift, nsshift (default: replace)
+- `-h        --` write help message and exit
+- `-i        --` interactive mode, read commands from stdin
+- `-s <name> --` socket mode: use unix socket <name> for communications
+- `-r        --` output relative times (seconds from requested time) instead of absolute timestamps
+
+#### Interactive mode:
 
 Use -i option to enter the interactive mode. Then commands are read from
 stdin, answers are written to stdout. This allows making many requests
@@ -70,7 +71,7 @@ it can be useful to open the connection once and do many operations.
 The program implements a Simple Pipe Protocol (see somewhere in my
 `tcl_device` package): When it is started sucsessfully  a prompt message is
 printed to stdout started with "#SPP001" and followed by "#OK" line. In
-case of an error "#Error: <...>" line is printed and program exits. Then
+case of an error `#Error: <...>` line is printed and program exits. Then
 the program reads commands from stdin and sends ansers to stdout folowed
 by "#OK" or "#Error: <...>" lines until the user closes the connection.
 If answer contains symbol "#" in the begining of a line, it is protected
@@ -81,7 +82,7 @@ a server which accepts connections (one at a time) through a unix-domain
 socket.
 
 
-####Commands for manipulating databases:
+#### Commands for manipulating databases:
 
 - `create <name> [<data_fmt>] [<description>]` -- Create a database file.
 
@@ -101,7 +102,7 @@ socket.
 - `list` -- List all databases in the data directory.
 
 
-####Commands for reading and writing data:
+#### Commands for reading and writing data:
 
 - `put <name> <time> <value1> ... <valueN>` -- Write a data point.
 
@@ -137,13 +138,13 @@ data is filtered through it. The program should be located in the
 database directory, program name can not contain '.:|+ \t\n/' symbols.
 `TODO: remove this feature?`
 
-####Commands for deleting data:
+#### Commands for deleting data:
 
 - `del <name> <time>` -- Delete a data point.
 
 - `del_range  <name> [<time1>] [<time2>]` -- Delete all points in the range.
 
-####Command for syncing databases in interactive mode:
+#### Command for syncing databases in interactive mode:
 
 - `sync` -- This command flushes any cached information to disk. It is
 useful if you keep a connection (for example via ssh) for a long time,
@@ -158,13 +159,13 @@ used if you want to close unused databases and sync data.
 - `close <name>` -- Same, but for one database. If database is not opened
   command does nothing and returns without error.
 
-Information:
+#### Information:
 
 - `cmdlist` -- print list of commands.
 
 - `*idn?`   -- print intentifier: "Graphene database <version>".
 
-Examples:
+#### Examples:
 
 See `examples/*` in the source folder
 

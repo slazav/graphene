@@ -19,11 +19,8 @@ Graphene use BerkleyDB environment for databases.
   with Process Registration and Auto Recovery options and can do recovery itself
   if is it possible/needed.
 
-* Working way to do an incremental backup:
-- Copy (or rsync) all log files to the destination.
-  For me this works better then `db_hotbackup -u` (?).
-- Run `checkpoint -1` on source enviroment.
+* You can do hot and incremental backups using `db_hotbackup` tool.
 
 * Read books:
- - `https://docs.oracle.com/cd/E17076_05/html/gsg/C/index.html`
- - `https://docs.oracle.com/cd/E17076_05/html/gsg_txn/C/index.html`
+  - `https://docs.oracle.com/cd/E17076_05/html/gsg/C/index.html`
+  - `https://docs.oracle.com/cd/E17076_05/html/gsg_txn/C/index.html`
