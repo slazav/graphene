@@ -18,8 +18,7 @@
 * Do not use `db_hotbackup -u` when other program is working with the destination.
 
 * Working way to do an incremental backup:
-- Run `checkpoint -1` on source enviroment.
 - Copy (or rsync) all log files to the destination.
   For me this works better then `db_hotbackup -u` (?).
-- Run `recover -c` on the destination.
+- Run `checkpoint -1` on source enviroment.
 

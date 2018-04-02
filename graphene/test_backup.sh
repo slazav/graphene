@@ -26,8 +26,13 @@ db_hotbackup -h test_backup/a -b test_backup/b
 ./graphene -d test_backup/a put db1 now 0.16
 
 #db_hotbackup -h test_backup/a -b test_backup/b -u
+#
+db_checkpoint -h test_backup/b -1
 cp -f test_backup/a/log.* test_backup/b/
+db_checkpoint -h test_backup/a -1
 
+./graphene -d test_backup/a get db1
+./graphene -d test_backup/b get db1
 assert\
   "$(./graphene -d test_backup/a get db1)"\
   "$(./graphene -d test_backup/b get db1)"
