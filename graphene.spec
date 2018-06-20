@@ -21,6 +21,7 @@ graphene -- a simple time series database with nanosecond precision for scientif
 
 %build
 %makeinstall initdir=%buildroot%_initdir
+mkdir -p %buildroot%_sharedstatedir/graphene
 
 %post
 %post_service graphene_http
