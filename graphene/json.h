@@ -6,7 +6,7 @@
 #include <cstdlib>
 #include <stdint.h>
 #include "jsonxx/jsonxx.h"
-#include "db.h"
+#include "dbgr.h"
 
 /* Process a JSON request to the database. */
 /* Returns allocated buffer with the data, set dsize to its size */

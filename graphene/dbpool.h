@@ -10,7 +10,7 @@
 #include <sstream>
 #include <cstring> /* memset */
 #include <db.h>
-#include "db.h"
+#include "dbgr.h"
 
 /***********************************************************/
 // Class for keeping a database environment and many opened

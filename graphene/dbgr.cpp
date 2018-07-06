@@ -5,7 +5,7 @@
 #include <fstream>
 #include <iostream>
 #include <cstring> /* memset */
-#include "db.h"
+#include "dbgr.h"
 
 using namespace std;
 

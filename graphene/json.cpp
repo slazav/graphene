@@ -16,7 +16,7 @@
 #include <stdint.h>
 #include "jsonxx/jsonxx.h"
 #include "dbpool.h"
-#include "db.h"
+#include "dbgr.h"
 #include "dbout.h"
 
 using namespace std;

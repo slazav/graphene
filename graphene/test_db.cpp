@@ -5,7 +5,7 @@
 
 #include "tests.h"
 #include "dbpool.h"
-#include "db.h"
+#include "dbgr.h"
 #include "dbout.h"
 
 using namespace std;
