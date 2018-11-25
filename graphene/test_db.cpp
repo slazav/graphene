@@ -284,7 +284,7 @@ int main() {
     DBinfo hh1(DATA_INT16, "AAA");
     DBinfo hh2;
     {
-      DBpool pool(".");
+      DBpool pool(".", false);
       DBgr db = pool.get("test", DB_CREATE);
       db.write_info(hh1);
       hh2 = db.read_info();
@@ -300,7 +300,7 @@ int main() {
     }
 
     {
-      DBpool pool(".");
+      DBpool pool(".", true);
       DBgr db1 = pool.get("test", DB_RDONLY);
       hh2 = db1.read_info();
       ASSERT_EQ(hh1.val, hh2.val);

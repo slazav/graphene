@@ -22,11 +22,14 @@ class DBpool{
   std::string env_type;
   std::map<std::string, DBgr> pool;
   DB_ENV *env; // database environment
+  bool readonly;
+
   public:
 
   // Constructor: open DB environment
   // env_type: "none", "lock", "txn" (default)
-  DBpool(const std::string & dbpath_, const std::string & env_type = GRAPHENE_DEF_ENV);
+  DBpool(const std::string & dbpath_, const bool readoonly,
+         const std::string & env_type = GRAPHENE_DEF_ENV);
 
   // Destructor: close the DB environment
   ~DBpool();
