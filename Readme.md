@@ -203,6 +203,22 @@ graphene program:
   [r, out] = system('graphene get_range my_dataset 1464260400 now 60000');
   [t val1 val2] = strread(out, '%f %f %f');
 
+
+### `graphene_tab` script
+
+A common problem is to make a single table using values from a few databases
+(to plot one parameter as a function of another). This is not supported yet
+by graphene program itself, but there is a simple script for doing this, `graphene_tab`.
+
+Usage: `graphene_tab -D <db_prog> -t <t1> -u <t2> db1 db2 db3 ...`
+   db_prog -- graphene command: 'graphene -i' (default), 'device -d db' etc.
+   t1, t2  -- time range
+   db2, db2, db3 -- databases
+
+Values from db2, db3, etc. are interpolated to points of db1 and printed in a single
+text table. For floating-point databases linear interpolation is used, for integer
+ones nearest values with smaller timestemps are printed.
+
 ### Known problems
 
 - Linebreaks in text databases. You can put linebreaks in text database using

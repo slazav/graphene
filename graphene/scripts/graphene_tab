@@ -1,0 +1,78 @@
+#!/usr/bin/perl
+
+# Script for making a single table from a few graphene databases.
+# Usage: graphene_tab -D <db_prog> -t <t1> -u <t2> db1 db2 db3 ...
+#   db_prog -- graphene command: 'graphene -i' (default), 'device -d db' etc.
+#   t1, t2  -- time range
+#   db2, db2, db3 -- databases
+# Float-point values from db2.. are interpolated to points of db1.
+
+use warnings;
+use strict;
+use IPC::Open2;
+use Getopt::Long qw(GetOptions Configure);
+
+
+my $t1='0';
+my $t2='now';
+my $db_prog = 'graphene -i';
+
+sub usage {
+  print "Usage: $0 -D <db_prog> -t <t1> -u <t2> db1 db2 db3 ...\n";
+  exit 1;
+}
+
+GetOptions(
+  "D|db_prog=s"   => \$db_prog,
+  "t|t1=s"        => \$t1,
+  "u|t2=s"        => \$t2,
+) or usage();
+my @dbs = @ARGV;
+
+usage() if $#dbs<0 || $dbs[0] eq '';
+
+# start graphene device:
+my $pid = open2(\*GO, \*GI, $db_prog);
+
+# read the header (TODO: parse SPP head)
+while( my $line = <GO>) { last if $line =~/^\#OK/; }
+
+# read values one by one
+my @data;
+chomp $t1;
+chomp $t2;
+print GI "get_range $dbs[0] $t1 $t2\n";
+while( my $line = <GO>)  {
+  die $line if $line =~ /^#Error/;
+  last if $line =~/^\#OK/;
+  chomp $line;
+
+  my ($t, $v) = split /\s+/, $line;
+  push @data, {t=>$t, v=>$v};
+}
+
+
+print "# time";
+foreach my $db (@dbs) {print " $db";}
+print "\n";
+
+splice @dbs, 0, 1;
+foreach (@data) {
+  my $t=$_->{t};
+  my $v=$_->{v};
+  print "$t $v";
+  foreach my $db (@dbs){
+    print GI "get $db $t\n";
+    while( my $line = <GO>)  {
+      die $line if $line =~ /^#Error/;
+      last if $line =~/^\#OK/;
+      chomp $line;
+      my ($t, $v) = split /\s+/, $line;
+      print " $v";
+    }
+  }
+  print "\n";
+}
+
+kill HUP => $pid;
+waitpid( $pid, 0);
