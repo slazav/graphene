@@ -50,12 +50,13 @@ class Pars{
     if (argc<1) return; // needed for print_help()
     /* parse  options */
     int c;
-    while((c = getopt(argc, argv, "+d:D:his:r"))!=-1){
+    while((c = getopt(argc, argv, "+d:D:E:his:r"))!=-1){
       switch (c){
         case '?':
         case ':': throw Err(); /* error msg is printed by getopt*/
         case 'd': dbpath = optarg; break;
         case 'D': dpolicy = optarg; break;
+        case 'E': env_type = optarg; break;
         case 'h': print_help();
         case 'i': interactive = true; break;
         case 's': sockname = optarg; break;
@@ -113,6 +114,8 @@ class Pars{
             "  -d <path> -- database directory (default " << p.dbpath << "\n"
             "  -D <word> -- what to do with duplicated timestamps:\n"
             "               replace, skip, error, sshift, nsshift (default: " << p.dpolicy << ")\n"
+            "  -E <word> -- environment type:\n"
+            "               none, lock, txn (default: " << p.env_type << ")\n"
             "  -h        -- write this help message and exit\n"
             "  -i        -- interactive mode, read commands from stdin\n"
             "  -s <name> -- socket mode: use unix socket <name> for communications\n"
