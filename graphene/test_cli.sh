@@ -416,6 +416,23 @@ assert "$(./graphene -d . delete test_2)" ""
 
 
 ###########################################################################
+# readonly mode
+
+assert "$(./graphene -d . create test_1 UINT32)" ""
+assert "$(./graphene -d . put test_1 1    1)" ""
+assert "$(./graphene -d . put test_1 1.5  2)" ""
+assert "$(./graphene -d . put test_1 2    3)" ""
+assert "$(./graphene -d . -R put test_1 3    4)" "#Error: can't write to database in readonly mode"
+assert "$(./graphene -d . -R  get_range test_1)" "\
+1.000000000 1
+1.500000000 2
+2.000000000 3"
+
+assert "$(./graphene -d . -R delete test_1)" "#Error: can't remove database in readonly mode"
+assert "$(./graphene -d . -R rename test_1 test_2)" "#Error: can't rename database in readonly mode"
+
+
+###########################################################################
 # remove all test databases
 for i in *.db; do
   [ -f $i ] || continue

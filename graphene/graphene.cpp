@@ -39,6 +39,7 @@ class Pars{
   bool interactive;    /* use interactive mode */
   vector<string> pars; /* non-option parameters */
   bool relative;       /* output relative times */
+  bool readonly;       /* open databases in read-only mode */
 
   // get options and parameters from argc/argv
   Pars(const int argc, char **argv){
@@ -47,10 +48,11 @@ class Pars{
     env_type = GRAPHENE_DEF_ENV;
     interactive = false;
     relative  = false;
+    readonly  = false;
     if (argc<1) return; // needed for print_help()
     /* parse  options */
     int c;
-    while((c = getopt(argc, argv, "+d:D:E:his:r"))!=-1){
+    while((c = getopt(argc, argv, "+d:D:E:his:rR"))!=-1){
       switch (c){
         case '?':
         case ':': throw Err(); /* error msg is printed by getopt*/
@@ -61,6 +63,7 @@ class Pars{
         case 'i': interactive = true; break;
         case 's': sockname = optarg; break;
         case 'r': relative = true; break;
+        case 'R': readonly = true; break;
       }
     }
     pars = vector<string>(argv+optind, argv+argc);
@@ -120,6 +123,7 @@ class Pars{
             "  -i        -- interactive mode, read commands from stdin\n"
             "  -s <name> -- socket mode: use unix socket <name> for communications\n"
             "  -r        -- output relative times (seconds from requested time) instead of absolute timestamps\n"
+            "  -R        -- read-only mode\n"
             "Commands:\n"
     ;
     print_cmdlist(cout);
@@ -147,7 +151,7 @@ class Pars{
     out << "#SPP001\n"; // command-line protocol, version 001.
     out << "Graphene database. Type cmdlist to see list of commands\n";
     out.flush();
-    DBpool pool(dbpath, env_type);
+    DBpool pool(dbpath, readonly, env_type);
     out << "#OK\n";
     out.flush();
 
@@ -211,7 +215,7 @@ class Pars{
   // Cmdline mode.
   void run_cmdline(){
     if (pars.size() < 1) throw Err() << "command is expected";
-    DBpool pool(dbpath, env_type);
+    DBpool pool(dbpath, readonly, env_type);
     run_command(&pool, cout);
   }
 
@@ -410,7 +414,7 @@ class Pars{
     if (strcasecmp(cmd.c_str(), "load")==0){
       if (pars.size()<3) throw Err() << "database name and dump file expected";
       if (pars.size()>3) throw Err() << "too many parameters";
-      DBpool simple_pool(dbpath, "none");
+      DBpool simple_pool(dbpath, false, "none");
       DBgr db = simple_pool.get(pars[1], DB_CREATE | DB_EXCL);
       db.load(pars[2]);
       return;

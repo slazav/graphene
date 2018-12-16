@@ -22,9 +22,10 @@ int
 is_alive(DB_ENV *dbenv, pid_t pid, db_threadid_t tid, u_int32_t flag) { return 1;}
 
 // Constructor: open DB environment
-DBpool::DBpool(const std::string & dbpath_, const std::string & env_type_): dbpath(dbpath_), env_type(env_type_){
+DBpool::DBpool(const std::string & dbpath_, const bool readonly_, const std::string & env_type_):
+    dbpath(dbpath_), env_type(env_type_), readonly(readonly_){
 
-  if (env_type == "none"){
+  if (readonly || env_type == "none"){
     // no invironment
     env=NULL;
     return;
@@ -77,6 +78,7 @@ DBpool::~DBpool(){
 // remove database file
 void
 DBpool::dbremove(std::string name){
+  if (readonly) throw Err() << "can't remove database in readonly mode";
   check_name(name); // check name
   close(name);
   if (env) {
@@ -92,6 +94,7 @@ DBpool::dbremove(std::string name){
 // rename database file
 void
 DBpool::dbrename(std::string name1, std::string name2){
+  if (readonly) throw Err() << "can't rename database in readonly mode";
   check_name(name1); // check name
   check_name(name2); // check name
   std::string path1 = name1 + ".db";
@@ -123,6 +126,7 @@ DBpool::dbrename(std::string name1, std::string name2){
 DBgr &
 DBpool::get(const std::string & name, const int fl){
 
+  if (readonly && !(fl & DB_RDONLY)) throw Err() << "can't write to database in readonly mode";
   std::map<std::string, DBgr>::iterator i = pool.find(name);
 
   // if database was opened with wrong flags close it

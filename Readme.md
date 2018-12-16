@@ -61,6 +61,7 @@ Usage: `graphene [options] <command> <parameters>`
 - `-i        --` interactive mode, read commands from stdin
 - `-s <name> --` socket mode: use unix socket <name> for communications
 - `-r        --` output relative times (seconds from requested time) instead of absolute timestamps
+- `-R        --` read-only mode
 
 #### Interactive mode:
 
