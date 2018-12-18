@@ -2,6 +2,9 @@
 */
 
 #define VERSION "2.4"
+#define GRAPHENE_DEF_ENV "txn"
+#define GRAPHENE_DEF_DPOLICY "replace"
+#define GRAPHENE_DEF_DBPATH  "."
 
 #include <cstdlib>
 #include <stdint.h>
@@ -31,6 +34,7 @@ class Pars{
   public:
   string dbpath;       /* path to the databases */
   string dpolicy;      /* what to do with duplicated timestamps*/
+  string env_type;     /* environment type (see dbpool.h)*/
   string sockname;     /* socket name*/
   bool interactive;    /* use interactive mode */
   vector<string> pars; /* non-option parameters */
@@ -41,18 +45,20 @@ class Pars{
   Pars(const int argc, char **argv){
     dbpath  = GRAPHENE_DEF_DBPATH;
     dpolicy = GRAPHENE_DEF_DPOLICY;
+    env_type = GRAPHENE_DEF_ENV;
     interactive = false;
     relative  = false;
     readonly  = false;
     if (argc<1) return; // needed for print_help()
     /* parse  options */
     int c;
-    while((c = getopt(argc, argv, "+d:D:his:rR"))!=-1){
+    while((c = getopt(argc, argv, "+d:D:E:his:rR"))!=-1){
       switch (c){
         case '?':
         case ':': throw Err(); /* error msg is printed by getopt*/
         case 'd': dbpath = optarg; break;
         case 'D': dpolicy = optarg; break;
+        case 'E': env_type = optarg; break;
         case 'h': print_help();
         case 'i': interactive = true; break;
         case 's': sockname = optarg; break;
@@ -111,6 +117,8 @@ class Pars{
             "  -d <path> -- database directory (default " << p.dbpath << "\n"
             "  -D <word> -- what to do with duplicated timestamps:\n"
             "               replace, skip, error, sshift, nsshift (default: " << p.dpolicy << ")\n"
+            "  -E <word> -- environment type:\n"
+            "               none, lock, txn (default: " << p.env_type << ")\n"
             "  -h        -- write this help message and exit\n"
             "  -i        -- interactive mode, read commands from stdin\n"
             "  -s <name> -- socket mode: use unix socket <name> for communications\n"
@@ -143,7 +151,7 @@ class Pars{
     out << "#SPP001\n"; // command-line protocol, version 001.
     out << "Graphene database. Type cmdlist to see list of commands\n";
     out.flush();
-    DBpool pool(dbpath, readonly);
+    DBpool pool(dbpath, readonly, env_type);
     out << "#OK\n";
     out.flush();
 
@@ -207,7 +215,7 @@ class Pars{
   // Cmdline mode.
   void run_cmdline(){
     if (pars.size() < 1) throw Err() << "command is expected";
-    DBpool pool(dbpath, readonly);
+    DBpool pool(dbpath, readonly, env_type);
     run_command(&pool, cout);
   }
 

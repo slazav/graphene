@@ -169,7 +169,7 @@ Json json_query(const string & dbpath, const Json & ji){
 
   /* parse targets and run command */
   Json out = Json::array();
-  DBpool pool(dbpath, true); // readonly
+  DBpool pool(dbpath, true, "none");
   for (int i=0; i<ji["targets"].size(); i++){
 
 
@@ -224,7 +224,7 @@ Json json_annotations(const string & dbpath, const Json & ji){
   DBoutJSON dbo(dbpath, ji["annotation"]["name"].as_string(), false);
 
   // Get a database
-  DBpool pool(dbpath, true); //readonly
+  DBpool pool(dbpath, true, "none");
   DBgr db = pool.get(dbo.name, DB_RDONLY);
 
   // check DB format

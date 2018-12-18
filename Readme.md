@@ -56,6 +56,7 @@ Usage: `graphene [options] <command> <parameters>`
 - `-d <path> --` database directory (default `.`)
 - `-D <word> --` what to do with duplicated timestamps:
                  replace, skip, error, sshift, nsshift (default: replace)
+- `-E <word> --` environment type: none, lock, txn (default: txn)
 - `-h        --` write help message and exit
 - `-i        --` interactive mode, read commands from stdin
 - `-s <name> --` socket mode: use unix socket <name> for communications

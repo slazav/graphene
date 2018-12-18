@@ -586,6 +586,7 @@ uint8_t DIG(const char c){
   if (c=='d') return 13;
   if (c=='e') return 14;
   if (c=='f') return 15;
+  return 0;
 }
 
 std::string
