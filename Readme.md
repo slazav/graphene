@@ -103,6 +103,9 @@ socket.
 
 - `list` -- List all databases in the data directory.
 
+- `list_dbs`  -- print environment database files for archiving (same as db_archive -s)
+
+- `list_logs`  -- print environment log files (same as db_archive -l)
 
 #### Commands for reading and writing data:
 

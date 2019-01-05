@@ -63,6 +63,16 @@ assert "$(./graphene -d . info test_4)" "UINT32	Uint 32 database"
 assert "$(./graphene -d . list a)" "#Error: too many parameters"
 assert "$(./graphene -d . list | sort)" "$(printf "test_1\ntest_2\ntest_3\ntest_4")"
 
+# list_dbs
+assert "$(./graphene -d . list_dbs a)" "#Error: too many parameters"
+assert "$(./graphene -d . list_dbs)" "$(printf "test_1.db\ntest_2.db\ntest_3.db\ntest_4.db")"
+assert "$(./graphene -R -d . list_dbs)" "#Error: Command can not be run without DB environment"
+
+# list_logs
+assert "$(./graphene -d . list_logs a)" "#Error: too many parameters"
+assert "$(./graphene -d . list_logs)" "log.0000000001"
+assert "$(./graphene -R -d . list_logs)" "#Error: Command can not be run without DB environment"
+
 # delete
 assert "$(./graphene -d . delete)" "#Error: database name expected"
 assert "$(./graphene -d . delete a b)" "#Error: too many parameters"
@@ -430,7 +440,6 @@ assert "$(./graphene -d . -R  get_range test_1)" "\
 
 assert "$(./graphene -d . -R delete test_1)" "#Error: can't remove database in readonly mode"
 assert "$(./graphene -d . -R rename test_1 test_2)" "#Error: can't rename database in readonly mode"
-
 
 ###########################################################################
 # remove all test databases

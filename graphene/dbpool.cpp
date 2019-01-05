@@ -167,3 +167,37 @@ DBpool::sync(){
   std::map<std::string, DBgr>::iterator i;
   for (i = pool.begin(); i!=pool.end(); i++) i->second.sync();
 }
+
+void
+DBpool::list_dbs(){
+  // see code in https://web.stanford.edu/class/cs276a/projects/docs/berkeleydb/ref/transapp/archival.html
+  int ret;
+  char **begin, **list;
+  if (!env) throw Err() << "Command can not be run without DB environment";
+
+  /* Get the list of database files. */
+  if ((ret = env->log_archive(env, &list, DB_ARCH_DATA)) != 0)
+    throw Err() << db_strerror(ret);
+
+  if (list != NULL) {
+    for (begin = list; *list != NULL; ++list)  printf("%s\n", *list);
+    free (begin);
+  }
+}
+
+void
+DBpool::list_logs(){
+  // see code in https://web.stanford.edu/class/cs276a/projects/docs/berkeleydb/ref/transapp/archival.html
+  int ret;
+  char **begin, **list;
+  if (!env) throw Err() << "Command can not be run without DB environment";
+
+  /* Get the list of log files. */
+  if ((ret = env->log_archive(env, &list, DB_ARCH_LOG)) != 0)
+    throw Err() << db_strerror(ret);
+
+  if (list != NULL) {
+    for (begin = list; *list != NULL; ++list) printf("%s\n", *list);
+    free (begin);
+  }
+}
