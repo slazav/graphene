@@ -156,8 +156,8 @@ Json json_query(const string & dbpath, const Json & ji){
   if (t1=="" || t2=="") throw Json::Err() << "Bad range setting";
 
   /* check format */
-  if (ji["format"].as_string() != "json") 
-    throw Json::Err() << "Unknown format";
+  //if (ji["format"].as_string() != "json") 
+  //  throw Json::Err() << "Unknown format";
 
   /* parse interval */
   string dt = convert_interval( ji["interval"].as_string() );
