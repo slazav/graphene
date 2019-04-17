@@ -50,6 +50,12 @@ class DBpool{
   void sync(const std::string & name);
   void sync();
 
+  // print environment database files for archiving (same as db_archive -s)
+  void list_dbs();
+
+  // print environment log files (same as db_archive -l)
+  void list_logs();
+
 };
 
 #endif

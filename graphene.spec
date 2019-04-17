@@ -10,8 +10,8 @@ License:      GPL
 Packager:     Vladislav Zavjalov <slazav@altlinux.org>
 
 Source:       %name-%version.tar
-BuildRequires: libmicrohttpd-devel libjansson-devel libdb4.8-devel
-Requires:      libmicrohttpd libjansson libdb4.8
+BuildRequires: libmicrohttpd-devel libjansson-devel libdb4.7-devel
+Requires:      libmicrohttpd libjansson libdb4.7
 
 %description
 graphene -- a simple time series database with nanosecond precision for scientific applications
@@ -20,6 +20,9 @@ graphene -- a simple time series database with nanosecond precision for scientif
 %setup -q
 
 %build
+%make
+
+%install
 %makeinstall initdir=%buildroot%_initdir
 mkdir -p %buildroot%_sharedstatedir/graphene
 

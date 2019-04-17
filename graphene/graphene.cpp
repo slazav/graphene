@@ -104,6 +104,8 @@ class Pars{
             "  sync <name> -- sync one database\n"
             "  load <name> <file> -- create db and load file in a db_dump format\n"
             "  dump <name> <file> -- dump the database into a file (same as db_dump utility)\n"
+            "  list_dbs -- print environment database files for archiving (same as db_archive -s)"
+            "  list_logs -- print environment log files (same as db_archive -l)"
             "  cmdlist -- print this list of commands\n"
             "  *idn?   -- print intentifier: Graphene database " << VERSION << "\n"
     ;
@@ -432,6 +434,21 @@ class Pars{
       return;
     }
 
+    // print environment database files for archiving (same as db_archive -s)
+    // args: list_dbs
+    if (strcasecmp(cmd.c_str(), "list_dbs")==0){
+      if (pars.size()>1) throw Err() << "too many parameters";
+      pool->list_dbs();
+      return;
+    }
+
+    // print environment log files (same as db_archive -l)
+    // args: list_logs
+    if (strcasecmp(cmd.c_str(), "list_logs")==0){
+      if (pars.size()>1) throw Err() << "too many parameters";
+      pool->list_logs();
+      return;
+    }
 
     // print list of commands
     // args: cmdlist
