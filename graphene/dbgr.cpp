@@ -3,6 +3,7 @@
 #include <vector>
 #include <sstream>
 #include <fstream>
+#include <iomanip>
 #include <iostream>
 #include <cstring> /* memset */
 #include "dbgr.h"
@@ -580,15 +581,15 @@ DBgr::del_range(const string &t1, const string &t2){
 // functions for DBgr::load method
 uint8_t DIG(const char c){
   if (c>='0' && c<='9') return c-'0';
-  if (c=='a') return 10;
-  if (c=='b') return 11;
-  if (c=='c') return 12;
-  if (c=='d') return 13;
-  if (c=='e') return 14;
-  if (c=='f') return 15;
-  return 0;
+  if (c=='a' || c=='A') return 10;
+  if (c=='b' || c=='B') return 11;
+  if (c=='c' || c=='C') return 12;
+  if (c=='d' || c=='D') return 13;
+  if (c=='e' || c=='E') return 14;
+  if (c=='f' || c=='F') return 15;
+  throw Err() << "bad data formatting";
 }
-
+// convert hex string to binary data (for load command)
 std::string
 strconv(const std::string &s){
   std::string ret;
@@ -638,5 +639,58 @@ DBgr::load(const std::string &file){
     int ret = dbp->put(dbp, NULL, &k, &v, 0);
     if (ret != 0)
       throw Err() << name << ".db: " << db_strerror(ret);
+  }
+}
+
+/************************************/
+// dump file in a db_dump format
+// should be same as db_dump utility
+// Note:
+// - dump command is used without BerkleyDB environment
+//   in readonly mode (see how it is called in graphene.cpp)
+void
+DBgr::dump(const std::string &file){
+  ofstream ff(file.c_str());
+
+  // write header
+  ff << "VERSION=3\n"
+     << "format=bytevalue\n"
+     << "type=btree\n"
+     << "db_pagesize=4096\n"
+     << "HEADER=END\n";
+
+  // write data
+  DBT k = mk_dbt("\0"); // start from 1-byte 0
+  DBT v = mk_dbt();
+  DBC *curs = NULL;
+  try {
+
+    // Get a cursor
+    get_cursor(dbp, NULL, &curs, 0);
+
+    int fl = DB_SET_RANGE;
+    while (1){
+      if (!c_get(curs, &k, &v, fl)) break;
+      fl=DB_NEXT;
+
+      ff << ' ';
+      // print key and value as hex code
+      for (string::size_type i = 0; i < k.size; ++i)
+        ff << std::hex << std::setfill('0') << std::setw(2)
+           << (int)((uint8_t*)k.data)[i];
+      ff << "\n";
+
+      ff << ' ';
+      for (string::size_type i = 0; i < v.size; ++i)
+        ff << std::hex << std::setfill('0') << std::setw(2)
+           << (int)((uint8_t*)v.data)[i];
+      ff << "\n";
+    }
+    curs->close(curs);
+    ff << "DATA=END\n";
+  }
+  catch (Err e){
+    if (curs) curs->close(curs);
+    throw e;
   }
 }

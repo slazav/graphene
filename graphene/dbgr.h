@@ -167,6 +167,10 @@ class DBgr{
   // (we can not use db_load because of user-defined comparison function)
   void load(const std::string &file);
 
+  // dump file in a db_dump format
+  // (db_dump utility can be used instead)
+  void dump(const std::string &file);
+
 };
 
 #endif

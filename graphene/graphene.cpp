@@ -103,6 +103,7 @@ class Pars{
             "  sync         -- sync all opened databases\n"
             "  sync <name> -- sync one database\n"
             "  load <name> <file> -- create db and load file in a db_dump format\n"
+            "  dump <name> <file> -- dump the database into a file (same as db_dump utility)\n"
             "  cmdlist -- print this list of commands\n"
             "  *idn?   -- print intentifier: Graphene database " << VERSION << "\n"
     ;
@@ -417,6 +418,17 @@ class Pars{
       DBpool simple_pool(dbpath, false, "none");
       DBgr db = simple_pool.get(pars[1], DB_CREATE | DB_EXCL);
       db.load(pars[2]);
+      return;
+    }
+
+    // dump the database into a file (same as db_dump utility)
+    // args: dump <name> <file>
+    if (strcasecmp(cmd.c_str(), "dump")==0){
+      if (pars.size()<3) throw Err() << "database name and dump file expected";
+      if (pars.size()>3) throw Err() << "too many parameters";
+      DBpool simple_pool(dbpath, false, "none");
+      DBgr db = simple_pool.get(pars[1], DB_RDONLY);
+      db.dump(pars[2]);
       return;
     }
 

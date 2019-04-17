@@ -17,7 +17,7 @@ E-mail: Vladislav Zavjalov <slazav@altlinux.org>
 ### Data storage
 
 Data are stored as databases inside a BerkleyDB environment directory (which
-can be chousen via `-d` command-line option). Database name can not
+can be chosen via `-d` command-line option). Database name can not
 contain symbols `.:|+ \t\n/`. [Some BerkleyDB notes](BerkleyDB.md)
 
 Each database contains a set of sorted key-value pairs. Key is a
@@ -32,7 +32,7 @@ with duplicates (see -D option of the graphene program):
 - error   -- skip the new record and return error message
 - sshift  -- increase time by 1 second step until it will be possible
              to put the record (no loss of data)
-- nsshift -- same, but with nanosecosd steps.
+- nsshift -- same, but with nanosecond steps.
 
 Value can contain an array of numbers of arbitrary length (data columns)
 or some text. The data format can be chosen during the database
@@ -71,12 +71,12 @@ without reopening databases. Opening and closing of databases are long,
 it can be useful to open the connection once and do many operations.
 
 The program implements a Simple Pipe Protocol (see somewhere in my
-`tcl_device` package): When it is started sucsessfully  a prompt message is
+`tcl_device` package): When it is started successfully  a prompt message is
 printed to stdout started with "#SPP001" and followed by "#OK" line. In
 case of an error `#Error: <...>` line is printed and program exits. Then
-the program reads commands from stdin and sends ansers to stdout folowed
+the program reads commands from stdin and sends answers to stdout followed
 by "#OK" or "#Error: <...>" lines until the user closes the connection.
-If answer contains symbol "#" in the begining of a line, it is protected
+If answer contains symbol "#" in the beginning of a line, it is protected
 with a second "#".
 
 Socket mode is similar to the interactive mode. Graphene program acts as
@@ -88,9 +88,13 @@ socket.
 
 - `create <name> [<data_fmt>] [<description>]` -- Create a database file.
 
-- `load <name> <file>` -- Create a database and load file in db_dump format
-  (note that it is not possible to use db_load utility
-  because of non-standard comparison function in graphene databases).
+- `load <name> <file>` -- Create a database and load file in `db_dump`
+  format (note that it is not possible to use `db_load` utility because of
+  non-standard comparison function in graphene databases).
+
+- `dump <name> <file>` -- Dump a database to a file which can be loaded
+  by `load` command. Same thing (with various options) can be done by
+  `db_dump` utility and it it is recommended to use it.
 
 - `delete <name>` -- Delete a database.
 
@@ -165,7 +169,7 @@ used if you want to close unused databases and sync data.
 
 - `cmdlist` -- print list of commands.
 
-- `*idn?`   -- print intentifier: "Graphene database <version>".
+- `*idn?`   -- print ID string: "Graphene database <version>".
 
 #### Examples:
 
@@ -219,11 +223,11 @@ Usage: `graphene_tab -D <db_prog> -t <t1> -u <t2> db1 db2 db3 ...`
 
 Values from db2, db3, etc. are interpolated to points of db1 and printed in a single
 text table. For floating-point databases linear interpolation is used, for integer
-ones nearest values with smaller timestemps are printed.
+ones nearest values with smaller timestamps are printed.
 
 ### Known problems
 
-- Linebreaks in text databases. You can put linebreaks in text database using
+- Line breaks in text databases. You can put line breaks in text database using
 the command line interface. In interactive mode it is not possible, because
 line breaks always mean starting of a new command.
 
