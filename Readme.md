@@ -172,7 +172,7 @@ used if you want to close unused databases and sync data.
 
 - `cmdlist` -- print list of commands.
 
-- `*idn?`   -- print ID string: "Graphene database <version>".
+- `*idn?`   -- print ID string: `Graphene database <version>`.
 
 #### Examples:
 

@@ -1,5 +1,5 @@
 Name:         graphene
-Version:      2.6
+Version:      2.7
 Release:      alt1
 
 Summary:      Simple time series database.
@@ -40,6 +40,23 @@ mkdir -p %buildroot%_sharedstatedir/graphene
 %config %_initdir/graphene_http
 
 %changelog
+* Thu Apr 18 2019 Vladislav Zavjalov <slazav@altlinux.org> 2.7-alt1
+- v2.7
+ - New commands:
+    load -- load file in db_dump format (instead of db_load utility)
+    dump -  (analog of db_dump utility)
+    add list_dbs/list_logs commands (analogs of db_archive -s, db_archive -l)
+ - Use logs and transactions, -E option for choosing environment type (txn, lock, none).
+   process registrationin env; snapshot isolation for reading; deadlock
+   detection.
+ - -R option: read-only mode.
+ - Set default database path to ".".
+ - Symbol / is not allowed in db names, subfolders are not supported.
+ - json.cpp: allow requests without format=json field
+ - add graphene_tab script: collecting data from different databases
+   to a single text table
+ - protect # in interactive mode (for SPP protocol)
+
 * Fri Mar 02 2018 Vladislav Zavjalov <slazav@altlinux.org> 2.6-alt1
 - v2.6
  - test_cli.sh: fix test to use only local folder
