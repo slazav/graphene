@@ -25,7 +25,7 @@ assert "$(./graphene -X . 2>&1)" "./graphene: invalid option -- 'X'"
 # unknown command
 assert "$(./graphene -d . a)" "#Error: Unknown command: a"
 
-assert "$(./graphene -d . *idn?)" "Graphene database 2.4"
+assert "$(./graphene -d . *idn?)" "Graphene database 2.7"
 
 
 ###########################################################################

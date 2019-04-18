@@ -2,8 +2,8 @@
 
 Graphene use BerkleyDB environment for databases.
 
-* By default a full transactional environment is used. If needed it can
-  be changed during compilation: you can have no environment at
+* By default a full transactional environment is used. To change it use
+  `-E` command-line option: you can have no environment at
   all (each dataset is a single db file, only one program can work with
   it at a time), or a simple environment with locking.
 
