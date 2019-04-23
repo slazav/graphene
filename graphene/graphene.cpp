@@ -10,6 +10,7 @@
 #include <stdint.h>
 #include <cstring>
 #include <cstdio>
+#include <iomanip>
 #include <cerrno>
 #include <dirent.h>
 
@@ -24,6 +25,7 @@
 #include <ext/stdio_filebuf.h>
 #include <sys/types.h>
 #include <sys/socket.h>
+#include <sys/time.h>
 #include <sys/un.h>
 
 using namespace std;
@@ -108,6 +110,7 @@ class Pars{
             "  list_logs -- print environment log files (same as db_archive -l)"
             "  cmdlist -- print this list of commands\n"
             "  *idn?   -- print intentifier: Graphene database " << VERSION << "\n"
+            "  get_time -- print current time (unix seconds with ms precision)\n"
     ;
   }
 
@@ -228,6 +231,15 @@ class Pars{
   // "now", "now_s" and "inf" strings can be used.
   void run_command(DBpool* pool, ostream & out){
     string cmd = pars[0];
+
+    // print current time (unix seconds with ms precision)
+    if (strcasecmp(cmd.c_str(), "get_time")==0){
+      if (pars.size()>1) throw Err() << "too many parameters";
+      struct timeval tv;
+      gettimeofday(&tv, NULL);
+      cout << tv.tv_sec << "." << setfill('0') << setw(6) << tv.tv_usec << "\n";
+      return;
+    }
 
     // create new database
     // args: create <name> [<data_fmt>] [<description>]
