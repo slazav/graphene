@@ -21,8 +21,13 @@ class DBpool{
   std::string dbpath;
   std::string env_type;
   std::map<std::string, DBgr> pool;
-  DB_ENV *env; // database environment
+  std::shared_ptr<DB_ENV> env; // database environment
   bool readonly;
+
+  // Deleter for the environment
+  struct D{
+    void operator() (DB_ENV* env) {env->close(env, 0);}
+  };
 
   public:
 
@@ -30,7 +35,6 @@ class DBpool{
   // env_type: "none", "lock", "txn" (default)
   DBpool(const std::string & dbpath_, const bool readonly, const std::string & env_type);
 
-  // Destructor: close the DB environment
   ~DBpool();
 
   // remove database file

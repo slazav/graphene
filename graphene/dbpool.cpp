@@ -31,17 +31,19 @@ DBpool::DBpool(const std::string & dbpath_, const bool readonly_, const std::str
     return;
   }
 
-  int res = db_env_create(&env, 0);
+  DB_ENV * e;
+  int res = db_env_create(&e, 0);
   if (res != 0)
     throw Err() << "creating DB_ENV: " << dbpath << ": " << db_strerror(res);
+  env = std::shared_ptr<DB_ENV>(e, DBpool::D());
 
   // set logfile size
-  res = env->set_lg_max(env, GRAPHENE_LOGSIZE);
+  res = env->set_lg_max(env.get(), GRAPHENE_LOGSIZE);
   if (res != 0)
     throw Err() << "set_lg_max failed: " << db_strerror(res);
 
   // deadlock detection
-  res = env->set_lk_detect(env, DB_LOCK_MINWRITE);
+  res = env->set_lk_detect(env.get(), DB_LOCK_MINWRITE);
   if (res != 0)
     throw Err() << "Error setting lock detect: " << db_strerror(res);
 
@@ -64,7 +66,7 @@ DBpool::DBpool(const std::string & dbpath_, const bool readonly_, const std::str
   else throw Err() << "unknown env_type";
 
   // open environment
-  res = env->open(env, dbpath.c_str(), flags, 0644);
+  res = env->open(env.get(), dbpath.c_str(), flags, 0644);
   if (res != 0)
     throw Err() << "opening DB_ENV: " << dbpath << ": " << db_strerror(res);
 }
@@ -72,7 +74,6 @@ DBpool::DBpool(const std::string & dbpath_, const bool readonly_, const std::str
 // Destructor: close the DB environment
 DBpool::~DBpool(){
   close();
-  if (env) env->close(env, 0);
 }
 
 // remove database file
@@ -82,7 +83,7 @@ DBpool::dbremove(std::string name){
   check_name(name); // check name
   close(name);
   if (env) {
-    int res = env->dbremove(env, NULL, (name + ".db").c_str(), NULL, 0);
+    int res = env->dbremove(env.get(), NULL, (name + ".db").c_str(), NULL, 0);
     if (res!=0) throw Err() << name <<  ".db: " << db_strerror(res);
   }
   else {
@@ -110,7 +111,7 @@ DBpool::dbrename(std::string name1, std::string name2){
 
   close(name1);
   if (env) {
-    res = env->dbrename(env, NULL, path1.c_str(), NULL, path2.c_str(), 0);
+    res = env->dbrename(env.get(), NULL, path1.c_str(), NULL, path2.c_str(), 0);
     if (res!=0) throw Err() << "renaming " << name1 <<  ".db -> "
                             << name2 << ".db: " << db_strerror(res);
   }
@@ -137,7 +138,7 @@ DBpool::get(const std::string & name, const int fl){
 
   // if database is not opened, open it
   if (!pool.count(name)) pool.insert(
-    std::pair<std::string, DBgr>(name, DBgr(env, dbpath, name, fl)));
+    std::pair<std::string, DBgr>(name, DBgr(env.get(), dbpath, name, fl)));
 
   // return the database
   return pool.find(name)->second;
@@ -176,7 +177,7 @@ DBpool::list_dbs(){
   if (!env) throw Err() << "Command can not be run without DB environment";
 
   /* Get the list of database files. */
-  if ((ret = env->log_archive(env, &list, DB_ARCH_DATA)) != 0)
+  if ((ret = env->log_archive(env.get(), &list, DB_ARCH_DATA)) != 0)
     throw Err() << db_strerror(ret);
 
   if (list != NULL) {
@@ -193,7 +194,7 @@ DBpool::list_logs(){
   if (!env) throw Err() << "Command can not be run without DB environment";
 
   /* Get the list of log files. */
-  if ((ret = env->log_archive(env, &list, DB_ARCH_LOG)) != 0)
+  if ((ret = env->log_archive(env.get(), &list, DB_ARCH_LOG)) != 0)
     throw Err() << db_strerror(ret);
 
   if (list != NULL) {
