@@ -4,6 +4,7 @@
 #ifndef GRAPHENE_DB_H
 #define GRAPHENE_DB_H
 
+#include <memory>
 #include <cassert>
 #include <cstdlib>
 #include <string>
@@ -53,50 +54,24 @@ class DBgr{
   }
 
   /************************************/
-  /* data and memory management */
-    DB *dbp;
-    DB_ENV *env;
+  /* data */
+    std::shared_ptr<DB> dbp;
+    DB_ENV * env;
     std::string name;    // database name
     uint32_t open_flags; // database open flags
     uint32_t env_flags;  // environment flags
     DBinfo db_info;      // database information
     bool info_is_actual; // is the info the same as in the file?
-    int *refcounter;
 
-    void copy(const DBgr & other){
-      dbp        = other.dbp;
-      env        = other.env;
-      name       = other.name;
-      open_flags = other.open_flags;
-      env_flags  = other.env_flags;
-      refcounter = other.refcounter;
-      db_info    = other.db_info;
-      info_is_actual = other.info_is_actual;
-      (*refcounter)++;
-      assert(*refcounter >0);
-    }
-    void destroy(void){
-      (*refcounter)--;
-      if (*refcounter<=0){
-        dbp->close(dbp, 0); // close db
-        // We do not want to check result and throw an exception
-        // here in the destructor.
-        // If this destructor is called from another exception, then
-        // program just terminates here.
-        delete refcounter;
-      }
-    }
+  // database deleter
+  struct D {
+    void operator()(DB* dbp) { dbp->close(dbp, 0); }
+  };
+
+
 
   /************************************/
-  // Copy constructor, destructor, assignment
   public:
-
-    DBgr(const DBgr & other){ copy(other); }
-    DBgr & operator=(const DBgr & other){
-      if (this != &other){ destroy(); copy(other); }
-      return *this;
-    }
-    ~DBgr(){ destroy(); }
 
   /************************************/
   // Constructor -- open a database
@@ -161,7 +136,7 @@ class DBgr{
   void del_range(const std::string &t1, const std::string &t2);
 
   // sync the database
-  void sync() {dbp->sync(dbp, 0);}
+  void sync() {dbp->sync(dbp.get(), 0);}
 
   // load file in a db_dump format
   // (we can not use db_load because of user-defined comparison function)

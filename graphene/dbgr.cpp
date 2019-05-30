@@ -63,8 +63,6 @@ DBgr::DBgr(DB_ENV *env_,
      const string & name_,
      const int flags): env(env_), name(name_){
 
-  refcounter   = new int;
-  *refcounter  = 1;
   info_is_actual = false;
 
   check_name(name); // check the name
@@ -86,18 +84,20 @@ DBgr::DBgr(DB_ENV *env_,
   if (!env) { fname = path_ + "/" + fname; }
 
   /* Initialize the DB handle */
-  int ret = db_create(&dbp, env, 0);
+  DB *dbp1;
+  int ret = db_create(&dbp1, env, 0);
   if (ret != 0)
     throw Err() << name << ".db: " << db_strerror(ret);
+  dbp = std::shared_ptr<DB>(dbp1, DBgr::D());
 
 
   /* set key compare function */
-  ret = dbp->set_bt_compare(dbp, cmpfunc);
+  ret = dbp->set_bt_compare(dbp.get(), cmpfunc);
   if (ret != 0)
     throw Err() << name << ".db: " << db_strerror(ret);
 
   /* Open the database */
-  ret = dbp->open(dbp,           /* Pointer to the database */
+  ret = dbp->open(dbp.get(),     /* Pointer to the database */
                   NULL,          /* Txn pointer */
                   fname.c_str(), /* file */
                   NULL,          /* database */
@@ -105,7 +105,6 @@ DBgr::DBgr(DB_ENV *env_,
                   open_flags,    /* Open flags */
                   0644);         /* File mode*/
   if (ret != 0){
-    destroy();
     throw Err() << name << ".db: " << db_strerror(ret);
   }
 }
@@ -176,7 +175,7 @@ DBgr::write_info(const DBinfo &info){
     // remove the info entry if it exists
     uint8_t x=0;
     DBT k = mk_dbt(&x);
-    ret = dbp->del(dbp, txn, &k, 0);
+    ret = dbp->del(dbp.get(), txn, &k, 0);
     if (ret != 0 && ret != DB_NOTFOUND)
       throw Err() << name << ".db: " << db_strerror(ret);
 
@@ -184,7 +183,7 @@ DBgr::write_info(const DBinfo &info){
     string vs = string(1, (char)info.val)
                    + info.descr;
     DBT v = mk_dbt(vs);
-    ret = dbp->put(dbp, txn, &k, &v, 0);
+    ret = dbp->put(dbp.get(), txn, &k, &v, 0);
     if (ret != 0)
       throw Err() << name << ".db: " << db_strerror(ret);
 
@@ -192,13 +191,13 @@ DBgr::write_info(const DBinfo &info){
     // remove the info entry if it exists
     x=1;
     k = mk_dbt(&x);
-    ret = dbp->del(dbp, txn, &k, 0);
+    ret = dbp->del(dbp.get(), txn, &k, 0);
     if (ret != 0 && ret != DB_NOTFOUND)
       throw Err() << name << ".db: " << db_strerror(ret);
 
     // write new data
     v = mk_dbt(&info.version);
-    ret = dbp->put(dbp, txn, &k, &v, 0);
+    ret = dbp->put(dbp.get(), txn, &k, &v, 0);
     if (ret != 0)
       throw Err() << name << ".db: " << db_strerror(ret);
   }
@@ -226,7 +225,7 @@ DBgr::read_info(){
     uint8_t x=0;
     DBT k = mk_dbt(&x);
     DBT v = mk_dbt();
-    int ret = dbp->get(dbp, txn, &k, &v, 0);
+    int ret = dbp->get(dbp.get(), txn, &k, &v, 0);
     if (ret != 0)
      throw Err() << name << ".db: " << db_strerror(ret);
     uint8_t dfmt = *((uint8_t*)v.data);
@@ -239,7 +238,7 @@ DBgr::read_info(){
     x=1;
     k = mk_dbt(&x);
     v = mk_dbt();
-    ret = dbp->get(dbp, txn, &k, &v, 0);
+    ret = dbp->get(dbp.get(), txn, &k, &v, 0);
     if (ret == DB_NOTFOUND)
       db_info.version = 1; // first version can be without key=1
     else if (ret != 0)
@@ -278,7 +277,7 @@ DBgr::put(const string &t, const vector<string> & dat, const string &dpolicy){
     while (res!=0){
       DBT k = mk_dbt(ks);
       DBT v = mk_dbt(vs);
-      res = dbp->put(dbp, txn, &k, &v, flags);
+      res = dbp->put(dbp.get(), txn, &k, &v, flags);
       if (res == DB_KEYEXIST){
         if (dpolicy =="error") throw Err() << name << ".db: " << "Timestamp exists";
         else if (dpolicy =="sshift")  ks = info.add_time(ks, info.parse_time("1"));
@@ -312,7 +311,7 @@ DBgr::get_next(const string &t1, DBout & dbo){
   DBC *curs = NULL;
   try {
     /* Get a cursor */
-    get_cursor(dbp, txn, &curs, 0);
+    get_cursor(dbp.get(), txn, &curs, 0);
 
     if (c_get(curs, &k, &v, DB_SET_RANGE))
       dbo.proc_point(&k, &v, info);
@@ -345,7 +344,7 @@ DBgr::get_prev(const string &t2, DBout & dbo){
   DBC *curs = NULL;
   try {
     /* Get a cursor */
-    get_cursor(dbp, txn, &curs, 0);
+    get_cursor(dbp.get(), txn, &curs, 0);
 
     bool found = c_get(curs, &k, &v, DB_SET_RANGE);
 
@@ -390,7 +389,7 @@ DBgr::get(const string &t, DBout & dbo){
   try {
 
     /* Get a cursor */
-    get_cursor(dbp, txn, &curs, 0);
+    get_cursor(dbp.get(), txn, &curs, 0);
 
     // find next value
     bool found = c_get(curs, &k, &v, DB_SET_RANGE);
@@ -465,7 +464,7 @@ DBgr::get_range(const string &t1, const string &t2,
   try {
 
     // Get a cursor
-    get_cursor(dbp, txn, &curs, 0);
+    get_cursor(dbp.get(), txn, &curs, 0);
 
     int fl = DB_SET_RANGE; // first get t >= t1
     while (1){
@@ -522,7 +521,7 @@ DBgr::del(const string &t1){
 
   DB_TXN *txn = txn_begin();
   // delete data
-  ret = dbp->del(dbp, txn, &k, 0);
+  ret = dbp->del(dbp.get(), txn, &k, 0);
   if (ret!=0){
     txn_abort(txn);
     throw Err() << name << ".db: " << db_strerror(ret);
@@ -547,7 +546,7 @@ DBgr::del_range(const string &t1, const string &t2){
   try {
 
     /* Get a cursor */
-    get_cursor(dbp, txn, &curs, 0);
+    get_cursor(dbp.get(), txn, &curs, 0);
 
     int fl = DB_SET_RANGE; // first get t >= t1
     while (1){
@@ -636,7 +635,7 @@ DBgr::load(const std::string &file){
     // write new data
     DBT k = mk_dbt(kp);
     DBT v = mk_dbt(vp);
-    int ret = dbp->put(dbp, NULL, &k, &v, 0);
+    int ret = dbp->put(dbp.get(), NULL, &k, &v, 0);
     if (ret != 0)
       throw Err() << name << ".db: " << db_strerror(ret);
   }
@@ -666,7 +665,7 @@ DBgr::dump(const std::string &file){
   try {
 
     // Get a cursor
-    get_cursor(dbp, NULL, &curs, 0);
+    get_cursor(dbp.get(), NULL, &curs, 0);
 
     int fl = DB_SET_RANGE;
     while (1){
