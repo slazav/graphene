@@ -58,7 +58,7 @@ DBpool::DBpool(const std::string & dbpath_, const bool readonly_, const std::str
             DB_RECOVER  |     // run recover if possible/needed
             DB_MULTIVERSION;  // for snapshot isolation
 
-  else if (env_type == "simple")
+  else if (env_type == "lock")
     flags = DB_CREATE |
             DB_INIT_LOCK |
             DB_INIT_MPOOL;
