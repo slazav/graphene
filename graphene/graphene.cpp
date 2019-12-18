@@ -110,7 +110,7 @@ class Pars{
             "  list_logs -- print environment log files (same as db_archive -l)"
             "  cmdlist -- print this list of commands\n"
             "  *idn?   -- print intentifier: Graphene database " << VERSION << "\n"
-            "  get_time -- print current time (unix seconds with ms precision)\n"
+            "  get_time -- print current time (unix seconds with microsecond precision)\n"
     ;
   }
 

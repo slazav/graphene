@@ -174,7 +174,7 @@ used if you want to close unused databases and sync data.
 
 - `*idn?`   -- print ID string: `Graphene database <version>`.
 
-- `get_time` -- print current time (unix seconds with ms precision).
+- `get_time` -- print current time (unix seconds with microsecond precision).
 
 #### Examples:
 
