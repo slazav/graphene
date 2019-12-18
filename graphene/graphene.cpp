@@ -2,7 +2,7 @@
 */
 
 #define VERSION "2.7"
-#define GRAPHENE_DEF_ENV "txn"
+#define GRAPHENE_DEF_ENV "lock"
 #define GRAPHENE_DEF_DPOLICY "replace"
 #define GRAPHENE_DEF_DBPATH  "."
 
