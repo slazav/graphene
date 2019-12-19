@@ -171,15 +171,15 @@ DBgr::write_info(const DBinfo &info){
   DB_TXN *txn = txn_begin();
   try {
 
-    // key = 0
-    // remove the info entry if it exists
-    uint8_t x=0;
+    // Write format + description.
+    // Remove the entry if it exists:
+    uint8_t x=KEY_DESCR;
     DBT k = mk_dbt(&x);
     ret = dbp->del(dbp.get(), txn, &k, 0);
     if (ret != 0 && ret != DB_NOTFOUND)
       throw Err() << name << ".db: " << db_strerror(ret);
 
-    // write new data
+    // Write new data:
     string vs = string(1, (char)info.val)
                    + info.descr;
     DBT v = mk_dbt(vs);
@@ -187,9 +187,9 @@ DBgr::write_info(const DBinfo &info){
     if (ret != 0)
       throw Err() << name << ".db: " << db_strerror(ret);
 
-    // key = 1
-    // remove the info entry if it exists
-    x=1;
+    // Write version.
+    // Remove the entry if it exists.
+    x=KEY_VERSION;
     k = mk_dbt(&x);
     ret = dbp->del(dbp.get(), txn, &k, 0);
     if (ret != 0 && ret != DB_NOTFOUND)
@@ -221,8 +221,8 @@ DBgr::read_info(){
   // do everything in a single transaction (with snapshot isolation)
   DB_TXN *txn = txn_begin(DB_TXN_SNAPSHOT);
   try {
-    // key = 0
-    uint8_t x=0;
+    // Read format + description.
+    uint8_t x=KEY_DESCR;
     DBT k = mk_dbt(&x);
     DBT v = mk_dbt();
     int ret = dbp->get(dbp.get(), txn, &k, &v, 0);
@@ -234,8 +234,8 @@ DBgr::read_info(){
     db_info.val = static_cast<DataFMT>(dfmt);
     db_info.descr = string((char*)v.data+1, (char*)v.data+v.size);
 
-    // key = 1
-    x=1;
+    // Read version
+    x=KEY_VERSION;
     k = mk_dbt(&x);
     v = mk_dbt();
     ret = dbp->get(dbp.get(), txn, &k, &v, 0);
@@ -253,6 +253,97 @@ DBgr::read_info(){
   txn_commit(txn);
   info_is_actual = true;
   return db_info;
+}
+
+/************************************/
+void
+DBgr::lastmod_reset(){
+  int ret;
+
+  // do everything in a single transaction (with snapshot isolation)
+  DB_TXN *txn = txn_begin(DB_TXN_SNAPSHOT);
+  DBC *curs = NULL;
+  try {
+    // Remove the lastmod entry if it exists:
+    uint8_t x=KEY_LASTMOD;
+    DBT k = mk_dbt(&x);
+    ret = dbp->del(dbp.get(), txn, &k, 0);
+    if (ret != 0 && ret != DB_NOTFOUND)
+      throw Err() << name << ".db: " << db_strerror(ret);
+  }
+  catch (Err e){
+    txn_abort(txn);
+    throw e;
+  }
+  txn_commit(txn);
+}
+
+std::string
+DBgr::lastmod_get(){
+  std::string lastmod;
+  DBinfo info = read_info();
+
+  DB_TXN *txn = txn_begin(DB_TXN_SNAPSHOT);
+  try {
+    uint8_t x=KEY_LASTMOD;
+    DBT k = mk_dbt(&x);
+    DBT v = mk_dbt();
+    int ret = dbp->get(dbp.get(), txn, &k, &v, 0);
+    if (ret != 0 && ret != DB_NOTFOUND)
+     throw Err() << name << ".db: " << db_strerror(ret);
+
+    lastmod =  (ret == DB_NOTFOUND)?
+      info.parse_time("inf"):
+      string((char *)v.data, (char *)v.data+v.size);
+  }
+  catch (Err e){
+    txn_abort(txn);
+    throw e;
+  }
+  txn_commit(txn);
+  return info.print_time(lastmod);;
+}
+
+// update lastmod timestamp.
+void
+DBgr::lastmod_upd(const std::string &t){
+  int ret;
+  DBinfo info = read_info();
+
+  // do everything in a single transaction
+  DB_TXN *txn = txn_begin();
+  try {
+
+    // Read lastmod value
+    uint8_t x=KEY_LASTMOD;
+    DBT k = mk_dbt(&x);
+    DBT v = mk_dbt();
+    int ret = dbp->get(dbp.get(), txn, &k, &v, 0);
+    if (ret != 0 && ret != DB_NOTFOUND)
+     throw Err() << name << ".db: " << db_strerror(ret);
+
+    if (ret == DB_NOTFOUND) {
+      v = mk_dbt(t);
+      ret = dbp->put(dbp.get(), txn, &k, &v, 0);
+      if (ret != 0)
+        throw Err() << name << ".db: " << db_strerror(ret);
+    }
+    else {
+      std::string lastmod = string((char *)v.data, (char *)v.data+v.size);
+      if (info.cmp_time(lastmod,t)>0){
+        v = mk_dbt(t);
+        ret = dbp->put(dbp.get(), txn, &k, &v, 0);
+        if (ret != 0)
+          throw Err() << name << ".db: " << db_strerror(ret);
+      }
+    }
+
+  }
+  catch (Err e){
+    txn_abort(txn);
+    throw e;
+  }
+  txn_commit(txn);
 }
 
 /************************************/
@@ -294,6 +385,7 @@ DBgr::put(const string &t, const vector<string> & dat, const string &dpolicy){
     throw e;
   }
   txn_commit(txn);
+  lastmod_upd(ks);
 }
 
 /************************************/
@@ -527,6 +619,7 @@ DBgr::del(const string &t1){
     throw Err() << name << ".db: " << db_strerror(ret);
   }
   txn_commit(txn);
+  lastmod_upd(t1p);
 }
 
 /************************************/
@@ -535,6 +628,7 @@ void
 DBgr::del_range(const string &t1, const string &t2){
   int ret;
   DBinfo info = read_info();
+  std::string first_del; // for lastmod timestamp
 
   string t1p = info.parse_time(t1);
   string t2p = info.parse_time(t2);
@@ -561,6 +655,7 @@ DBgr::del_range(const string &t1, const string &t2){
       int res = curs->del(curs, 0);
       if (res!=0)
         throw Err() << name << ".db: " << db_strerror(res);
+      if (first_del=="") first_del = tp;
 
       // we want to delete every point, so switch to DB_NEXT and repeat
       fl=DB_NEXT;
@@ -574,6 +669,7 @@ DBgr::del_range(const string &t1, const string &t2){
     throw e;
   }
   txn_commit(txn);
+  if (first_del!="") lastmod_upd(first_del);
 }
 
 /************************************/

@@ -22,6 +22,10 @@
 
 #define GRAPHENE_LOGSIZE 1<<20
 
+#define KEY_DESCR   0
+#define KEY_VERSION 1
+#define KEY_LASTMOD  0x10
+
 /***********************************************************/
 // type for data processing function.
 typedef void(process_data_func)(DBT*,DBT*,const DBinfo&, void *usr_data);
@@ -102,6 +106,20 @@ class DBgr{
   public:
     void write_info(const DBinfo &info);
     DBinfo read_info();
+
+  /****************************/
+  // Reset lastmod timestamp to largest possible time.
+  // After each database modification the timestamp
+  // is shifted to lastmod = min(lastmod, modification timestamp).
+  // Lastmod value is stored in key = (uint8_t)0x10 (1byte).
+  void lastmod_reset();
+
+  // Get the timestamp.
+  std::string lastmod_get();
+
+  // Shift `lastmod` to `t` if t<lastmod.
+  // This should be called after each write/delete operations.
+  void lastmod_upd(const std::string &t);
 
   /****************************/
   // Put data to the database

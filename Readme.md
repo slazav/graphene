@@ -176,10 +176,42 @@ used if you want to close unused databases and sync data.
 
 - `get_time` -- print current time (unix seconds with microsecond precision).
 
-#### Examples:
+#### Lastmod system:
+
+Graphene database supportes incremental syncronization with another
+database. This can be done using `lastmod` timestamp which exists in each
+database.
+
+- `lastmod_reset <name>` -- reset `lastmod` timestamp of a database to the largest
+possible time. This is initial state for all new databases, and for old ones which
+had been created before lastmod support appeared in graphene-2.8.
+
+- `lastmod_get <name>` -- print `lastmod` timestamp.
+
+When data in the database is modified the `lastmod` timestamp is shifted
+to the modification time if it is smaller then the previous value of
+`lastmod`. (`lastmod = min(lastmod, modification_time)`). Modification
+commands are `put`, `del`, `del_range`, modification time is the smallest
+time of modified record (it can be different from time in the command
+argument).
+
+For incremental syncronization the following procedure can be done:
+- first time:
+  - create secondary database
+  - `lastmod_reset` in the master database
+  - `get_range` in the master database, put all values to the secondary one.
+- incremental syncronization
+  - `lastmod_get` in the master database
+  - `del_range <lastmod>` in the secondary database
+  - `get_range <lastmod>` in the master database, put all values to the secondary one.
+
+This should be efficient in normal operation, when values with
+contineously-increasing timestamps are added to the master database and
+modifications of old values happens rarely.
+
+### Examples
 
 See `examples/*` in the source folder
-
 
 
 ### HTTP + Simple JSON interface

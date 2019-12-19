@@ -466,6 +466,47 @@ assert "$(./graphene -d . -R  get_range test_1)" "\
 
 assert "$(./graphene -d . -R delete test_1)" "#Error: can't remove database in readonly mode"
 assert "$(./graphene -d . -R rename test_1 test_2)" "#Error: can't rename database in readonly mode"
+assert "$(./graphene -d . delete test_1)" ""
+
+###########################################################################
+# lastmod system
+
+assert "$(./graphene -d . create test_1 UINT32)" ""
+assert "$(./graphene -d . lastmod_get test_1)" "4294967295.999999999"
+
+# on put operations lastmod alwayw shifts to lower times
+assert "$(./graphene -d . put test_1 1234 1)" ""
+assert "$(./graphene -d . lastmod_get test_1)" "1234.000000000"
+assert "$(./graphene -d . put test_1 1235 1)" ""
+assert "$(./graphene -d . lastmod_get test_1)" "1234.000000000"
+assert "$(./graphene -d . put test_1 1233 1)" ""
+assert "$(./graphene -d . lastmod_get test_1)" "1233.000000000"
+
+# reset
+assert "$(./graphene -d . lastmod_reset test_1)" ""
+assert "$(./graphene -d . lastmod_get test_1)" "4294967295.999999999"
+
+# delete operation
+assert "$(./graphene -d . del test_1 1235)" ""
+assert "$(./graphene -d . lastmod_get test_1)" "1235.000000000"
+
+# if delete fails, lastmod does not change
+assert "$(./graphene -d . del test_1 10)" "#Error: test_1.db: DB_NOTFOUND: No matching key/data pair found"
+assert "$(./graphene -d . lastmod_get test_1)" "1235.000000000"
+
+# real change will be at 1235
+assert "$(./graphene -d . lastmod_reset test_1)" ""
+assert "$(./graphene -D sshift -d . put test_1 1233 10)" ""
+assert "$(./graphene -d . lastmod_get test_1)" "1235.000000000"
+
+assert "$(./graphene -d . del_range test_1 0 10)" ""
+assert "$(./graphene -d . lastmod_get test_1)" "1235.000000000"
+
+assert "$(./graphene -d . del_range test_1 100 1234)" ""
+assert "$(./graphene -d . lastmod_get test_1)" "1233.000000000"
+
+
+assert "$(./graphene -d . delete test_1)" ""
 
 ###########################################################################
 # remove all test databases

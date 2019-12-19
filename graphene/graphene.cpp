@@ -315,6 +315,25 @@ class Pars{
       return;
     }
 
+    // reset database lastmod timestamp
+    // args: lastmod_reset <name>
+    if (strcasecmp(cmd.c_str(), "lastmod_reset")==0){
+      if (pars.size()!=2) throw Err() << "database name expected";
+      DBgr db = pool->get(pars[1]);
+      db.lastmod_reset();
+      return;
+    }
+
+    // print database lastmod timestamp
+    // args: lastmod_get <name>
+    if (strcasecmp(cmd.c_str(), "lastmod_get")==0){
+      if (pars.size()!=2) throw Err() << "database name expected";
+      DBgr db = pool->get(pars[1]);
+      out << db.lastmod_get();
+      return;
+    }
+
+
     // write data
     // args: put <name> <time> <value1> ...
     if (strcasecmp(cmd.c_str(), "put")==0){
