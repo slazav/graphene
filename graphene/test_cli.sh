@@ -69,13 +69,13 @@ assert "$(./graphene -d . list | sort)" "$(printf "test_1\ntest_2\ntest_3\ntest_
 
 # list_dbs
 assert "$(./graphene -d . list_dbs a)" "#Error: too many parameters"
-assert "$(./graphene -d . list_dbs)" "$(printf "test_1.db\ntest_2.db\ntest_3.db\ntest_4.db")"
-assert "$(./graphene -R -d . list_dbs)" "#Error: Command can not be run without DB environment"
+assert "$(./graphene -E lock -d . list_dbs)" "#Error: list_dbs can not by run in this environment type: lock"
+assert "$(./graphene -R -d . list_dbs)" "#Error: list_dbs can not by run in this environment type: none"
 
 # list_logs
 assert "$(./graphene -d . list_logs a)" "#Error: too many parameters"
-assert "$(./graphene -d . list_logs)" "log.0000000001"
-assert "$(./graphene -R -d . list_logs)" "#Error: Command can not be run without DB environment"
+assert "$(./graphene -E lock -d . list_logs)" "#Error: list_logs can not by run in this environment type: lock"
+assert "$(./graphene -R -d . list_logs)" "#Error: list_logs can not by run in this environment type: none"
 
 # delete
 assert "$(./graphene -d . delete)" "#Error: database name expected"
@@ -105,7 +105,26 @@ assert "$(./graphene -d . info test_1)" "DOUBLE	Test DB number 1"
 
 assert "$(./graphene -d . delete test_1)" ""
 assert "$(./graphene -d . delete test_2)" ""
+assert "$(./graphene -d . delete test_4)" ""
 
+###########################################################################
+# list_dbs/list_logs need transactions
+rm -f -- __db.* log.*
+
+assert "$(./graphene -E txn -d . create test_1)" ""
+assert "$(./graphene -E txn -d . create test_2 UINT16)" ""
+assert "$(./graphene -E txn -d . create test_3 uint32 "Uint 32 database")" ""
+assert "$(./graphene -E txn -d . create test_4 uint32 Uint 32 database)" ""
+
+assert "$(./graphene -E txn -d . list_dbs)" "$(printf "test_1.db\ntest_2.db\ntest_3.db\ntest_4.db")"
+assert "$(./graphene -E txn -d . list_logs)" "log.0000000001"
+
+assert "$(./graphene -E txn -d . delete test_1)" ""
+assert "$(./graphene -E txn -d . delete test_2)" ""
+assert "$(./graphene -E txn -d . delete test_3)" ""
+assert "$(./graphene -E txn -d . delete test_4)" ""
+
+rm -f -- __db.* log.*
 ###########################################################################
 # DOUBLE database
 
@@ -247,6 +266,7 @@ echo "while read t v; do echo \$t \$((\$v*\$v)); done" >> test_flt
 chmod 755 test_flt
 
 assert "$(./graphene -d . create test_3)" ""
+assert "$(./graphene -d . create test_4 uint32 Uint 32 database)" ""
 assert "$(./graphene -d . put test_3 10 1 4)" ""
 assert "$(./graphene -d . put test_3 11 2 3)" ""
 assert "$(./graphene -d . put test_3 12 3 2)" ""

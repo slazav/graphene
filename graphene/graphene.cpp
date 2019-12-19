@@ -65,7 +65,7 @@ class Pars{
         case 'i': interactive = true; break;
         case 's': sockname = optarg; break;
         case 'r': relative = true; break;
-        case 'R': readonly = true; break;
+        case 'R': readonly = true; env_type = "none"; break;
       }
     }
     pars = vector<string>(argv+optind, argv+argc);
@@ -450,6 +450,7 @@ class Pars{
     // args: list_dbs
     if (strcasecmp(cmd.c_str(), "list_dbs")==0){
       if (pars.size()>1) throw Err() << "too many parameters";
+      if (env_type != "txn") throw Err() << "list_dbs can not by run in this environment type: " << env_type;
       pool->list_dbs();
       return;
     }
@@ -458,6 +459,7 @@ class Pars{
     // args: list_logs
     if (strcasecmp(cmd.c_str(), "list_logs")==0){
       if (pars.size()>1) throw Err() << "too many parameters";
+      if (env_type != "txn") throw Err() << "list_logs can not by run in this environment type: " << env_type;
       pool->list_logs();
       return;
     }
