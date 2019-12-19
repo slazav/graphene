@@ -111,6 +111,10 @@ class Pars{
             "  cmdlist -- print this list of commands\n"
             "  *idn?   -- print intentifier: Graphene database " << VERSION << "\n"
             "  get_time -- print current time (unix seconds with microsecond precision)\n"
+            "  lastmod_reset <name> -- reset lastmod timestamp of a database\n"
+            "  lastmod_get <name> -- print lastmod timestamp\n"
+            "\n"
+            "For more information see https://github.com/slazav/graphene/\n"
     ;
   }
 
