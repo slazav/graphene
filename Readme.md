@@ -11,7 +11,7 @@ E-mail: Vladislav Zavjalov <slazav@altlinux.org>
 - fast access to data, interpolation, downsampling, time ranges
 - multi-column numerical values
 - command line and socket interfaces for reading/writing data
-- http simple json interface for Grafana viewer
+- http `simple_json` interface for [Grafana viewer](https://grafana.com/)
 - user filters for data processing, calibration tables etc. (to be removed?)
 
 ### Data storage
@@ -63,6 +63,28 @@ Usage: `graphene [options] <command> <parameters>`
 - `-r        --` output relative times (seconds from requested time) instead of absolute timestamps
 - `-R        --` read-only mode
 
+#### Environment type
+
+Graphene supports three database environment types (set by `-E`
+command-line option).
+
+- `none` -- No environment, each database is an independent file. In this mode
+only one program can access database at a time. This setting can be
+useful if you want to do massive and fast operations with a database and
+no other programs use this database. For example, importing large amount
+of data to a database can be done faster without using environment. This
+mode is also used in readonly mode (`-R` command-line option).
+
+- `lock` -- Default mode. Environment (a few additional files) provides
+database locking to allow multiple programs work with the database
+simultaneously.
+
+- `txn` -- Full transaction and logging support. At the moment there are a few
+issues with this mode, and it is not recommended to use it.
+
+Further information about database environments can be found in BerkleyDB
+documentation.
+
 #### Interactive mode:
 
 Use -i option to enter the interactive mode. Then commands are read from
@@ -107,9 +129,11 @@ socket.
 
 - `list` -- List all databases in the data directory.
 
-- `list_dbs`  -- print environment database files for archiving (same as db_archive -s)
+- `list_dbs`  -- print environment database files for archiving (same as db_archive -s).
+   Works only for `txn` environment type.
 
 - `list_logs`  -- print environment log files (same as db_archive -l)
+   Works only for `txn` environment type.
 
 #### Commands for reading and writing data:
 
@@ -254,9 +278,9 @@ A common problem is to make a single table using values from a few databases
 by graphene program itself, but there is a simple script for doing this, `graphene_tab`.
 
 Usage: `graphene_tab -D <db_prog> -t <t1> -u <t2> db1 db2 db3 ...`
-   db_prog -- graphene command: 'graphene -i' (default), 'device -d db' etc.
-   t1, t2  -- time range
-   db2, db2, db3 -- databases
+- db_prog -- graphene command: 'graphene -i' (default), 'device -d db' etc.
+- t1, t2  -- time range
+- db2, db2, db3 -- databases
 
 Values from db2, db3, etc. are interpolated to points of db1 and printed in a single
 text table. For floating-point databases linear interpolation is used, for integer
