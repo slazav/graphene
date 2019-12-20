@@ -111,6 +111,7 @@ class Pars{
             "  cmdlist -- print this list of commands\n"
             "  *idn?   -- print intentifier: Graphene database " << VERSION << "\n"
             "  get_time -- print current time (unix seconds with microsecond precision)\n"
+            "  libdb_version -- print libdb version\n"
             "  lastmod_reset <name> -- reset lastmod timestamp of a database\n"
             "  lastmod_get <name> -- print lastmod timestamp\n"
             "\n"
@@ -242,6 +243,13 @@ class Pars{
       struct timeval tv;
       gettimeofday(&tv, NULL);
       cout << tv.tv_sec << "." << setfill('0') << setw(6) << tv.tv_usec << "\n";
+      return;
+    }
+
+    // print libdb version (<major>.<minor>.<patch>)
+    if (strcasecmp(cmd.c_str(), "libdb_version")==0){
+      if (pars.size()>1) throw Err() << "too many parameters";
+      cout << db_version(NULL,NULL,NULL);
       return;
     }
 

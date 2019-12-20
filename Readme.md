@@ -200,6 +200,8 @@ used if you want to close unused databases and sync data.
 
 - `get_time` -- print current time (unix seconds with microsecond precision).
 
+- `libdb_version` -- print libdb version.
+
 #### Lastmod system:
 
 Graphene database supportes incremental syncronization with another
