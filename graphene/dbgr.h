@@ -24,7 +24,8 @@
 
 #define KEY_DESCR   0
 #define KEY_VERSION 1
-#define KEY_LASTMOD  0x10
+#define KEY_BACKUP_MAIN  0x10
+#define KEY_BACKUP_TMP   0x11
 
 /***********************************************************/
 // type for data processing function.
@@ -108,18 +109,22 @@ class DBgr{
     DBinfo read_info();
 
   /****************************/
-  // Reset lastmod timestamp to largest possible time.
-  // After each database modification the timestamp
-  // is shifted to lastmod = min(lastmod, modification timestamp).
-  // Lastmod value is stored in key = (uint8_t)0x10 (1byte).
-  void lastmod_reset();
+  // Backup system:
 
-  // Get the timestamp.
-  std::string lastmod_get();
+  // backup start: notify that we are going to start backup.
+  // - reset temporary backup timer
+  // - return value of the main backup timer
+  // args: backup_start <name>
+  std::string backup_start();
 
-  // Shift `lastmod` to `t` if t<lastmod.
-  // This should be called after each write/delete operations.
-  void lastmod_upd(const std::string &t);
+  // backup end: notify that backup is successfully done
+  // - commit temporary backup timer into main one
+  // args: backup_end <name>
+  void backup_end();
+
+  // Internal function, should be calld after each
+  // database modification.
+  void backup_upd(const std::string &t);
 
   /****************************/
   // Put data to the database

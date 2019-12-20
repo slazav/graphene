@@ -203,38 +203,50 @@ used if you want to close unused databases and sync data.
 
 - `libdb_version` -- print libdb version.
 
-#### Lastmod system:
+#### Backup  system:
 
-Graphene database supportes incremental syncronization with another
-database. This can be done using `lastmod` timestamp which exists in each
-database.
+Graphene database supportes incremental backups. This can be done using
+`backup_*` commands: database.
 
-- `lastmod_reset <name>` -- reset `lastmod` timestamp of a database to the largest
-possible time. This is initial state for all new databases, and for old ones which
-had been created before lastmod support appeared in graphene-2.8.
+- `backup_start <name>` -- notify that we want to backup the database `name`,
+get time value of he earliest change since last backup.
 
-- `lastmod_get <name>` -- print `lastmod` timestamp.
+- `backup_end <name>` -- notify that backup finished successfully.
 
-When data in the database is modified the `lastmod` timestamp is shifted
-to the modification time if it is smaller then the previous value of
-`lastmod`. (`lastmod = min(lastmod, modification_time)`). Modification
-commands are `put`, `del`, `del_range`, modification time is the smallest
-time of modified record (it can be different from time in the command
-argument).
+Internally there are two timers with contains earlies time of database
+modification (main and temporary one). Each database modification command
+(`put`, `del`, or `del_range`) decreases both timer values to the
+smallest time of modified record (it can be different from time in the
+command argument): (`timer = min(timer, modification_time)`). In new
+databases (and in databases created before graphene-2.8 where backup
+timers appear) buth timers are at at the largest possible time.
 
-For incremental syncronization the following procedure can be done:
+The temporary timer is reset before backup starts (`backup_start`
+command) and commited to the main timer after backup process is
+successfully finished (`backup_end` command). Main timer value is
+returned by `backup_start` command.
+
+For incremental backup the following procedure can be done:
 - first time:
   - create secondary database
-  - `lastmod_reset` in the master database
+  - `backup_start` in the master database, ignore timer value
   - `get_range` in the master database, put all values to the secondary one.
-- incremental syncronization
-  - `lastmod_get` in the master database
-  - `del_range <lastmod>` in the secondary database
-  - `get_range <lastmod>` in the master database, put all values to the secondary one.
+  - `backup_end` in the master database
 
-This should be efficient in normal operation, when values with
+- incremental syncronization
+  - `backup_start` in the master database, save timer value
+  - `del_range <timer>` in the secondary database
+  - `get_range <timer>` in the master database, put all values to the secondary one.
+  - `backup_end` in the master database
+
+Such backup should be efficient in normal operation, when records with
 contineously-increasing timestamps are added to the master database and
 modifications of old values happens rarely.
+
+If backup process fails and `backup_end` command is not executed then the
+main backup timer will not be reset and the next backup will work
+correctly.
+
 
 ### Examples
 

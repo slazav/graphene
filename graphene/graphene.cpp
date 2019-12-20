@@ -327,23 +327,28 @@ class Pars{
       return;
     }
 
-    // reset database lastmod timestamp
-    // args: lastmod_reset <name>
-    if (strcasecmp(cmd.c_str(), "lastmod_reset")==0){
+
+    // backup start: notify that we are going to start backup.
+    // - reset temporary backup timer
+    // - return value of the main backup timer
+    // args: backup_start <name>
+    if (strcasecmp(cmd.c_str(), "backup_start")==0){
       if (pars.size()!=2) throw Err() << "database name expected";
       DBgr db = pool->get(pars[1]);
-      db.lastmod_reset();
+      out << db.backup_start();
       return;
     }
 
-    // print database lastmod timestamp
-    // args: lastmod_get <name>
-    if (strcasecmp(cmd.c_str(), "lastmod_get")==0){
+    // backup end: notify that backup is successfully done
+    // - commit temporary backup timer into main one
+    // args: backup_end <name>
+    if (strcasecmp(cmd.c_str(), "backup_end")==0){
       if (pars.size()!=2) throw Err() << "database name expected";
       DBgr db = pool->get(pars[1]);
-      out << db.lastmod_get();
+      db.backup_end();
       return;
     }
+
 
 
     // write data
