@@ -616,7 +616,10 @@ DBgr::del(const string &t1){
   ret = dbp->del(dbp.get(), txn, &k, 0);
   if (ret!=0){
     txn_abort(txn);
-    throw Err() << name << ".db: " << db_strerror(ret);
+    if (ret == DB_NOTFOUND)
+      throw Err() << name << ".db: No such record: " << t1;
+    else
+      throw Err() << name << ".db: " << db_strerror(ret);
   }
   txn_commit(txn);
   lastmod_upd(t1p);

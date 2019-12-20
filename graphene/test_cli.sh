@@ -33,6 +33,16 @@ assert "$(./graphene -d . get_time | tr [0-9] x)" "xxxxxxxxxx.xxxxxx"
 
 
 ###########################################################################
+# Some error messages depend on libdb version. Extract major part:
+maj="$(./graphene libdb_version | sed -r 's/.*([0-9]+)\.([0-9]+)\.([0-9]+).*/\1/')"
+if [ $maj -ge 5 ]; then
+  DB_NOTFOUND="BDB0073 DB_NOTFOUND: No matching key/data pair found"
+else
+  DB_NOTFOUND="DB_NOTFOUND: No matching key/data pair found"
+fi
+# (At the moment no such messages are used in the test)
+
+###########################################################################
 # database operations
 
 # remove all test databases
@@ -491,7 +501,7 @@ assert "$(./graphene -d . del test_1 1235)" ""
 assert "$(./graphene -d . lastmod_get test_1)" "1235.000000000"
 
 # if delete fails, lastmod does not change
-assert "$(./graphene -d . del test_1 10)" "#Error: test_1.db: DB_NOTFOUND: No matching key/data pair found"
+assert "$(./graphene -d . del test_1 10)" "#Error: test_1.db: No such record: 10"
 assert "$(./graphene -d . lastmod_get test_1)" "1235.000000000"
 
 # real change will be at 1235

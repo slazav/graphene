@@ -173,7 +173,8 @@ database directory, program name can not contain '.:|+ \t\n/' symbols.
 
 #### Commands for deleting data:
 
-- `del <name> <time>` -- Delete a data point.
+- `del <name> <time>` -- Delete a data point. Returns an error if there is
+no such point.
 
 - `del_range  <name> [<time1>] [<time2>]` -- Delete all points in the range.
 
