@@ -256,18 +256,66 @@ DBgr::read_info(){
 }
 
 /************************************/
-void
-DBgr::lastmod_reset(){
-  int ret;
+std::string
+DBgr::backup_start(){
+  std::string timer;
+  DBinfo info = read_info();
 
-  // do everything in a single transaction (with snapshot isolation)
   DB_TXN *txn = txn_begin(DB_TXN_SNAPSHOT);
   DBC *curs = NULL;
   try {
-    // Remove the lastmod entry if it exists:
-    uint8_t x=KEY_LASTMOD;
+    int ret;
+    // Reset temporary backup timer:
+    uint8_t x=KEY_BACKUP_TMP;
     DBT k = mk_dbt(&x);
     ret = dbp->del(dbp.get(), txn, &k, 0);
+    if (ret != 0 && ret != DB_NOTFOUND)
+      throw Err() << name << ".db: " << db_strerror(ret);
+
+    // Return main backup timer value:
+    x=KEY_BACKUP_MAIN;
+    k = mk_dbt(&x);
+    DBT v = mk_dbt();
+    ret = dbp->get(dbp.get(), txn, &k, &v, 0);
+    if (ret != 0 && ret != DB_NOTFOUND)
+     throw Err() << name << ".db: " << db_strerror(ret);
+
+    timer = (ret == DB_NOTFOUND)?
+      info.parse_time("inf"):
+      string((char *)v.data, (char *)v.data+v.size);
+  }
+  catch (Err e){
+    txn_abort(txn);
+    throw e;
+  }
+  txn_commit(txn);
+  return info.print_time(timer);;
+}
+
+void
+DBgr::backup_end(){
+
+  // do everything in a single transaction
+  DB_TXN *txn = txn_begin();
+  try {
+    int ret;
+
+    // Read temporary backup timer
+    uint8_t x = KEY_BACKUP_TMP;
+    DBT k = mk_dbt(&x);
+    DBT v = mk_dbt();
+    ret = dbp->get(dbp.get(), txn, &k, &v, 0);
+    if (ret != 0 && ret != DB_NOTFOUND)
+     throw Err() << name << ".db: " << db_strerror(ret);
+
+    // Commit the temporary timer to the main one
+    x=KEY_BACKUP_MAIN;
+    k = mk_dbt(&x);
+    if (ret == DB_NOTFOUND)
+      ret = dbp->del(dbp.get(), txn, &k, 0);
+    else
+      ret = dbp->put(dbp.get(), txn, &k, &v, 0);
+
     if (ret != 0 && ret != DB_NOTFOUND)
       throw Err() << name << ".db: " << db_strerror(ret);
   }
@@ -278,64 +326,35 @@ DBgr::lastmod_reset(){
   txn_commit(txn);
 }
 
-std::string
-DBgr::lastmod_get(){
-  std::string lastmod;
-  DBinfo info = read_info();
-
-  DB_TXN *txn = txn_begin(DB_TXN_SNAPSHOT);
-  try {
-    uint8_t x=KEY_LASTMOD;
-    DBT k = mk_dbt(&x);
-    DBT v = mk_dbt();
-    int ret = dbp->get(dbp.get(), txn, &k, &v, 0);
-    if (ret != 0 && ret != DB_NOTFOUND)
-     throw Err() << name << ".db: " << db_strerror(ret);
-
-    lastmod =  (ret == DB_NOTFOUND)?
-      info.parse_time("inf"):
-      string((char *)v.data, (char *)v.data+v.size);
-  }
-  catch (Err e){
-    txn_abort(txn);
-    throw e;
-  }
-  txn_commit(txn);
-  return info.print_time(lastmod);;
-}
-
-// update lastmod timestamp.
 void
-DBgr::lastmod_upd(const std::string &t){
-  int ret;
+DBgr::backup_upd(const std::string &t){
   DBinfo info = read_info();
 
-  // do everything in a single transaction
   DB_TXN *txn = txn_begin();
   try {
-
-    // Read lastmod value
-    uint8_t x=KEY_LASTMOD;
-    DBT k = mk_dbt(&x);
-    DBT v = mk_dbt();
-    int ret = dbp->get(dbp.get(), txn, &k, &v, 0);
-    if (ret != 0 && ret != DB_NOTFOUND)
-     throw Err() << name << ".db: " << db_strerror(ret);
-
-    if (ret == DB_NOTFOUND) {
-      v = mk_dbt(t);
-      ret = dbp->put(dbp.get(), txn, &k, &v, 0);
-      if (ret != 0)
+    // Read and update both main and temporary timers
+    for (int i = 0; i<2; i++) {
+      int ret=0;
+      uint8_t x = (i==0)? KEY_BACKUP_TMP : KEY_BACKUP_MAIN;
+      DBT k = mk_dbt(&x);
+      DBT v = mk_dbt();
+      ret = dbp->get(dbp.get(), txn, &k, &v, 0);
+      if (ret != 0 && ret != DB_NOTFOUND)
         throw Err() << name << ".db: " << db_strerror(ret);
-    }
-    else {
-      std::string lastmod = string((char *)v.data, (char *)v.data+v.size);
-      if (info.cmp_time(lastmod,t)>0){
+
+      if (ret == DB_NOTFOUND) {
         v = mk_dbt(t);
         ret = dbp->put(dbp.get(), txn, &k, &v, 0);
-        if (ret != 0)
-          throw Err() << name << ".db: " << db_strerror(ret);
       }
+      else {
+        std::string timer = string((char *)v.data, (char *)v.data+v.size);
+        if (info.cmp_time(timer,t)>0){
+          v = mk_dbt(t);
+          ret = dbp->put(dbp.get(), txn, &k, &v, 0);
+        }
+      }
+      if (ret != 0)
+        throw Err() << name << ".db: " << db_strerror(ret);
     }
 
   }
@@ -385,7 +404,7 @@ DBgr::put(const string &t, const vector<string> & dat, const string &dpolicy){
     throw e;
   }
   txn_commit(txn);
-  lastmod_upd(ks);
+  backup_upd(ks);
 }
 
 /************************************/
@@ -622,7 +641,7 @@ DBgr::del(const string &t1){
       throw Err() << name << ".db: " << db_strerror(ret);
   }
   txn_commit(txn);
-  lastmod_upd(t1p);
+  backup_upd(t1p);
 }
 
 /************************************/
@@ -672,7 +691,7 @@ DBgr::del_range(const string &t1, const string &t2){
     throw e;
   }
   txn_commit(txn);
-  if (first_del!="") lastmod_upd(first_del);
+  if (first_del!="") backup_upd(first_del);
 }
 
 /************************************/

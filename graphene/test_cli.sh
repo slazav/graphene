@@ -481,39 +481,46 @@ assert "$(./graphene -d . delete test_1)" ""
 ###########################################################################
 # lastmod system
 
+# in the new database backup timer is set to the largest time
 assert "$(./graphene -d . create test_1 UINT32)" ""
-assert "$(./graphene -d . lastmod_get test_1)" "4294967295.999999999"
+assert "$(./graphene -d . backup_start test_1)" "4294967295.999999999"
 
-# on put operations lastmod alwayw shifts to lower times
+# on put operations timer shifts to lower times
 assert "$(./graphene -d . put test_1 1234 1)" ""
-assert "$(./graphene -d . lastmod_get test_1)" "1234.000000000"
-assert "$(./graphene -d . put test_1 1235 1)" ""
-assert "$(./graphene -d . lastmod_get test_1)" "1234.000000000"
-assert "$(./graphene -d . put test_1 1233 1)" ""
-assert "$(./graphene -d . lastmod_get test_1)" "1233.000000000"
+assert "$(./graphene -d . backup_start test_1)" "1234.000000000"
+assert "$(./graphene -d . backup_end test_1)" "" # commit tmp timer
 
-# reset
-assert "$(./graphene -d . lastmod_reset test_1)" ""
-assert "$(./graphene -d . lastmod_get test_1)" "4294967295.999999999"
+assert "$(./graphene -d . backup_start test_1)" "4294967295.999999999"
+assert "$(./graphene -d . put test_1 1234 1)" ""
+assert "$(./graphene -d . backup_end test_1)" "" # commit tmp timer
+assert "$(./graphene -d . put test_1 1235 1)" ""
+
+assert "$(./graphene -d . backup_start test_1)" "1234.000000000"
+assert "$(./graphene -d . backup_end test_1)" "" # commit tmp timer
+
+assert "$(./graphene -d . put test_1 1233 1)" ""
+assert "$(./graphene -d . backup_start test_1)" "1233.000000000"
+assert "$(./graphene -d . backup_start test_1)" "1233.000000000"
+assert "$(./graphene -d . backup_end test_1)" "" # commit tmp timer
 
 # delete operation
 assert "$(./graphene -d . del test_1 1235)" ""
-assert "$(./graphene -d . lastmod_get test_1)" "1235.000000000"
+assert "$(./graphene -d . backup_start test_1)" "1235.000000000"
 
 # if delete fails, lastmod does not change
 assert "$(./graphene -d . del test_1 10)" "#Error: test_1.db: No such record: 10"
-assert "$(./graphene -d . lastmod_get test_1)" "1235.000000000"
+assert "$(./graphene -d . backup_start test_1)" "1235.000000000"
+assert "$(./graphene -d . backup_end test_1)" ""
 
 # real change will be at 1235
-assert "$(./graphene -d . lastmod_reset test_1)" ""
 assert "$(./graphene -D sshift -d . put test_1 1233 10)" ""
-assert "$(./graphene -d . lastmod_get test_1)" "1235.000000000"
+assert "$(./graphene -d . backup_start test_1)" "1235.000000000"
 
 assert "$(./graphene -d . del_range test_1 0 10)" ""
-assert "$(./graphene -d . lastmod_get test_1)" "1235.000000000"
+assert "$(./graphene -d . backup_start test_1)" "1235.000000000"
 
 assert "$(./graphene -d . del_range test_1 100 1234)" ""
-assert "$(./graphene -d . lastmod_get test_1)" "1233.000000000"
+assert "$(./graphene -d . backup_start test_1)" "1233.000000000"
 
 
 assert "$(./graphene -d . delete test_1)" ""
