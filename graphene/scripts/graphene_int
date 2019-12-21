@@ -1,0 +1,4 @@
+#!/bin/sh
+# Interactive version of graphene.
+# Can be used as a user shell
+exec graphene -i

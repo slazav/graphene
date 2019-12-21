@@ -36,6 +36,7 @@ mkdir -p %buildroot%_sharedstatedir/graphene
 %attr(2770,root,users) %dir %_sharedstatedir/graphene
 %_bindir/graphene
 %_bindir/graphene_tab
+%_bindir/graphene_int
 %_bindir/graphene_http
 %config %_initdir/graphene_http
 

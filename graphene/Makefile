@@ -12,6 +12,7 @@ install: all
 	install graphene graphene_http ${bindir}
 	install graphene_http.init ${initdir}/graphene_http
 	install scripts/graphene_tab ${bindir}
+	install scripts/graphene_int ${bindir}
 
 dbinfo.o:      dbinfo.h dbinfo.cpp
 dbinfo_v1.o:   dbinfo.h dbinfo_v1.cpp
