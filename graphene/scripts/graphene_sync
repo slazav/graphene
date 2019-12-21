@@ -1,0 +1,177 @@
+#!/usr/bin/perl
+
+# graphene_sync -- script for incremental syncronization of graphene databases.
+#
+# Usage: graphene_sync [options]
+#
+# Options:
+#
+#   -S src_db_prog -- graphene command for accessing source database:
+#                    'graphene -i' (default), 'device -d db', etc.
+#
+#   -D dst_db_prog -- graphene command for
+#                    accessing destination database.
+#
+#   -n src_names -- source database names, ';'-separated
+#
+#   -p <dst_pref> -- set prefix for destination database name (default: '')
+#
+#   -F  -- do full (non-incremental backup)
+#
+#   -v  -- be verbose
+#
+# TODO: multiple dst_db_progs
+
+
+use warnings;
+use strict;
+use IPC::Open2;
+use Getopt::Long qw(GetOptions Configure);
+
+
+sub usage {
+  print qq*graphene_sync -- script for incremental syncronization of graphene databases.
+
+Usage: graphene_sync [options]
+
+Options:
+
+  -S <string>
+  --src_db_prog <string> -- graphene command for accessing source database:
+                            'graphene -i' (default), 'device -d db', etc.
+
+  -D <string>
+  --dst_db_prog<string>  -- graphene command for accessing destination
+                            database.
+
+  -n <string>,
+   --src_names <string>  -- source database names, ';'-separated
+
+  -p <string>,
+  --dst_pref <string>    -- set prefix for destination
+                            database name (default: '')
+
+  -F, --full             -- do full (non-incremental backup)
+
+  -v, --verb             -- be verbose
+
+  -h, --help            -- show help message
+*;
+
+  exit 1;
+}
+
+my $src_db_prog = 'graphene -i';
+my $dst_db_prog = '';
+my $src_names = '';
+my $dst_pref = '';
+my $full = 0;
+my $verb = 1;
+my $help = 0;
+
+
+GetOptions(
+  "S|src_db_prog=s"  => \$src_db_prog,
+  "D|dst_db_prog=s"  => \$dst_db_prog,
+  "n|src_names=s"    => \$src_names,
+  "p|dst_pref=s"     => \$dst_pref,
+  "F|full"           => \$full,
+  "v|verb"           => \$verb,
+  "h|help"           => \$help,
+) or usage();
+
+usage() if $help;
+
+my @dbs = @ARGV;
+
+die "dst_db_prog (-D) is not set" if $dst_db_prog eq '';
+die "src_names (-n) is not set" if $src_names eq '';
+
+
+sub spp_write {
+  my $conn = shift;
+  my $cmd  = shift;
+  print $conn $cmd, "\n";
+}
+sub spp_read {
+  my $conn = shift;
+  my $return_err = shift || 0;
+  my $ret = "";
+  while( my $line = <$conn>)  {
+    if ($line =~ /^#Error/){
+      if ($return_err){
+        return $line;
+      } else {
+        die "$line\n";
+      }
+    }
+    last if $line =~/^\#OK/;
+    $ret .= $line;
+  }
+  return $ret;
+}
+
+# start graphene progs
+my $spid = open2(\*SO, \*SI, $src_db_prog) or die "can'r run program: $src_db_prog\n";
+my $dpid = open2(\*DO, \*DI, $dst_db_prog) or die "can'r run program: $dst_db_prog\n";
+
+# read the header (TODO: parse SPP head)
+spp_read(\*SO, 0);
+spp_read(\*DO, 0);
+
+foreach my $src_name (split ';', $src_names) {
+  print "$src_name:" if $verb;
+  my $dst_name="$dst_pref$src_name";
+
+  spp_write(\*SI, "info $src_name");
+  my $src_info = spp_read(\*SO, 0);
+
+  spp_write(\*DI, "info $dst_name");
+  my $dst_info = spp_read(\*DO, 1);
+
+  # create dst database if it does not exist
+  if ($dst_info eq "#Error: $dst_name.db: No such file or directory\n"){
+    spp_write(\*DI, "create $dst_name $src_info");
+    die "Can't create database: $dst_name\n"
+      if (spp_read(\*DO) =~ /^#Error/);
+    $full = 1;
+  }
+  elsif ($dst_info ne $src_info) {
+    die "Source and destination database have different format:\n$src_info\n$dst_info\n";
+  }
+
+  # start_backup
+  spp_write(\*SI, "backup_start $src_name");
+  my $tstamp = spp_read(\*SO, 0);
+  chomp($tstamp);
+
+  # calculate backup range
+  my $range = $full ? "0 inf" : "$tstamp inf";
+  print " $range: " if $verb;
+
+  # delete the range in destination database:
+  spp_write(\*DI, "del_range $dst_name $range");
+  spp_read(\*DO, 0);
+
+  # get range from source database, put values into destination one:
+  spp_write(\*SI, "get_range $src_name $range");
+  my $num=0;
+  while( my $line = <SO>)  {
+    die $line if $line =~ /^#Error/;
+    last if $line =~/^\#OK/;
+
+    spp_write(\*DI, "put $dst_name $line");
+    spp_read(\*DO, 0);
+    $num++;
+  }
+
+  spp_write(\*SI, "backup_end $src_name");
+  spp_read(\*SO, 0);
+
+  print "$num records\n" if $verb;
+}
+
+kill HUP => $spid;
+kill HUP => $dpid;
+waitpid( $spid, 0);
+waitpid( $dpid, 0);
