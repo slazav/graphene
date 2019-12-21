@@ -247,6 +247,8 @@ If backup process fails and `backup_end` command is not executed then the
 main backup timer will not be reset and the next backup will work
 correctly.
 
+There is a script `graphene_sync` for implementing incremental syncronization
+of databases using backup timer mechanism.
 
 ### Examples
 
