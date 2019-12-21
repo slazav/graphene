@@ -112,8 +112,8 @@ class Pars{
             "  *idn?   -- print intentifier: Graphene database " << VERSION << "\n"
             "  get_time -- print current time (unix seconds with microsecond precision)\n"
             "  libdb_version -- print libdb version\n"
-            "  lastmod_reset <name> -- reset lastmod timestamp of a database\n"
-            "  lastmod_get <name> -- print lastmod timestamp\n"
+            "  backup start <name> -- notify that we are going to start backup, return backup timestamp.\n"
+            "  backup_end <name> -- notify that backup is successfully finished\n"
             "\n"
             "For more information see https://github.com/slazav/graphene/\n"
     ;
