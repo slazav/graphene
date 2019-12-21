@@ -335,7 +335,7 @@ class Pars{
     if (strcasecmp(cmd.c_str(), "backup_start")==0){
       if (pars.size()!=2) throw Err() << "database name expected";
       DBgr db = pool->get(pars[1]);
-      out << db.backup_start();
+      out << db.backup_start() << "\n";
       return;
     }
 

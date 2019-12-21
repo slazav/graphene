@@ -261,7 +261,7 @@ DBgr::backup_start(){
   std::string timer;
   DBinfo info = read_info();
 
-  DB_TXN *txn = txn_begin(DB_TXN_SNAPSHOT);
+  DB_TXN *txn = txn_begin();
   DBC *curs = NULL;
   try {
     int ret;
