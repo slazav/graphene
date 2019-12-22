@@ -130,11 +130,12 @@ foreach my $src_name (split ';', $src_names) {
   my $dst_info = spp_read(\*DO, 1);
 
   # create dst database if it does not exist
+  my $newdb = 0;
   if ($dst_info eq "#Error: $dst_name.db: No such file or directory\n"){
     spp_write(\*DI, "create $dst_name $src_info");
     die "Can't create database: $dst_name\n"
       if (spp_read(\*DO) =~ /^#Error/);
-    $full = 1;
+    $newdb = 1;
   }
   elsif ($dst_info ne $src_info) {
     die "Source and destination database have different format:\n$src_info\n$dst_info\n";
@@ -146,7 +147,7 @@ foreach my $src_name (split ';', $src_names) {
   chomp($tstamp);
 
   # calculate backup range
-  my $range = $full ? "0 inf" : "$tstamp inf";
+  my $range = ($full || $newdb) ? "0 inf" : "$tstamp inf";
   print " $range: " if $verb;
 
   # delete the range in destination database:
