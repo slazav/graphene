@@ -45,7 +45,8 @@ Options:
                             database.
 
   -n <string>,
-   --src_names <string>  -- source database names, ';'-separated
+   --src_names <string>  -- source database names, ';'-separated.
+                            Default: syncronize all databases
 
   -p <string>,
   --dst_pref <string>    -- set prefix for destination
@@ -85,7 +86,6 @@ usage() if $help;
 my @dbs = @ARGV;
 
 die "dst_db_prog (-D) is not set" if $dst_db_prog eq '';
-die "src_names (-n) is not set" if $src_names eq '';
 
 
 sub spp_write {
@@ -119,7 +119,18 @@ my $dpid = open2(\*DO, \*DI, $dst_db_prog) or die "can'r run program: $dst_db_pr
 spp_read(\*SO, 0);
 spp_read(\*DO, 0);
 
-foreach my $src_name (split ';', $src_names) {
+# get database list if -n option is not set
+my @names;
+if ($src_names eq '') {
+  spp_write(\*SI, "list");
+  my $src_names = spp_read(\*SO, 0);
+  @names = sort(split "\n", $src_names);
+}
+else {
+  @names = split ';', $src_names;
+}
+
+foreach my $src_name (@names) {
   print "$src_name:" if $verb;
   my $dst_name="$dst_pref$src_name";
 
