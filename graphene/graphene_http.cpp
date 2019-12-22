@@ -141,7 +141,8 @@ static int request_answer(void * cls, struct MHD_Connection * connection, const 
       if (spars->verb>0) *(spars->log) << "Error: " << e.str() << "\n";
     }
     catch(Err e){
-      out_data = e.str();
+      out_data = std::string("{\"error_type\": \"graphene\", ") +
+                             "\"error_message\":\"" + e.str() + "\"}";
       if (spars->verb>0) *(spars->log) << "Error: " << e.str() << "\n";
     }
 
