@@ -80,13 +80,9 @@ GetOptions(
   "v|verb"           => \$verb,
   "h|help"           => \$help,
 ) or usage();
-
 usage() if $help;
 
-my @dbs = @ARGV;
-
 die "dst_db_prog (-D) is not set" if $dst_db_prog eq '';
-
 
 sub spp_write {
   my $conn = shift;
