@@ -14,6 +14,8 @@ install: all
 	install scripts/graphene_tab ${bindir}
 	install scripts/graphene_int ${bindir}
 	install scripts/graphene_sync ${bindir}
+	install scripts/graphene_sweeps ${bindir}
+	install scripts/graphene_filter ${bindir}
 
 dbinfo.o:      dbinfo.h dbinfo.cpp
 dbinfo_v1.o:   dbinfo.h dbinfo_v1.cpp

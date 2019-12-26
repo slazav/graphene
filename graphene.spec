@@ -39,6 +39,8 @@ mkdir -p %buildroot%_sharedstatedir/graphene
 %_bindir/graphene_int
 %_bindir/graphene_sync
 %_bindir/graphene_http
+%_bindir/graphene_filter
+%_bindir/graphene_sweeps
 %config %_initdir/graphene_http
 
 %changelog
