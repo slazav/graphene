@@ -1,27 +1,6 @@
 #!/usr/bin/perl
 
-# graphene_sync -- script for incremental syncronization of graphene databases.
-#
-# Usage: graphene_sync [options]
-#
-# Options:
-#
-#   -S src_db_prog -- graphene command for accessing source database:
-#                    'graphene -i' (default), 'device -d db', etc.
-#
-#   -D dst_db_prog -- graphene command for
-#                    accessing destination database.
-#
-#   -n src_names -- source database names, ';'-separated
-#
-#   -p <dst_pref> -- set prefix for destination database name (default: '')
-#
-#   -F  -- do full (non-incremental backup)
-#
-#   -v  -- be verbose
-#
 # TODO: multiple dst_db_progs
-
 
 use warnings;
 use strict;
@@ -36,27 +15,23 @@ Usage: graphene_sync [options]
 
 Options:
 
-  -S <string>
-  --src_db_prog <string> -- graphene command for accessing source database:
-                            'graphene -i' (default), 'device -d db', etc.
+-S | --src_db_prog <string>
+  -- graphene command for accessing source database:
+    'graphene -i' (default), 'device -d db', etc.
 
-  -D <string>
-  --dst_db_prog<string>  -- graphene command for accessing destination
-                            database.
+-D | --dst_db_prog<string>
+  -- graphene command for accessing destination database.
 
-  -n <string>,
-   --src_names <string>  -- source database names, ';'-separated.
-                            Default: syncronize all databases
+-n | --src_names <string>
+  -- source database names, ';'-separated.
+     Default: syncronize all databases
 
-  -p <string>,
-  --dst_pref <string>    -- set prefix for destination
-                            database name (default: '')
+-p <string> | --dst_pref <string>
+  -- set prefix for destination database name (default: '')
 
-  -F, --full             -- do full (non-incremental backup)
-
-  -v, --verb             -- be verbose
-
-  -h, --help            -- show help message
+-F | --full  -- do full (non-incremental backup)
+-v | --verb  -- be verbose
+-h | --help  -- show help message
 *;
 
   exit 1;
