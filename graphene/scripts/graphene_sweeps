@@ -1,0 +1,218 @@
+#!/usr/bin/perl
+
+use warnings;
+use strict;
+use IPC::Open2;
+use Getopt::Long qw(GetOptions Configure);
+
+sub usage {
+  print qq*graphene_sweeps -- extract parameter sweeps from a database
+Usage: graphene_sweeps [options]
+
+Options:
+-D | -db_prog <string>
+  Graphene command: 'graphene -i' (default), 'device -d db' etc.
+
+-n | --db_name <string>
+  Database name.
+
+-t | --t1 <val>,
+  Starting time for sweep search (in seconds, words "now" and "inf" are
+  also acceptable). default: 0 if --out_db is not set, last value in
+  the out_db database otherwise.
+
+-u | --t2 <val>
+  End time of the sweep search. Default: inf.
+
+-m | --min_pts <int>
+  Minimum number of points in the sweep (default: 3).
+
+ -a | --append
+  List of database names. Append values from these databases
+  to the sweep data. Values are taken for the peginning of the
+  sweep time range osing get_prev command (no interpolation).
+
+ -o | --out_db
+  Sweep database name (default: ""). If it is empty then sweep data
+  is printed to stdout. If it is non-empty sweep data is put into
+  this database with timestamp equal to the starting point of the sweep.
+
+-v | --verb  -- be verbose
+-h | --help  -- show help message
+
+Example:
+  graphene_sweeps -D 'ssh -t mydb' -n 'nmr_data:2'\
+                  -a 'magnet_grad:3 magnet_quad'\
+                  -o 'sweeps'
+
+It extract sweeps of the parameter in the second column of 'nmr_data'
+database, append values from third column of 'magnet_grad' and all
+columns of 'magnet_quad' and put result into 'sweeps' database. This
+database can be later used in 'graphene_filter' program for processing
+each sweep separately.
+
+Because t0 is not set, only sweeps starting with the last one in the
+'sweeps' database will be found and added to the database. (The last
+sweep will be rewritten because it may be incomple during previouse call
+of 'graphene_sweeps').
+
+*;
+
+  exit 1;
+}
+
+# default values
+my $t1; # will be defined later
+my $t2='now';
+my $db_prog = 'graphene -i';
+my $db_name = '';
+my $out_db = '';
+my $append = '';
+my $verb = 1;
+my $help = 0;
+my $min_pts = 3;
+
+# pars parameters
+GetOptions(
+  "D|db_prog=s"    => \$db_prog,
+  "n|db_name=s"    => \$db_name,
+  "t|t1=s"         => \$t1,
+  "u|t2=s"         => \$t2,
+  "m|min_pts=i"    => \$min_pts,
+  "o|out_db=s"     => \$out_db,
+  "a|append=s"     => \$append,
+  "v|verb"         => \$verb,
+  "h|help"         => \$help,
+) or usage();
+
+usage() if $help;
+
+die "db_name (-n) is not set" if $db_name eq '';
+
+
+##########
+
+sub spp_write {
+  my $conn = shift;
+  my $cmd  = shift;
+  print $conn $cmd, "\n";
+}
+sub spp_read {
+  my $conn = shift;
+  my $return_err = shift || 0;
+  my $ret = "";
+  while( my $line = <$conn>)  {
+    if ($line =~ /^#Error/){
+      if ($return_err){
+        return $line;
+      } else {
+        die "$line\n";
+      }
+    }
+    last if $line =~/^\#OK/;
+    $ret .= $line;
+  }
+  return $ret;
+}
+
+#########
+
+# start graphene prog
+my $pid = open2(\*GO, \*GI, $db_prog) or die "can'r run program: $db_prog\n";
+
+# read the header (TODO: parse SPP head)
+spp_read(\*GO, 0);
+
+
+# get parameter range
+if ($out_db && !defined($t1)) {
+  my $v = 0;
+  my $tt ='';
+  while ($v==0) {
+    spp_write(\*GI, "get_prev $out_db $tt");
+    ($tt,$v) = split /\s+/, spp_read(\*GO);
+    last unless $tt; # empty database
+    $t1 = $tt;
+    $tt="$tt-";
+  }
+}
+
+$t1 = 0 unless defined($t1);
+
+print STDERR "Getting sweep parameter from $db_name ($t1 -- $t2)\n" if $verb;
+
+#extract sweeps
+my $tsweep;
+my $tprev=0; #previous time value
+my $vprev=0; # previous parameter value
+my $vdiff=0; # previous parameter difference
+my $nswp=0;  # line counter for each sweep
+my $tstart = 0; #start time of the sweep
+
+spp_write(\*GI, "get_range $db_name $t1 $t2");
+my @data;
+while (my $line = <GO>){
+  die $line if $line =~ /^#Error/;
+  last if $line =~ /^#OK/;
+
+  my ($t, $v) = split /\s+/, $line;
+
+  # reset sweep
+  if ($nswp>0 && ($v-$vprev)*$vdiff <= 0){
+    $vdiff = $v-$vprev;
+
+    push @data, [$tsweep, $tprev] if $nswp>=$min_pts;
+    $tsweep = $tprev;
+    $nswp = 1;
+    $tstart = $t;
+  }
+  else {
+    $vdiff = $v-$vprev;
+  }
+
+  $tsweep = $t unless defined $tsweep;
+  $nswp++;
+  $vprev=$v;
+  $tprev=$t;
+}
+push @data, [$tsweep, $tprev] if $nswp>=$min_pts;;
+
+foreach (@data) {
+  my $ts = ${$_}[0];
+  my $te = ${$_}[1];
+
+  # accurate time difference (not needed?):
+  my ($s1,$ns1) = split(/\./, $ts);
+  my ($s2,$ns2) = split(/\./, $te);
+  my $dt = $s2-$s1 + 1e-9*($ns2-$ns1);
+
+
+  my $app="";
+  if ($append){
+    my @names = split /\s+/, $append;
+    foreach my $name (@names){
+      spp_write(\*GI, "get_prev $name $ts");
+      my $v = spp_read(\*GO);
+      chomp($v);
+      $v =~ s/^\s*\S+\s+//;
+      $app = "$app $v";
+    }
+  }
+
+
+  if ($out_db) {
+    print STDERR "$ts $te $dt $app\n" if $verb;
+    spp_write(\*GI, "put $out_db $ts $dt $app");
+    spp_read(\*GO);
+    spp_write(\*GI, "put $out_db $te 0");
+    spp_read(\*GO);
+  }
+  else {
+    print "$t1 $dt $app\n";
+  }
+
+
+}
+
+kill HUP => $pid;
+waitpid( $pid, 0);
