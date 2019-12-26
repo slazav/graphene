@@ -1,0 +1,221 @@
+#!/usr/bin/perl
+
+use warnings;
+use strict;
+use IPC::Open2;
+use Getopt::Long qw(GetOptions Configure);
+
+sub usage {
+  print qq*graphene_filter -- filter data through a program
+
+Script reads data from 'in_db', filter them through 'filter' program and
+put into 'out_db' (or to stdout if 'out_db' is not specified). Filter
+programs can be used for deleting or modifying single records or
+processing ranges of records. Filter program should read input data (as
+they are produced by "graphene get_range") from stdin and write data
+sutable for "graphene put" to stdout.
+
+If 'range_db' parameter is used then time ranges are extracted from it.
+It should contain pairs of records where the first value is non-zero for
+range start and zero for the range end. On the input of 'filter' ranges
+are separated by empty lines. In this case output timestamps should be
+inside the corresponding time range. If single points are processed then
+timestamps should not be modified.
+
+
+Usage: graphene_filter [options]
+
+Options:
+-D | -db_prog <string>
+  Graphene command: 'graphene -i' (default), 'device -d db' etc.
+
+-i | --in_db  <string>   -- Input database name.
+-o | --out_db <string>   -- Output database name.
+-r | --range_db <string> -- Range database name.
+-f | --filter <string>   -- filter program
+
+-t | --t1 <val>,
+  Starting time for filtering search (in seconds, words "now" and "inf" are
+  also acceptable). If 'out_db' defined then default value for t1 is the
+  last value in this database, otherwise it is 0.
+
+-u | --t2 <val>
+  End time of the sweep search. Default: inf.
+
+-v | --verb  -- be verbose
+-h | --help  -- show help message
+
+Example:
+  graphene_filter -D 'ssh -t mydb'\
+                  -r 'nmr_sweeps'\
+                  -i 'nmr_data' -o 'nmr_fits' -f 'fit_nmr'\
+
+In this example time ranges are extracted from 'nmr_sweeps' database.
+Data in these ranges are taken from 'nmr_data' database, filtered through
+'fit_nmr' program and put into 'nmr_fits' database.
+
+Because t1 is not set, only sweeps starting with the last one in the
+'sweeps' database will be found and added to the database. (The last
+sweep will be rewritten because it may be incomple during previouse call
+of 'graphene_sweeps').
+
+*;
+
+  exit 1;
+}
+
+# default values
+my $t1; # will be defined later
+my $t2='now';
+my $db_prog = 'graphene -i';
+my $in_db = '';
+my $out_db = '';
+my $range_db = '';
+my $filter = '';
+my $verb = 1;
+my $help = 0;
+
+# pars parameters
+GetOptions(
+  "D|db_prog=s"    => \$db_prog,
+  "i|in_db=s"      => \$in_db,
+  "o|out_db=s"     => \$out_db,
+  "r|range_db=s"   => \$range_db,
+  "f|filter=s"     => \$filter,
+  "t|t1=s"         => \$t1,
+  "u|t2=s"         => \$t2,
+  "v|verb"         => \$verb,
+  "h|help"         => \$help,
+) or usage();
+
+usage() if $help;
+
+die "in_db (-i) is not set" if $in_db eq '';
+
+
+##########
+
+sub spp_write {
+  my $conn = shift;
+  my $cmd  = shift;
+  print $conn $cmd, "\n";
+}
+sub spp_read {
+  my $conn = shift;
+  my $return_err = shift || 0;
+  my $ret = "";
+  while( my $line = <$conn>)  {
+    if ($line =~ /^#Error/){
+      if ($return_err){
+        return $line;
+      } else {
+        die "$line\n";
+      }
+    }
+    last if $line =~/^\#OK/;
+    $ret .= $line;
+  }
+  return $ret;
+}
+
+#########
+
+# start graphene prog
+my $pid = open2(\*GO, \*GI, $db_prog) or die "can'r run program: $db_prog\n";
+
+# read the header (TODO: parse SPP head)
+spp_read(\*GO, 0);
+
+if ($out_db && !$t1) {
+  my $v = 0;
+  spp_write(\*GI, "get_prev $out_db");
+  ($t1,$v) = split /\s+/, spp_read(\*GO);
+}
+
+$t1 = 0 unless $t1;
+
+if ($verb){
+  print STDERR "graphene_filter:\n";
+  print STDERR "  in_db:    $in_db\n";
+  print STDERR "  out_db:   $out_db\n" if $out_db;
+  print STDERR "  range_db: $range_db\n" if $range_db;
+  print STDERR "  time rng: $t1 .. $t2\n"
+}
+
+
+###########
+sub process_data{
+  my $t1 = shift;
+  my $t2 = shift;
+  my $args = shift;
+
+  # start filter prog
+  my $fpid = open2(\*FO, \*FI, "$filter $args") or
+    die "can'r run program: $filter $args\n";
+
+  print STDERR "Running filter: $filter $args\n" if $verb;
+
+  spp_write(\*GI, "get_range $in_db $t1 $t2");
+  while (my $line = <GO>){
+    die $line if $line =~ /^#Error/;
+    last if $line =~ /^#OK/;
+    print FI $line;
+  }
+  close(FI);
+
+  while (my $line = <FO>){
+    chomp $line;
+    if ($out_db){
+      spp_write(\*GI, "put $out_db $line") if $line;
+      spp_read(\*GO);
+    }
+    else {
+      print $line, "\n";
+    }
+  }
+  close(FO);
+
+  kill HUP => $fpid;
+  waitpid( $fpid, 0);
+}
+
+###########
+
+if ($range_db){
+  my @data;
+  my $start = 1; # we are looking for range start
+  my $ts;
+  my $args;
+  my $cmd = 'get_prev';
+  while (1){
+    spp_write(\*GI, "$cmd $range_db $t1");
+    my $line = spp_read(\*GO);
+    chomp $line;
+    my ($t, $v) = split /\s+/, $line;
+    last unless $t;
+    $t1="$t+";
+    $cmd = 'get_next';
+    if ($start && $v != 0) {
+      # we found range start!
+      $ts = $t; $args = $line;
+      $start = 0; # now looking for range end
+      next;
+    }
+    if (!$start && $ts && $v == 0) {
+      # we found range end
+      process_data($ts, $t, $args);
+      $ts = ''; $args='';
+      $start = 1; # now looking for range end
+      next;
+    }
+  }
+}
+else {
+  process_data($t1, $t2, "");
+}
+
+close(GI);
+close(GO);
+
+kill HUP => $pid;
+waitpid( $pid, 0);
