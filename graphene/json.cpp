@@ -134,7 +134,7 @@ class DBoutJSON: public DBout{
 
 /***************************************************************************/
 // process /query
-Json json_query(const string & dbpath, const Json & ji){
+Json json_query(const string & dbpath, const std::string & env_type, const Json & ji){
 
   /*
   /query input:
@@ -169,7 +169,7 @@ Json json_query(const string & dbpath, const Json & ji){
 
   /* parse targets and run command */
   Json out = Json::array();
-  DBpool pool(dbpath, true, "none");
+  DBpool pool(dbpath, true, env_type);
   for (int i=0; i<ji["targets"].size(); i++){
 
 
@@ -198,7 +198,7 @@ Json json_query(const string & dbpath, const Json & ji){
 
 /***************************************************************************/
 // process /annotations
-Json json_annotations(const string & dbpath, const Json & ji){
+Json json_annotations(const string & dbpath, const std::string & env_type, const Json & ji){
 
   /*
   /annotations input:
@@ -224,7 +224,7 @@ Json json_annotations(const string & dbpath, const Json & ji){
   DBoutJSON dbo(dbpath, ji["annotation"]["name"].as_string(), false);
 
   // Get a database
-  DBpool pool(dbpath, true, "none");
+  DBpool pool(dbpath, true, env_type);
   DBgr db = pool.get(dbo.name, DB_RDONLY);
 
   // check DB format
@@ -243,7 +243,7 @@ Json json_annotations(const string & dbpath, const Json & ji){
 
 /***************************************************************************/
 // process /search
-Json json_search(const string & dbpath, const Json & ji){
+Json json_search(const string & dbpath, const std::string & env_type, const Json & ji){
   Json out = Json::array();
   return out;
 }
@@ -252,6 +252,7 @@ Json json_search(const string & dbpath, const Json & ji){
 /* Process a JSON request to the database. */
 /* Returns error message on errors.*/
 string graphene_json(const string & dbpath,  /* path to databases */
+                     const std::string & env_type,
                      const string & url,     /* /query, /annotations, etc. */
                      const string & data){    /* input data */
 
@@ -262,13 +263,13 @@ string graphene_json(const string & dbpath,  /* path to databases */
     int out_fl = JSON_PRESERVE_ORDER;
 
     if (url == "/query")
-      return json_query(dbpath, ji).save_string(out_fl);
+      return json_query(dbpath, env_type, ji).save_string(out_fl);
 
     if (url == "/search")
-      return json_search(dbpath, ji).save_string(out_fl);
+      return json_search(dbpath, env_type, ji).save_string(out_fl);
 
     if (url == "/annotations")
-      return json_annotations(dbpath, ji).save_string(out_fl);
+      return json_annotations(dbpath, env_type, ji).save_string(out_fl);
 
     throw Json::Err() << "Unknown query";
   }

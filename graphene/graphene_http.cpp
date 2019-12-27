@@ -36,6 +36,7 @@ struct spars_t{
   string  dbpath;  /* path to the databases (default /var/lib/graphene/) */
   string  logfile; /* logfile */
   string  pidfile; /* pidfile */
+  string  env_type; /* environment type*/
   int16_t verb;    /* print commands to stdout */
   int16_t dofork;  /* print commands to stdout */
   ostream *log;    /* log stream */
@@ -47,6 +48,7 @@ struct spars_t{
     dbpath = "/var/lib/graphene/";
     logfile = ""; // to be set later
     pidfile = "/var/run/graphene_http.pid";
+    env_type = "lock";
     verb   = 1;
     dofork = 0;
     log    = &cout;
@@ -55,12 +57,13 @@ struct spars_t{
   /* parse cmdline options */
   int parse_cmdline(int *argc, char ***argv){
     while(1){
-      switch (getopt(*argc, *argv, "p:d:hv:f")){
+      switch (getopt(*argc, *argv, "p:d:E:hv:f")){
         case -1: return 0; /* end*/
         case '?':
         case ':': continue; /* error msg is printed by getopt*/
         case 'p': port =  atoi(optarg); break;
         case 'd': dbpath  = optarg; break;
+        case 'E': env_type = optarg; break;
         case 'v': verb    = atoi(optarg); break;
         case 'l': logfile = optarg; break;
         case 'f': dofork  = 1; break;
@@ -70,6 +73,8 @@ struct spars_t{
                   "Options:p\n"
                   " -p <port>  -- tcp port for connections (default 8081)\n"
                   " -d <path>  -- database path (default /var/lib/graphene/)\n"
+                  " -E <word>  -- environment type:\n"
+                  "               none, lock, txn (default: " << env_type << ")\n"
                   " -v <level> -- be verbose\n"
                   "                0 - write nothing\n" 
                   "                1 - write some information on start\n" 
@@ -134,7 +139,7 @@ static int request_answer(void * cls, struct MHD_Connection * connection, const 
   else{ // Process the query by graphene_json() and answer
     string out_data;
     try{
-      out_data = graphene_json(spars->dbpath, url, in_data);
+      out_data = graphene_json(spars->dbpath, spars->env_type, url, in_data);
     }
     catch(Json::Err e){
       out_data = e.str();
@@ -273,6 +278,7 @@ int main(int argc, char ** argv) {
   if (spars.verb >0){
     *(spars.log) << "Starting the server:\n"
                  << "  Port: " <<  spars.port << "\n"
+                 << "  DB environment type: " <<  spars.env_type << "\n"
                  << "  Path to databases: " << spars.dbpath << "\n";
      spars.log->flush();
   }

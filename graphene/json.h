@@ -12,8 +12,9 @@
 /* Returns allocated buffer with the data, set dsize to its size */
 /* Returns NULL on errors, dsize in unspecified then.*/
 
-std::string graphene_json(const std::string & dbpath,  /* path to databases */
-                          const std::string & url,     /* /query, /annotations, etc. */
-                          const std::string & data     /* input data */
+std::string graphene_json(const std::string & dbpath,   /* path to databases */
+                          const std::string & env_type, /* BerkleyDB environment type */
+                          const std::string & url,      /* /query, /annotations, etc. */
+                          const std::string & data      /* input data */
                          );
 #endif

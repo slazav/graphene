@@ -32,7 +32,7 @@ main(int argc, char *argv[]){
   while (!cin.eof()){ string s; getline(cin, s); in_data +=s+'\n'; }
 
   try {
-    cout << graphene_json(dbpath, url, in_data);
+    cout << graphene_json(dbpath, "none", url, in_data);
   }
   catch (Err e){
     cout << "Error:" << e.str();
