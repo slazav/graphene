@@ -580,11 +580,19 @@ DBgr::get_range(const string &t1, const string &t2,
     int fl = DB_SET_RANGE; // first get t >= t1
     while (1){
 
+      string pre((char *)k.data, (char *)k.data+k.size);
+
       if (!c_get(curs, &k, &v, fl)) break;
 
       // unpack new time value and check the range
       string tnp((char *)k.data, (char *)k.data+k.size);
       if (info.cmp_time(tnp,t2p)>0) break;
+
+      // I have a broken database where DB_SET_RANGE/DB_NEXT can
+      // get non-increasing values. Let's check this to prevent the
+      // program from infinite loops..
+      if (info.cmp_time(tnp,pre)<0)
+        throw Err() << "Broken database (DB_SET_RANGE/DB_NEXT get smaller timestamp)";
 
       // if we want every point, switch to DB_NEXT and repeat
       if (info.is_zero_time(dtp)){
