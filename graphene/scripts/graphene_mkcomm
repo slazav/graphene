@@ -1,0 +1,168 @@
+#!/usr/bin/perl
+
+use warnings;
+use strict;
+use IPC::Open2;
+use Getopt::Long qw(GetOptions Configure);
+
+sub usage {
+  print qq*graphene_mkcomm -- read numerical DB and update comments
+
+Script reads data from 'in_db' and when values are changing puts a
+formatted text message into 'db_out'.
+
+Usage: graphene_mkcomm [options]
+
+Options:
+-D | -db_prog <string>
+  Graphene command: 'graphene -i' (default), 'device -d db' etc.
+
+-i | --in_db  <string>   -- Input database name.
+-o | --out_db <string>   -- Output database name (should be TEXT database).
+-f | --fmt <string>      -- Message format (e.g. "Heater: %5.3f mV $.3f uW")
+-F | --factors <string>  -- Space-separated factors to apply to db values
+
+-t | --t1 <val>,
+  Starting time for filtering search (in seconds, words "now" and "inf" are
+  also acceptable). If 'out_db' defined then default value for t1 is the
+  last value in this database, otherwise it is 0.
+
+-u | --t2 <val>
+  End time of the sweep search. Default: inf.
+
+-v | --verb  -- be verbose
+-h | --help  -- show help message
+
+Example:
+
+graphene_mkcomm -v\
+  --t1 1\
+  --db_prog 'device -d db'\
+  --in_db   'heat_still'\
+  --factors '1 1e3'\
+  --fmt     'Still heater: %.3f V %.3f mW'\
+  --out_db 'comments'
+
+Get values from 'heat_still', multiply two first of them by 1 and 1e3,
+format and put into 'comments'.
+*;
+
+  exit 1;
+}
+
+# default values
+my $t1; # will be defined later
+my $t2='now';
+my $db_prog = 'graphene -i';
+my $in_db = '';
+my $out_db = '';
+my $fmt = '';
+my $factors = '';
+my $verb = 1;
+my $help = 0;
+
+# pars parameters
+GetOptions(
+  "D|db_prog=s"    => \$db_prog,
+  "i|in_db=s"      => \$in_db,
+  "o|out_db=s"     => \$out_db,
+  "f|fmt=s"        => \$fmt,
+  "F|factors=s"    => \$factors,
+  "t|t1=s"         => \$t1,
+  "u|t2=s"         => \$t2,
+  "v|verb"         => \$verb,
+  "h|help"         => \$help,
+) or usage();
+
+usage() if $help;
+
+die "in_db (-i) is not set" unless $in_db;
+die "fmt (-f) is not set" unless $fmt;
+my @factors = split /\s+/, $factors;
+
+##########
+
+sub spp_write {
+  my $conn = shift;
+  my $cmd  = shift;
+  print $conn $cmd, "\n";
+}
+sub spp_read {
+  my $conn = shift;
+  my $return_err = shift || 0;
+  my $ret = "";
+  while( my $line = <$conn>)  {
+    if ($line =~ /^#Error/){
+      if ($return_err){
+        return $line;
+      } else {
+        die "$line\n";
+      }
+    }
+    last if $line =~/^\#OK/;
+    $ret .= $line;
+  }
+  return $ret;
+}
+
+#########
+
+# start graphene prog
+my $pid = open2(\*GO, \*GI, $db_prog) or die "can'r run program: $db_prog\n";
+
+# read the header (TODO: parse SPP head)
+spp_read(\*GO, 0);
+
+# set default t1
+if ($out_db && !$t1) {
+  my $v = 0;
+  spp_write(\*GI, "get_prev $out_db");
+  ($t1,$v) = split /\s+/, spp_read(\*GO);
+}
+
+$t1 = 0 unless $t1;
+
+if ($verb){
+  print STDERR "graphene_mkcomm:\n";
+  print STDERR "  in_db:    $in_db\n";
+  print STDERR "  out_db:   $out_db\n" if $out_db;
+  print STDERR "  fmt:      $fmt\n";
+  print STDERR "  time rng: $t1 .. $t2\n"
+}
+
+
+my @data;
+my $msg="";
+spp_write(\*GI, "get_range $in_db $t1 $t2");
+while (my $line = <GO>){
+  die $line if $line =~ /^#Error/;
+  last if $line =~ /^#OK/;
+  my ($t, @val) = split /\s+/, $line;
+  for (my $i=0; $i<scalar @val; $i++){
+    next if $i>=scalar @factors || $factors[$i]==1;
+    $val[$i]*=$factors[$i];
+  }
+
+  my $new_msg = sprintf $fmt, @val;
+
+  next if $new_msg eq $msg;
+  $msg = $new_msg;
+  push @data, "$t $msg";
+}
+
+foreach (@data){
+  if ($out_db){
+    print STDERR $_, "\n" if $verb;
+    spp_write(\*GI, "put $out_db $_");
+    spp_read(\*GO);
+  }
+  else {
+    print $_, "\n";
+  }
+}
+
+close(GI);
+close(GO);
+
+kill HUP => $pid;
+waitpid( $pid, 0);
