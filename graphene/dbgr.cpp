@@ -675,11 +675,19 @@ DBgr::del_range(const string &t1, const string &t2){
     int fl = DB_SET_RANGE; // first get t >= t1
     while (1){
 
+      string pre((char *)k.data, (char *)k.data+k.size);
+
       if (!c_get(curs, &k, &v, fl)) break;
 
       // get packed time value and check the range
       string tp((char *)k.data, (char *)k.data+k.size);
       if (info.cmp_time(tp,t2p)>0) break;
+
+      // I have a broken database where DB_SET_RANGE/DB_NEXT can
+      // get non-increasing values. Let's check this to prevent the
+      // program from infinite loops..
+      if (info.cmp_time(tp,pre)<0)
+        throw Err() << "Broken database (DB_SET_RANGE/DB_NEXT get smaller timestamp)";
 
       // delete the point
       int res = curs->del(curs, 0);
