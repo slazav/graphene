@@ -8,6 +8,7 @@
 #include "dbgr.h"
 #include <ctime>
 #include <sys/time.h>
+#include <cmath>
 
 using namespace std;
 
@@ -89,7 +90,9 @@ DBinfo::parse_data(const vector<string> & strs) const{
   else {    // numbers
     ret = string(dsize()*strs.size(), '\0');
     for (int i=0; i<strs.size(); i++){
+
       istringstream s(strs[i]);
+      string tmp;
       switch (val){
         case DATA_INT8:   s >> ((int8_t   *)ret.data())[i]; break;
         case DATA_UINT8:  s >> ((uint8_t  *)ret.data())[i]; break;
@@ -99,8 +102,37 @@ DBinfo::parse_data(const vector<string> & strs) const{
         case DATA_UINT32: s >> ((uint32_t *)ret.data())[i]; break;
         case DATA_INT64:  s >> ((int64_t  *)ret.data())[i]; break;
         case DATA_UINT64: s >> ((uint64_t *)ret.data())[i]; break;
-        case DATA_FLOAT:  s >> ((float    *)ret.data())[i]; break;
-        case DATA_DOUBLE: s >> ((double   *)ret.data())[i]; break;
+        case DATA_FLOAT:
+          if (strcasecmp(strs[i].c_str(),"inf")==0 ||
+              strcasecmp(strs[i].c_str(),"+inf")==0) {
+            ((float*)ret.data())[i] = +INFINITY;
+            getline(s, tmp); break;
+          }
+          if (strcasecmp(strs[i].c_str(),"-inf")==0) {
+            ((float*)ret.data())[i] = -INFINITY;
+            getline(s, tmp); break;
+          }
+          if (strcasecmp(strs[i].c_str(),"nan")==0) {
+            ((float*)ret.data())[i] = NAN;
+            getline(s, tmp); break;
+          }
+          s >> ((float *)ret.data())[i]; break;
+
+        case DATA_DOUBLE:
+          if (strcasecmp(strs[i].c_str(),"inf")==0 ||
+              strcasecmp(strs[i].c_str(),"+inf")==0) {
+            ((double*)ret.data())[i] = +INFINITY;
+            getline(s, tmp); break;
+          }
+          if (strcasecmp(strs[i].c_str(),"-inf")==0) {
+            ((double*)ret.data())[i] = -INFINITY;
+            getline(s, tmp); break;
+          }
+          if (strcasecmp(strs[i].c_str(),"nan")==0) {
+            ((double*)ret.data())[i] = NAN;
+            getline(s, tmp); break;
+          }
+          s >> ((double*)ret.data())[i]; break;
         default: throw Err() << "Unexpected data format";
       }
       if (s.bad() || s.fail() || !s.eof())

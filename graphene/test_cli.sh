@@ -192,6 +192,12 @@ assert "$(./graphene -r -d . get_range test_1 1234567890 2234567890.123 2)" "0.0
 1000000000.123000026 0.2" # relative (note rounding error)
 
 assert "$(./graphene -d . get_range test_1 1234567890 2234567890.123 1200000000)" "1234567890.000000000 0.1"
+
+# -inf +inf nan values:
+assert "$(./graphene -d . put test_1 1 -inf -Inf nan NaN nAn +inf +Inf)" ""
+assert "$(./graphene -d . get test_1 1)" "1.000000000 -inf -inf nan nan nan inf inf"
+
+
 assert "$(./graphene -d . delete test_1)" ""
 
 ###########################################################################
