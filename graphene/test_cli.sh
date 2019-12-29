@@ -197,6 +197,9 @@ assert "$(./graphene -d . get_range test_1 1234567890 2234567890.123 1200000000)
 assert "$(./graphene -d . put test_1 1 -inf -Inf nan NaN nAn +inf +Inf)" ""
 assert "$(./graphene -d . get test_1 1)" "1.000000000 -inf -inf nan nan nan inf inf"
 
+# interpolation
+assert "$(./graphene -d . put test_1 3 10 10 10 10 10 10 10)" ""
+assert "$(./graphene -d . get test_1 2)" "2.000000000 -inf -inf nan nan nan inf inf"
 
 assert "$(./graphene -d . delete test_1)" ""
 
