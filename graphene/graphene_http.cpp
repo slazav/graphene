@@ -57,12 +57,13 @@ struct spars_t{
   /* parse cmdline options */
   int parse_cmdline(int *argc, char ***argv){
     while(1){
-      switch (getopt(*argc, *argv, "p:d:E:hv:f")){
+      switch (getopt(*argc, *argv, "p:d:P:E:hv:f")){
         case -1: return 0; /* end*/
         case '?':
         case ':': continue; /* error msg is printed by getopt*/
         case 'p': port =  atoi(optarg); break;
         case 'd': dbpath  = optarg; break;
+        case 'P': pidfile = optarg; break;
         case 'E': env_type = optarg; break;
         case 'v': verb    = atoi(optarg); break;
         case 'l': logfile = optarg; break;
@@ -71,8 +72,9 @@ struct spars_t{
           cout << "graphene_http -- http interface for graphene\n"
                   "Usage: graphene_http [options]\n"
                   "Options:p\n"
-                  " -p <port>  -- tcp port for connections (default 8081)\n"
-                  " -d <path>  -- database path (default /var/lib/graphene/)\n"
+                  " -p <port>  -- tcp port for connections (default: " << port <<")\n"
+                  " -d <path>  -- database path (default: " << dbpath << ")\n"
+                  " -P <path>  -- pid-file (default: " << pidfile << ")\n"
                   " -E <word>  -- environment type:\n"
                   "               none, lock, txn (default: " << env_type << ")\n"
                   " -v <level> -- be verbose\n"
