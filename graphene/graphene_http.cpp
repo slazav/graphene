@@ -57,7 +57,7 @@ struct spars_t{
   /* parse cmdline options */
   int parse_cmdline(int *argc, char ***argv){
     while(1){
-      switch (getopt(*argc, *argv, "p:d:P:E:hv:f")){
+      switch (getopt(*argc, *argv, "p:d:P:E:l:hv:f")){
         case -1: return 0; /* end*/
         case '?':
         case ':': continue; /* error msg is printed by getopt*/
