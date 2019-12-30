@@ -141,17 +141,21 @@ static int request_answer(void * cls, struct MHD_Connection * connection, const 
   }
   else{ // Process the query by graphene_json() and answer
     string out_data;
+    int code=MHD_HTTP_OK;
     try{
       out_data = graphene_json(spars->dbpath, spars->env_type, url, in_data);
     }
     catch(Json::Err e){
       out_data = e.str();
       if (spars->verb>0) *(spars->log) << "Error: " << e.str() << "\n";
+      MHD_add_response_header(response, "Error", e.str().c_str());
+      code=400;
     }
     catch(Err e){
-      out_data = std::string("{\"error_type\": \"graphene\", ") +
-                             "\"error_message\":\"" + e.str() + "\"}";
+      out_data = e.str();
       if (spars->verb>0) *(spars->log) << "Error: " << e.str() << "\n";
+      MHD_add_response_header(response, "Error", e.str().c_str());
+      code=400;
     }
 
     if (spars->verb>2) *(spars->log) << ">>> " << in_data << "\n";
@@ -162,7 +166,7 @@ static int request_answer(void * cls, struct MHD_Connection * connection, const 
       out_data.size(), (void *)out_data.data(), MHD_RESPMEM_MUST_COPY);
     if (response==NULL) return MHD_NO;
     ret = MHD_add_response_header (response, "Access-Control-Allow-Origin",  "*");
-    ret = MHD_queue_response(connection, MHD_HTTP_OK, response);
+    ret = MHD_queue_response(connection, code, response);
     MHD_destroy_response(response);
     return ret;
   }
