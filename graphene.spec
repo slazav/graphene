@@ -1,5 +1,5 @@
 Name:         graphene
-Version:      2.7
+Version:      2.8
 Release:      alt1
 
 Summary:      Simple time series database.
@@ -39,6 +39,49 @@ mkdir -p %buildroot%_sharedstatedir/graphene
 %config %_initdir/graphene_http
 
 %changelog
+* Mon Dec 30 2019 Vladislav Zavjalov <slazav@altlinux.org> 2.8-alt1
+- v2.8
+ - Rename -E lock parameter according to help message.
+   Change default environment type to "lock". (It seems that "txn"
+   environment type is broken and not a good choice in most cases).
+   This change will require accurate migration from v2.7 to v2.8:
+   - Stop all programs working with databases (including graphene_http).
+   - Check that theseprograms do not have -E parameter. It is not
+     recommended to use any other setting then the default one.
+   - Backup your databases.
+   - Do db_checkpoint -1 on the database envirnment.
+   - Remove log fies (db_archive -d). Delete environment files (__*)
+   - Update graphene and start.
+
+ - add backup_start and backup_end commands (database syncronization)
+ - add libdb_version command (print libdb version)
+ - add get_time command (print current time)
+ - list command produces sorted output
+
+ - change error message produced by del command (this fixes tests for
+   libdb5 where libdb messages are different)
+
+ - Support for +Inf, -Inf and NaN values in Float and Double databases.
+   This modification affects only parsing user input, storage and
+   ouput did not change, old and new versions are fully compatable here.
+
+ - avoid infinite loops on some broken databases
+
+ - graphene_http:
+   - support for simple search query
+   - produce HTTP errors when it is needed
+   - fix brokn -l option (set log-file)
+   - add -P option (set pid-file)
+   - add -E option (envirnment type)
+   - set defult environment type to "lock"
+
+ - add new scripts:
+   - graphene_mkcomm -- read numerical database and update human-readable comments
+   - graphene_filter -- filter points or time ranges through external program
+   - graphene_sweeps -- extract parameter sweeps from a database
+   - graphene_sync -- syncronize two databases
+   - graphene_int: trivial graphene -i wrapper to be used as user shells
+
 * Thu Apr 18 2019 Vladislav Zavjalov <slazav@altlinux.org> 2.7-alt1
 - v2.7
  - New commands:
