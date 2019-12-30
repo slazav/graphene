@@ -138,6 +138,8 @@ socket.
 #### Commands for reading and writing data:
 
 - `put <name> <time> <value1> ... <valueN>` -- Write a data point.
+  For TEXT values all arguments are joined with a single spaces between
+  then. If you do not want this, use quoted argument.
 
 - `get_next <extended name> [<time1>]` -- Get first point with t>=time1.
 
