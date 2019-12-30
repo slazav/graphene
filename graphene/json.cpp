@@ -18,6 +18,7 @@
 #include <ctime>
 #include <cstring>
 #include <stdint.h>
+
 #include "jsonxx/jsonxx.h"
 #include "dbpool.h"
 #include "dbgr.h"
@@ -245,6 +246,10 @@ Json json_annotations(const string & dbpath, const std::string & env_type, const
 // process /search
 Json json_search(const string & dbpath, const std::string & env_type, const Json & ji){
   Json out = Json::array();
+  DBpool pool(dbpath, true, env_type);
+  auto names = pool.dblist();
+  for (auto const & n:names)
+    out.append(Json(n));
   return out;
 }
 
