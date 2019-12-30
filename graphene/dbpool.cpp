@@ -3,6 +3,7 @@
 #include <vector>
 #include <map>
 #include <sstream>
+#include <algorithm>
 #include <cstring> /* memset */
 #include <db.h>
 #include <dirent.h>
@@ -138,6 +139,7 @@ DBpool::dblist(){
       ret.push_back(name.substr(0,p));
   }
   closedir(dir);
+  std::sort(ret.begin(), ret.end());
   return ret;
 }
 
