@@ -72,7 +72,7 @@ struct spars_t{
         case 'h':
           cout << "graphene_http -- http interface for graphene\n"
                   "Usage: graphene_http [options]\n"
-                  "Options:p\n"
+                  "Options:\n"
                   " -p <port>  -- tcp port for connections (default: " << port <<")\n"
                   " -d <path>  -- database path (default: " << dbpath << ")\n"
                   " -P <path>  -- pid-file (default: " << pidfile << ")\n"
