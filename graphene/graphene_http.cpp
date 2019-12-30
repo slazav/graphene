@@ -26,6 +26,7 @@
 #include <sys/stat.h>
 #include <microhttpd.h>
 #include "json.h"
+#include "err.h"
 
 using namespace std;
 

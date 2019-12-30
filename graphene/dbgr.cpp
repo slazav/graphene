@@ -6,7 +6,9 @@
 #include <iomanip>
 #include <iostream>
 #include <cstring> /* memset */
+
 #include "dbgr.h"
+#include "err.h"
 
 using namespace std;
 

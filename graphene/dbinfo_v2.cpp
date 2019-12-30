@@ -9,6 +9,7 @@
 #include <ctime>
 #include <cmath>
 #include <sys/time.h>
+#include "err.h"
 
 
 using namespace std;

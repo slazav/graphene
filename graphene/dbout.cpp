@@ -1,5 +1,6 @@
 #include "dbgr.h"
 #include "dbout.h"
+#include "err.h"
 
 #include <string>
 #include <iomanip>

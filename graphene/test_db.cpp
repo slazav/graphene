@@ -7,6 +7,7 @@
 #include "dbpool.h"
 #include "dbgr.h"
 #include "dbout.h"
+#include "err.h"
 
 using namespace std;
 int main() {

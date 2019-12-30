@@ -1,4 +1,5 @@
 // This code based on https://github.com/bvakili-evault/janssonxx
+#include "err.h"
 
 #define ASSERT_OP(lhs, rhs, op) {\
     if(!((lhs) op (rhs))) { \

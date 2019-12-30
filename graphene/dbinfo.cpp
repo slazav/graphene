@@ -5,10 +5,12 @@
 #include <iostream>
 #include <iomanip>
 #include <cstring> /* memset */
-#include "dbgr.h"
 #include <ctime>
 #include <sys/time.h>
 #include <cmath>
+
+#include "dbgr.h"
+#include "err.h"
 
 using namespace std;
 

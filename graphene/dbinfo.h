@@ -12,6 +12,7 @@
 #include <sstream>
 #include <cstring> /* memset */
 #include <db.h>
+#include "err.h"
 
 // current database version
 #define DBVERSION 2
@@ -19,20 +20,6 @@
 // bercleydb:
 //  http://docs.oracle.com/cd/E17076_02/html/gsg/C/index.html
 //  https://web.stanford.edu/class/cs276a/projects/docs/berkeleydb/reftoc.html
-
-/***********************************************************/
-// Class for exceptions.
-// Usage: throw Err() << "something";
-//
-class Err {
-  std::ostringstream s;
-  public:
-    Err(){}
-    Err(const Err & o) { s << o.s.str(); }
-    template <typename T>
-    Err & operator<<(const T & o){ s << o; return *this; }
-    std::string str()   const { return s.str(); }
-};
 
 /***********************************************************/
 // Enum for the data format

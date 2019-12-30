@@ -1,5 +1,3 @@
-#include "dbpool.h"
-
 #include <cstdlib>
 #include <string>
 #include <vector>
@@ -7,10 +5,13 @@
 #include <sstream>
 #include <cstring> /* memset */
 #include <db.h>
-#include "dbgr.h"
 #include <dirent.h>
 #include <errno.h>
 #include <sys/stat.h>
+
+#include "dbpool.h"
+#include "dbgr.h"
+#include "err.h"
 
 
 // process registration:
