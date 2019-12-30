@@ -43,6 +43,9 @@ class DBpool{
   // rename database file
   void dbrename(std::string name1, std::string name2);
 
+  // return listof all databases
+  std::vector<std::string> dblist();
+
   // find database in the pool. Create/Open/Reopen if needed
   DBgr & get(const std::string & name, const int fl = 0);
 

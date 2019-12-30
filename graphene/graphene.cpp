@@ -12,7 +12,6 @@
 #include <cstdio>
 #include <iomanip>
 #include <cerrno>
-#include <dirent.h>
 
 #include <map>
 #include <string>
@@ -315,19 +314,10 @@ class Pars{
     // args: list
     if (strcasecmp(cmd.c_str(), "list")==0){
       if (pars.size()>1) throw Err() << "too many parameters";
-      DIR *dir = opendir(dbpath.c_str());
-      if (!dir) throw Err() << "can't open database directory: " << strerror(errno);
-      struct dirent *ent;
-      while ((ent = readdir (dir)) != NULL) {
-        string name(ent->d_name);
-        size_t p = name.find(".db");
-        if (name.size()>3 && p == name.size()-3)
-          out << name.substr(0,p) << "\n";
-      }
-      closedir(dir);
+      auto names = pool->dblist();
+      for (auto const &n: names) out << n << "\n";
       return;
     }
-
 
     // backup start: notify that we are going to start backup.
     // - reset temporary backup timer

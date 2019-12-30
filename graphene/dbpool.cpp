@@ -123,6 +123,23 @@ DBpool::dbrename(std::string name1, std::string name2){
   }
 }
 
+// make database list
+std::vector<std::string>
+DBpool::dblist(){
+  std::vector<std::string> ret;
+  DIR *dir = opendir(dbpath.c_str());
+  if (!dir) throw Err() << "can't open database directory: " << strerror(errno);
+  struct dirent *ent;
+  std::vector<std::string> names;
+  while ((ent = readdir (dir)) != NULL) {
+    std::string name(ent->d_name);
+    size_t p = name.find(".db");
+    if (name.size()>3 && p == name.size()-3)
+      ret.push_back(name.substr(0,p));
+  }
+  closedir(dir);
+  return ret;
+}
 
 // find database in the pool. Open/Reopen if needed
 DBgr &
