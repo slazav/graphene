@@ -79,8 +79,12 @@ mode is also used in readonly mode (`-R` command-line option).
 database locking to allow multiple programs work with the database
 simultaneously.
 
-- `txn` -- Full transaction and logging support. At the moment there are a few
-issues with this mode, and it is not recommended to use it.
+- `txn` -- Full transaction and logging support. At the moment there are
+a few issues with this mode, and it is not recommended to use it.
+
+It is not good to use different environment type when accessing one
+database, even for read-only operations. It is strongly recommended to
+use the default setting.
 
 Further information about database environments can be found in BerkleyDB
 documentation.
@@ -157,9 +161,9 @@ socket.
   lines are shown.
 
 You can use words "now", "now_s" and "inf" as a timestamp. You can also
-add "+" or "-" symbol to numerical value to add 1 ns. This is convenient
-if you know a timestamp of some value and want to read next or  previous
-one. Default value for time1 is 0, for time2 is "inf".
+add "+" or "-" symbol after numerical value to add of subtract 1 ns. This
+is convenient if you know a timestamp of some value and want to read next
+or  previous one. Default value for time1 is 0, for time2 is "inf".
 
 The "extended name" used in get_* commands have the following format:
 `<name>[:<column>][|<filter>]`
@@ -178,7 +182,7 @@ database directory, program name can not contain '.:|+ \t\n/' symbols.
 - `del <name> <time>` -- Delete a data point. Returns an error if there is
 no such point.
 
-- `del_range  <name> [<time1>] [<time2>]` -- Delete all points in the range.
+- `del_range  <name> <time1> <time2>` -- Delete all points in the range.
 
 #### Command for syncing databases in interactive mode:
 
@@ -210,18 +214,22 @@ used if you want to close unused databases and sync data.
 Graphene database supportes incremental backups. This can be done using
 `backup_*` commands: database.
 
+It is assumed that thre is one backup process for a database. It notifies
+the database before and after data transfer. Database answers which time
+range was modified since the last transfer.
+
 - `backup_start <name>` -- notify that we want to backup the database `name`,
 get time value of he earliest change since last backup.
 
 - `backup_end <name>` -- notify that backup finished successfully.
 
-Internally there are two timers with contains earlies time of database
-modification (main and temporary one). Each database modification command
+Internally there are two timers with contains earliest time of database
+modification: main and temporary one. Each database modification command
 (`put`, `del`, or `del_range`) decreases both timer values to the
-smallest time of modified record (it can be different from time in the
-command argument): (`timer = min(timer, modification_time)`). In new
-databases (and in databases created before graphene-2.8 where backup
-timers appear) buth timers are at at the largest possible time.
+smallest time of modified record: (`timer = min(timer,
+modification_time)`). In new databases (and in databases created before
+graphene-2.8 where backup timers appear) both timers are at at the
+largest possible time.
 
 The temporary timer is reset before backup starts (`backup_start`
 command) and commited to the main timer after backup process is
@@ -269,16 +277,18 @@ Options:
 ```
  -p <port>  -- tcp port for connections (default 8081)
  -d <path>  -- database path (default /var/lib/graphene/)
+ -E <word>  -- environment type:
+               none, lock, txn (default: lock)
  -v <level> -- be verbose
-                0 - write nothing.
+                0 - write nothing
                 1 - write some information on start
                 2 - write info about connections
                 3 - write input data
                 4 - write output data
  -l <file>  -- log file, use '-' for stdout
-               (default /var/log/graphene.log in daemon mode, '-' in)"
- -f         -- do fork and run as a daemon;
- -h         -- write help message and exit;
+               (default /var/log/graphene.log in daemon mode, '-' in)
+ -f         -- do fork and run as a daemon
+ -h         -- write this help message and exit
 ```
 
 ###  Matlab/octave interface
