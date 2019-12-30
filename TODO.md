@@ -22,8 +22,6 @@
 
 - http GET interface
 
-- search query in simple_json http interface
-
 - Move pars/pack code out of dbinfo class.
   write tests. Add time formats to the data.
 
