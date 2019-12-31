@@ -262,8 +262,7 @@ class Pars{
         pars.size()<4 ? "": pars[3]);
       for (int i=4; i<pars.size(); i++) info.descr+=" "+pars[i];
       // todo: create folders if needed
-      DBgr db = pool->get(pars[1], DB_CREATE | DB_EXCL);
-      db.write_info(info);
+      pool->get(pars[1], DB_CREATE | DB_EXCL).write_info(info);
       return;
     }
 
@@ -302,8 +301,7 @@ class Pars{
     if (strcasecmp(cmd.c_str(), "info")==0){
       if (pars.size()<2) throw Err() << "database name expected";
       if (pars.size()>2) throw Err() << "too many parameters";
-      DBgr db = pool->get(pars[1], DB_RDONLY);
-      DBinfo info = db.read_info();
+      DBinfo info = pool->get(pars[1], DB_RDONLY).read_info();
       cout << DBinfo::datafmt2str(info.val);
       if (info.descr!="") out << '\t' << info.descr;
       out << "\n";
@@ -325,8 +323,7 @@ class Pars{
     // args: backup_start <name>
     if (strcasecmp(cmd.c_str(), "backup_start")==0){
       if (pars.size()!=2) throw Err() << "database name expected";
-      DBgr db = pool->get(pars[1]);
-      out << db.backup_start() << "\n";
+      out << pool->get(pars[1]).backup_start() << "\n";
       return;
     }
 
@@ -335,8 +332,7 @@ class Pars{
     // args: backup_end <name>
     if (strcasecmp(cmd.c_str(), "backup_end")==0){
       if (pars.size()!=2) throw Err() << "database name expected";
-      DBgr db = pool->get(pars[1]);
-      db.backup_end();
+      pool->get(pars[1]).backup_end();
       return;
     }
 
@@ -349,8 +345,7 @@ class Pars{
       vector<string> dat;
       for (int i=3; i<pars.size(); i++) dat.push_back(string(pars[i]));
       // open database and write data
-      DBgr db = pool->get(pars[1]);
-      db.put(pars[2], dat, dpolicy);
+      pool->get(pars[1]).put(pars[2], dat, dpolicy);
       return;
     }
 
@@ -363,8 +358,7 @@ class Pars{
       DBout dbo(dbpath, pars[1], out);
       if (relative) dbo.set_relative(t1);
       if (interactive) dbo.set_interactive();
-      DBgr db = pool->get(dbo.name, DB_RDONLY);
-      db.get_next(t1, dbo);
+      pool->get(dbo.name, DB_RDONLY).get_next(t1, dbo);
       return;
     }
 
@@ -377,8 +371,7 @@ class Pars{
       DBout dbo(dbpath, pars[1], out);
       if (relative) dbo.set_relative(t2);
       if (interactive) dbo.set_interactive();
-      DBgr db = pool->get(dbo.name, DB_RDONLY);
-      db.get_prev(t2, dbo);
+      pool->get(dbo.name, DB_RDONLY).get_prev(t2, dbo);
       return;
     }
 
@@ -391,8 +384,7 @@ class Pars{
       DBout dbo(dbpath, pars[1], out);
       if (relative) dbo.set_relative(t2);
       if (interactive) dbo.set_interactive();
-      DBgr db = pool->get(dbo.name, DB_RDONLY);
-      db.get(t2, dbo);
+      pool->get(dbo.name, DB_RDONLY).get(t2, dbo);
       return;
     }
 
@@ -407,8 +399,7 @@ class Pars{
       DBout dbo(dbpath, pars[1], out);
       if (relative) dbo.set_relative(t1);
       if (interactive) dbo.set_interactive();
-      DBgr db = pool->get(dbo.name, DB_RDONLY);
-      db.get_range(t1,t2,dt, dbo);
+      pool->get(dbo.name, DB_RDONLY).get_range(t1,t2,dt, dbo);
       return;
     }
 
@@ -417,8 +408,7 @@ class Pars{
     if (strcasecmp(cmd.c_str(), "del")==0){
       if (pars.size()<3) throw Err() << "database name and time expected";
       if (pars.size()>3) throw Err() << "too many parameters";
-      DBgr db = pool->get(pars[1]);
-      db.del(pars[2]);
+      pool->get(pars[1]).del(pars[2]);
       return;
     }
 
@@ -427,8 +417,7 @@ class Pars{
     if (strcasecmp(cmd.c_str(), "del_range")==0){
       if (pars.size()<4) throw Err() << "database name and two times expected";
       if (pars.size()>4) throw Err() << "too many parameters";
-      DBgr db = pool->get(pars[1]);
-      db.del_range(pars[2],pars[3]);
+      pool->get(pars[1]).del_range(pars[2],pars[3]);
       return;
     }
 
