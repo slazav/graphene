@@ -80,12 +80,12 @@ assert "$(./graphene -d . list | sort)" "$(printf "test_1\ntest_2\ntest_3\ntest_
 # list_dbs
 assert "$(./graphene -d . list_dbs a)" "#Error: too many parameters"
 assert "$(./graphene -E lock -d . list_dbs)" "#Error: list_dbs can not by run in this environment type: lock"
-assert "$(./graphene -R -d . list_dbs)" "#Error: list_dbs can not by run in this environment type: none"
+assert "$(./graphene -R -d . list_dbs)" "#Error: list_dbs can not by run in this environment type: lock"
 
 # list_logs
 assert "$(./graphene -d . list_logs a)" "#Error: too many parameters"
 assert "$(./graphene -E lock -d . list_logs)" "#Error: list_logs can not by run in this environment type: lock"
-assert "$(./graphene -R -d . list_logs)" "#Error: list_logs can not by run in this environment type: none"
+assert "$(./graphene -R -d . list_logs)" "#Error: list_logs can not by run in this environment type: lock"
 
 # delete
 assert "$(./graphene -d . delete)" "#Error: database name expected"

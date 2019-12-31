@@ -65,7 +65,7 @@ class Pars{
         case 'i': interactive = true; break;
         case 's': sockname = optarg; break;
         case 'r': relative = true; break;
-        case 'R': readonly = true; env_type = "none"; break;
+        case 'R': readonly = true; break;
       }
     }
     pars = vector<string>(argv+optind, argv+argc);
