@@ -23,11 +23,18 @@
 //
 class DBout {
   public:
+
+  struct Pars {
+    bool interactive;    // interactive mode
+    std::string time0;   // zero time for relative time output or ""
+    Pars(): interactive(false) {};
+  };
+
+
   std::string name;    // primary database name
   std::ostream & out;  // stream for output
-  std::string time0;   // zero time for relative time output or ""
-  bool interactive;    // interactive mode
   int col; // column number, for the main database
+  Pars pars;
 
   // filter name, pid, in/out descriptors
   std::string filter;  // filter program
@@ -50,8 +57,8 @@ class DBout {
   // but this function can be overriden.
   virtual void print_point(const std::string & str);
 
-  void set_interactive(const bool state=true) {interactive = state;}
-  void set_relative(const std::string & time0_="") {time0 = time0_;}
+  void set_interactive(const bool state=true) {pars.interactive = state;}
+  void set_relative(const std::string & time0_="") {pars.time0 = time0_;}
 };
 
 #endif
