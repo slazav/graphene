@@ -24,10 +24,29 @@
 class DBout {
   public:
 
+  // time format setting
+  enum timefmt_t {TIME_DEF, TIME_REL_S};
+
   struct Pars {
-    bool interactive;    // interactive mode
+    bool list;           // list mode -- print 1 line per point
+    bool interactive;    // interactive mode (protect # in the beginning of line)
+    timefmt_t timefmt;   // time format
     std::string time0;   // zero time for relative time output or ""
-    Pars(): interactive(false) {};
+
+    Pars(): interactive(false), list(false), timefmt(TIME_DEF) {};
+
+    void set_timefmt(const std::string & s){
+      if (strcasecmp(s.c_str(),"default") == 0) {timefmt=TIME_DEF; return;}
+      if (strcasecmp(s.c_str(),"rel_s") == 0) {timefmt=TIME_REL_S; return;}
+    }
+
+    std::string print_timefmt() const {
+      switch (timefmt){
+        case TIME_DEF:   return "default";
+        case TIME_REL_S: return "rel_s";
+        default: throw Err() << "Unknown time format: " << timefmt;
+      }
+    }
   };
 
 
@@ -51,14 +70,12 @@ class DBout {
   // and call print_point().
   // <list> parameter changes output of TEXT records in a list mode
   // (only first line is shown).
-  void proc_point(DBT *k, DBT *v, const DBinfo & info, int list=0);
+  void proc_point(DBT *k, DBT *v, const DBinfo & info);
 
   // print_point  -- by default it just prints the line to out,
   // but this function can be overriden.
   virtual void print_point(const std::string & str);
 
-  void set_interactive(const bool state=true) {pars.interactive = state;}
-  void set_relative(const std::string & time0_="") {pars.time0 = time0_;}
 };
 
 #endif

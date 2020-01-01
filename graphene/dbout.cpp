@@ -67,7 +67,7 @@ DBout::~DBout(){
 
 
 void
-DBout::proc_point(DBT *k, DBT *v, const DBinfo & info, int list) {
+DBout::proc_point(DBT *k, DBT *v, const DBinfo & info) {
   // check for correct key size (do not parse DB info)
   if (k->size!=sizeof(uint64_t) && k->size!=sizeof(uint32_t) ) return;
   // convert DBT to strings
@@ -76,16 +76,23 @@ DBout::proc_point(DBT *k, DBT *v, const DBinfo & info, int list) {
   // print values into a string (always \n in the end!)
   std::ostringstream str;
 
-  if (pars.time0.size() == 0)
-    str << info.print_time(ks); // absolute timestamp
-  else
-    str << std::fixed << std::setprecision(9)
-        << info.time_diff(ks, info.parse_time(pars.time0)); // relative time
+  // print time (according with timefmt)
+  switch (pars.timefmt) {
+    case TIME_DEF: // default: seconds.nanoseconds
+      str << info.print_time(ks);
+      break;
+    case TIME_REL_S: //relative, seconds
+      str << std::fixed << std::setprecision(9)
+          << info.time_diff(ks, info.parse_time(pars.time0));
+      break;
+    default: throw Err() << "unknown time format: " << pars.timefmt;
+  }
+
   str << " " << info.print_data(vs, col) << "\n"; // data
   std::string s = str.str();
 
   // keep only first line (s always ends with \n - see above)
- if (list==1 && info.val==DATA_TEXT)
+ if (pars.list==1 && info.val==DATA_TEXT)
     s.resize(s.find('\n')+1);
 
   // do filtering
