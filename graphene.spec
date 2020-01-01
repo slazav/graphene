@@ -20,6 +20,7 @@ graphene -- a simple time series database with nanosecond precision for scientif
 %setup -q
 
 %build
+tar -xvf modules.tar
 %make
 
 %install

@@ -12,7 +12,7 @@
 #include <sstream>
 #include <cstring> /* memset */
 #include <db.h>
-#include "err.h"
+#include "err/err.h"
 
 // current database version
 #define DBVERSION 2

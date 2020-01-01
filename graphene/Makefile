@@ -1,49 +1,14 @@
-LDLIBS=-lmicrohttpd -lm -ldb -ljansson
-CPPFLAGS=-g
-CC=g++
+MOD_HEADERS := dbgr.h dbinfo.h dbout.h dbpool.h json.h
+MOD_SOURCES := dbgr.cpp dbinfo.cpp dbinfo_v2.cpp dbinfo_v1.cpp dbout.cpp dbpool.cpp json.cpp
 
-bindir         ?= /usr/bin
-initdir       ?= /etc/init.d
+SIMPLE_TESTS := graphene json0
+SCRIPT_TESTS := json1
+OTHER_TESTS := test_cli.sh test_v1.sh
 
+PROGRAMS := graphene graphene_http
 
-all: graphene graphene_http graphene_json tests
-install: all
-	mkdir -p ${bindir} ${initdir}
-	install graphene graphene_http ${bindir}
-	install graphene_http.init ${initdir}/graphene_http
-	install scripts/graphene_tab ${bindir}
-	install scripts/graphene_int ${bindir}
-	install scripts/graphene_sync ${bindir}
-	install scripts/graphene_sweeps ${bindir}
-	install scripts/graphene_filter ${bindir}
-	install scripts/graphene_mkcomm ${bindir}
+PKG_CONFIG := libmicrohttpd libdb jansson
+LDLIBS=-lm
 
-dbinfo.o:      err.h dbinfo.h dbinfo.cpp
-dbinfo_v1.o:   err.h dbinfo.h dbinfo_v1.cpp
-dbinfo_v2.o:   err.h dbinfo.h dbinfo_v2.cpp
-dbgr.o:        err.h dbinfo.h dbout.h dbgr.h dbgr.cpp
-dbpool.o:      err.h dbpool.h dbgr.h
-dbout.o:       err.h dbout.h dbgr.h
-graphene.o:       err.h dbinfo.h dbgr.h dbout.h dbpool.h graphene.cpp
-test_json.o:      err.h json.h tests.h test_json.cpp
-test_db.o:        err.h dbinfo.h dbgr.h dbout.h dbpool.h tests.h test_db.cpp
-json.o:           err.h dbinfo.h dbgr.h dbout.h dbpool.h json.h json.cpp
-graphene_json.o:  err.h dbinfo.h dbgr.h dbout.h dbpool.h json.h graphene_json.cpp
-graphene_http.o:  err.h dbinfo.h dbgr.h dbout.h dbpool.h json.h graphene_http.cpp
-
-graphene:      dbinfo.o dbinfo_v1.o dbinfo_v2.o dbgr.o dbpool.o dbout.o graphene.o
-graphene_http: dbinfo.o dbinfo_v1.o dbinfo_v2.o dbgr.o dbpool.o dbout.o json.o graphene_http.o
-graphene_json: dbinfo.o dbinfo_v1.o dbinfo_v2.o dbgr.o dbpool.o dbout.o json.o graphene_json.o
-test_db:    dbinfo.o dbinfo_v1.o dbinfo_v2.o dbgr.o dbpool.o dbout.o test_db.o
-test_json:  dbinfo.o dbinfo_v1.o dbinfo_v2.o dbgr.o dbpool.o dbout.o json.o test_json.o
-
-tests: test_db test_json test_cli.sh
-	rm -f __db.* *.db
-	./test_db
-	./test_json
-	./test_cli.sh
-	./test_json.sh
-	./test_v1.sh
-
-clean:
-	rm -f *.o test_db test_json graphene graphene_http graphene_json *.db
+MODDIR      := ../modules
+include $(MODDIR)/Makefile.inc

@@ -1,0 +1,3 @@
+cd modules;
+gear --export-dir .. $@
+rm -f ../mapsoft2-libs.spec

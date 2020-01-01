@@ -1,7 +1,2 @@
-*.o
-*.so
 graphene
 graphene_http
-graphene_json
-test_db
-test_json

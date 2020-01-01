@@ -26,7 +26,7 @@
 #include <sys/stat.h>
 #include <microhttpd.h>
 #include "json.h"
-#include "err.h"
+#include "err/err.h"
 
 using namespace std;
 
@@ -144,12 +144,6 @@ static int request_answer(void * cls, struct MHD_Connection * connection, const 
     int code=MHD_HTTP_OK;
     try{
       out_data = graphene_json(spars->dbpath, spars->env_type, url, in_data);
-    }
-    catch(Json::Err e){
-      out_data = e.str();
-      if (spars->verb>0) *(spars->log) << "Error: " << e.str() << "\n";
-      MHD_add_response_header(response, "Error", e.str().c_str());
-      code=400;
     }
     catch(Err e){
       out_data = e.str();

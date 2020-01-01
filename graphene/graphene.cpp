@@ -20,7 +20,7 @@
 #include "dbgr.h"
 #include "dbpool.h"
 #include "dbout.h"
-#include "err.h"
+#include "err/err.h"
 
 #include <ext/stdio_filebuf.h>
 #include <sys/types.h>

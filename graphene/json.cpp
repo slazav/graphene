@@ -154,19 +154,19 @@ Json json_query(const string & dbpath, const std::string & env_type, const Json 
   /* parse time range */
   string t1 = convert_time( ji["range"]["from"].as_string() );
   string t2 = convert_time( ji["range"]["to"].as_string() );
-  if (t1=="" || t2=="") throw Json::Err() << "Bad range setting";
+  if (t1=="" || t2=="") throw Err() << "Bad range setting";
 
   /* check format */
   //if (ji["format"].as_string() != "json") 
-  //  throw Json::Err() << "Unknown format";
+  //  throw Err() << "Unknown format";
 
   /* parse interval */
   string dt = convert_interval( ji["interval"].as_string() );
-  if (dt=="") throw Json::Err() << "Bad interval";
+  if (dt=="") throw Err() << "Bad interval";
 
   /* parse maxDataPoints */
   uint64_t maxpt = ji["maxDataPoints"].as_integer();
-  if (maxpt==0) throw Json::Err() << "Bad maxDataPoints";
+  if (maxpt==0) throw Err() << "Bad maxDataPoints";
 
   /* parse targets and run command */
   Json out = Json::array();
@@ -182,7 +182,7 @@ Json json_query(const string & dbpath, const std::string & env_type, const Json 
 
     // check DB format
     if (db.read_info().val == DATA_TEXT)
-      throw Json::Err() << "Can not do query from TEXT database. Use annotations";
+      throw Err() << "Can not do query from TEXT database. Use annotations";
 
     // Get data from the database
     db.get_range(t1,t2,dt, dbo);
@@ -219,7 +219,7 @@ Json json_annotations(const string & dbpath, const std::string & env_type, const
   /* parse time range */
   string t1 = convert_time( ji["range"]["from"].as_string() );
   string t2 = convert_time( ji["range"]["to"].as_string() );
-  if (t1=="" || t2=="") throw Json::Err() << "Bad range setting";
+  if (t1=="" || t2=="") throw Err() << "Bad range setting";
 
   // extract db name
   DBoutJSON dbo(dbpath, ji["annotation"]["name"].as_string(), false);
@@ -230,7 +230,7 @@ Json json_annotations(const string & dbpath, const std::string & env_type, const
 
   // check DB format
   if (db.read_info().val != DATA_TEXT)
-    throw Json::Err() << "Annotations can be found only in TEXT databases";
+    throw Err() << "Annotations can be found only in TEXT databases";
 
   ostringstream ss; ss << fixed << (atof(t2.c_str())-atof(t1.c_str()))/MAX_ANNOTATIONS;
 
@@ -255,30 +255,24 @@ Json json_search(const string & dbpath, const std::string & env_type, const Json
 
 /***************************************************************************/
 /* Process a JSON request to the database. */
-/* Returns error message on errors.*/
 string graphene_json(const string & dbpath,  /* path to databases */
                      const std::string & env_type,
                      const string & url,     /* /query, /annotations, etc. */
                      const string & data){    /* input data */
 
-  try {
-    /* parse input JSON */
-    Json ji = Json::load_string(data);
-    Json jo;
-    int out_fl = JSON_PRESERVE_ORDER;
+  /* parse input JSON */
+  Json ji = Json::load_string(data);
+  Json jo;
+  int out_fl = JSON_PRESERVE_ORDER;
 
-    if (url == "/query")
-      return json_query(dbpath, env_type, ji).save_string(out_fl);
+  if (url == "/query")
+    return json_query(dbpath, env_type, ji).save_string(out_fl);
 
-    if (url == "/search")
-      return json_search(dbpath, env_type, ji).save_string(out_fl);
+  if (url == "/search")
+    return json_search(dbpath, env_type, ji).save_string(out_fl);
 
-    if (url == "/annotations")
-      return json_annotations(dbpath, env_type, ji).save_string(out_fl);
+  if (url == "/annotations")
+    return json_annotations(dbpath, env_type, ji).save_string(out_fl);
 
-    throw Json::Err() << "Unknown query";
-  }
-  catch (Json::Err e){
-    return e.json();
-  }
+  throw Err() << "Unknown query";
 }
