@@ -157,7 +157,7 @@ class Pars{
 
   // Interactive mode.
   void run_interactive(std::istream & in, std::ostream & out){
-    if (pars.size() !=0) throw Err() << "too many argumens for the interactive mode";
+    if (pars.size() !=0) throw Err() << "too many arguments for the interactive mode";
     string line;
     out << "#SPP001\n"; // command-line protocol, version 001.
     out << "Graphene database. Type cmdlist to see list of commands\n";

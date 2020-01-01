@@ -370,7 +370,7 @@ assert "$(./graphene -d . delete test_4)" ""
 # interactive mode
 
 #prompt
-assert "$(./graphene -d . -i 1)" "#Error: too many argumens for the interactive mode"
+assert "$(./graphene -d . -i 1)" "#Error: too many arguments for the interactive mode"
 prompt="$(printf "" | ./graphene  -d . -i)"
 assert "$prompt" "#SPP001
 Graphene database. Type cmdlist to see list of commands
