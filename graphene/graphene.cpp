@@ -162,22 +162,32 @@ class Pars{
     out << "#SPP001\n"; // command-line protocol, version 001.
     out << "Graphene database. Type cmdlist to see list of commands\n";
     out.flush();
-    DBpool pool(dbpath, readonly, env_type);
-    out << "#OK\n";
-    out.flush();
 
-    while (getline(in, line)){
-      try {
-        if (line=="") continue;
-        parse_command_string(line);
-        run_command(&pool, out);
-        out << "#OK\n";
-        out.flush();
+    // Outer try -- exit on errors with #Error message
+    // For SPP2 it should be #Fatal
+    try {
+      DBpool pool(dbpath, readonly, env_type);
+      out << "#OK\n";
+      out.flush();
+
+      while (getline(in, line)){
+        // inner try -- continue to a new command with #Error message
+        try {
+          if (line=="") continue;
+          parse_command_string(line);
+          run_command(&pool, out);
+          out << "#OK\n";
+          out.flush();
+        }
+        catch(Err e){
+          if (e.str()!="") out << "#Error: " << e.str() << "\n";
+          out.flush();
+        }
       }
-      catch(Err e){
-        if (e.str()!="") out << "#Error: " << e.str() << "\n";
-        out.flush();
-      }
+    }
+    catch(Err e){
+      if (e.str()!="") out << "#Error: " << e.str() << "\n";
+      return;
     }
     return;
   }
@@ -508,6 +518,7 @@ int
 main(int argc, char **argv) {
 
   try {
+
     Pars p(argc, argv);
     if (p.interactive) p.run_interactive(cin, cout);
     else if (p.sockname!="") p.run_socket(p.sockname);
