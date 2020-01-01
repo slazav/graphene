@@ -525,7 +525,7 @@ main(int argc, char **argv) {
     else p.run_cmdline();
 
   } catch(Err e){
-    if (e.str()!="") cout << "#Error: " << e.str() << "\n";
+    if (e.str()!="") cout << "Error: " << e.str() << "\n";
     return 1;
   }
 }
