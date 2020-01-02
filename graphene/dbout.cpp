@@ -97,7 +97,8 @@ DBout::proc_point(DBT *k, DBT *v, const DBinfo & info) {
 
   // do filtering
   if (pid>0){
-    write(fd1[1], s.data(), s.length());
+    if (write(fd1[1], s.data(), s.length()) != s.length())
+      throw Err() << "can't send data to the filter program";
     char buf[256];
     size_t n;
     std::string out;
