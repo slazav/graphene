@@ -472,6 +472,7 @@ assert "$(diff test_2.tmp test_3.tmp)" ""
 assert "$(./graphene -d . delete test_1)" ""
 assert "$(./graphene -d . delete test_2)" ""
 
+rm -f test_*.tmp
 
 ###########################################################################
 # readonly mode
