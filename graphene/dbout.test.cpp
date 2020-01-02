@@ -7,6 +7,35 @@
 
 #include "dbinfo.h"
 #include "dbout.h"
+#include "dbgr.h"
+
+std::string
+proc_point_str(const std::string & input, const DBinfo & info){
+
+  // split input
+  std::istringstream in(input);
+  std::vector<std::string> args;
+  std::string key;
+  in >> key;
+  while (1) {
+    std::string a;
+    in >> a;
+    if (!in) break;
+    args.push_back(a);
+  }
+
+  std::ostringstream out;
+  DBout dbo("", "dbname", out);
+
+  // pack input
+  std::string kp = info.parse_time(key);
+  std::string vp = info.parse_data(args);
+  DBT k = DBgr::mk_dbt(kp);
+  DBT v = DBgr::mk_dbt(vp);
+
+  dbo.proc_point(&k,&v, info);
+  return out.str();
+}
 
 using namespace std;
 int main() {
@@ -47,61 +76,131 @@ int main() {
       assert_eq(hh2.dname(), "INT16");
     }
 
+
     {
-      // pack/unpack timestamps - v1
       DBinfo hh1(DATA_DOUBLE);
-      DBinfo hh2(DATA_INT16);
 
-      std::string ts1  = "1234567890.123000000";
-      std::string ts2  = "0.000000000";
-      std::string ts3  = "18446744073709551.615000000";
+      /// version 1 timestamps
+      hh1.version = 1;
 
-      string d1  = hh1.parse_time_v1(ts1);
-      assert_eq(d1.size(),  8);
-      assert_eq(hh1.print_time_v1(d1), ts1);
+      assert_eq(proc_point_str("1234567890.123000000 0.1 0.2 0.3", hh1),
+                std::string("1234567890.123000000 0.1 0.2 0.3\n"));
 
-      string d2  = hh1.parse_time_v1(ts2);
-      assert_eq(d2.size(),  8);
-      assert_eq(hh1.print_time_v1(d2), ts2);
+      assert_eq(proc_point_str("0.000000000 0.1 0.2 0.3", hh1),
+                "0.000000000 0.1 0.2 0.3\n");
 
-      assert_eq(hh2.print_time_v1(hh1.parse_time_v1(ts3)), ts3); //max
+      // largest possible value
+      assert_eq(proc_point_str("18446744073709551.615 0.1 0.2 0.3", hh1),
+                "18446744073709551.615000000 0.1 0.2 0.3\n");
 
-      assert_eq(hh2.print_time_v1(hh1.parse_time_v1("1")), "1.000000000");
-      assert_eq(hh2.print_time_v1(hh1.parse_time_v1("1.")), "1.000000000");
-      assert_eq(hh2.print_time_v1(hh1.parse_time_v1("1.000")), "1.000000000");
-      assert_eq(hh2.print_time_v1(hh1.parse_time_v1("1.123")), "1.123000000");
-      assert_eq(hh2.print_time_v1(hh1.parse_time_v1("1.12345")), "1.123000000");
+      // same as inf
+      assert_eq(proc_point_str("inf 0.1 0.2 0.3", hh1),
+                "18446744073709551.615000000 0.1 0.2 0.3\n");
+
+      // overfull
+      assert_eq(proc_point_str("18446744073709551.616 0.1 0.2 0.3", hh1),
+                "0.000000000 0.1 0.2 0.3\n");
+
+      // version 1 has 1ms precision
+      assert_eq(proc_point_str("1234567890.123123000 0.1 0.2 0.3", hh1),
+                std::string("1234567890.123000000 0.1 0.2 0.3\n"));
+
+      // and no rounding, extra digits are skipped
+      assert_eq(proc_point_str("1234567890.123923000 0.1 0.2 0.3", hh1),
+                std::string("1234567890.123000000 0.1 0.2 0.3\n"));
+
+      assert_eq(proc_point_str("1 0.1 0.2 0.3", hh1),
+                std::string("1.000000000 0.1 0.2 0.3\n"));
+
+      assert_err(proc_point_str("-1a 0.1 0.2 0.3", hh1),
+                "Bad timestamp: can't read decimal dot: -1a");
+
+      assert_err(proc_point_str("1a 0.1 0.2 0.3", hh1),
+                "Bad timestamp: can't read decimal dot: 1a");
+
+      assert_err(proc_point_str("1.2a 0.1 0.2 0.3", hh1),
+                "Bad timestamp: can't read milliseconds: 1.2a");
+
+
+      /// version 2 timestamps
+      hh1.version = 2;
+
+      assert_eq(proc_point_str("1234567890.000000000 0.1 0.2 0.3", hh1),
+                std::string("1234567890.000000000 0.1 0.2 0.3\n"));
+
+      assert_eq(proc_point_str("1234567890.123456789 0.1 0.2 0.3", hh1),
+                std::string("1234567890.123456789 0.1 0.2 0.3\n"));
+
+      assert_eq(proc_point_str("0.0 0.1 0.2 0.3", hh1),
+                std::string("0.000000000 0.1 0.2 0.3\n"));
+
+      assert_eq(proc_point_str("1 0.1 0.2 0.3", hh1),
+                std::string("1.000000000 0.1 0.2 0.3\n"));
+
+      assert_eq(proc_point_str("1. 0.1 0.2 0.3", hh1),
+                std::string("1.000000000 0.1 0.2 0.3\n"));
+
+      assert_eq(proc_point_str("1.0 0.1 0.2 0.3", hh1),
+                std::string("1.000000000 0.1 0.2 0.3\n"));
+
+      assert_eq(proc_point_str("1.1 0.1 0.2 0.3", hh1),
+                std::string("1.100000000 0.1 0.2 0.3\n"));
+
+      assert_eq(proc_point_str("1.001 0.1 0.2 0.3", hh1),
+                std::string("1.001000000 0.1 0.2 0.3\n"));
+
+      // ns precision, extra digits are skipped
+      assert_eq(proc_point_str("1234567890.12345678999 0.1 0.2 0.3", hh1),
+                std::string("1234567890.123456789 0.1 0.2 0.3\n"));
+
+      // max value
+      assert_eq(proc_point_str("4294967295.999999999 0.1 0.2 0.3", hh1),
+                std::string("4294967295.999999999 0.1 0.2 0.3\n"));
+
+      assert_eq(proc_point_str("inf 0.1 0.2 0.3", hh1),
+                std::string("4294967295.999999999 0.1 0.2 0.3\n"));
+
+      // error on overfull:
+      assert_err(proc_point_str("4294967296.000000000 0.1 0.2 0.3", hh1),
+                "Bad timestamp: can't read seconds: 4294967296.000000000");
+
+      /// +/- suffixes
+      assert_eq(proc_point_str("123456789.12345678999+ 0.1 0.2 0.3", hh1),
+                std::string("123456789.123456790 0.1 0.2 0.3\n"));
+
+      assert_eq(proc_point_str("123456789.12345678999- 0.1 0.2 0.3", hh1),
+                std::string("123456789.123456788 0.1 0.2 0.3\n"));
+
+      assert_eq(proc_point_str("0+ 0.1 0.2 0.3", hh1),
+                std::string("0.000000001 0.1 0.2 0.3\n"));
+
+      assert_eq(proc_point_str("0- 0.1 0.2 0.3", hh1),
+                std::string("4294967295.999999999 0.1 0.2 0.3\n"));
+
+      assert_eq(proc_point_str("0.- 0.1 0.2 0.3", hh1),
+                std::string("4294967295.999999999 0.1 0.2 0.3\n"));
+
+      assert_eq(proc_point_str("0.0- 0.1 0.2 0.3", hh1),
+                std::string("4294967295.999999999 0.1 0.2 0.3\n"));
+
+      // inf+/inf- are not supported yet!
+//      assert_eq(proc_point_str("inf- 0.1 0.2 0.3", hh1),
+//                std::string("4294967295.999999998 0.1 0.2 0.3\n"));
+
+//      assert_eq(proc_point_str("inf+ 0.1 0.2 0.3", hh1),
+//                std::string("0.000000000 0.1 0.2 0.3\n"));
+
+      /// version 2 timestamps
+      hh1.version = 3;
+
+      assert_err(proc_point_str("1.0 0.1 0.2 0.3", hh1),
+                "Unknown database version: 3");
 
     }
+
     {
       // pack/unpack timestamps - v2
       DBinfo hh1(DATA_DOUBLE);
-
-      std::string ts1  = "1234567890.000000000";
-      std::string ts2  = "1234567890.123456789";
-      string d1  = hh1.parse_time_v2(ts1);
-      assert_eq(d1.size(),  4);
-      assert_eq(hh1.print_time_v2(d1), ts1);
-      string d2  = hh1.parse_time_v2(ts2);
-      assert_eq(d2.size(),  8);
-      assert_eq(hh1.print_time_v2(d2), ts2);
-
-      assert_eq(hh1.print_time_v2(hh1.parse_time_v2("0.0")), "0.000000000");
-      assert_eq(hh1.print_time_v2(hh1.parse_time_v2("1")), "1.000000000");
-      assert_eq(hh1.print_time_v2(hh1.parse_time_v2("1.")), "1.000000000");
-      assert_eq(hh1.print_time_v2(hh1.parse_time_v2("1.1")), "1.100000000");
-      assert_eq(hh1.print_time_v2(hh1.parse_time_v2("1.001")), "1.001000000");
-      assert_eq(hh1.print_time_v2(hh1.parse_time_v2("123456789.123456789")), "123456789.123456789");
-      assert_eq(hh1.print_time_v2(hh1.parse_time_v2("123456789.12345678999")), "123456789.123456789");
-      assert_eq(hh1.print_time_v2(hh1.parse_time_v2("4294967295.12345678999")), "4294967295.123456789"); // max
-      assert_eq(hh1.print_time_v2(hh1.parse_time_v2("123456789.12345678999+")), "123456789.123456790");
-      assert_eq(hh1.print_time_v2(hh1.parse_time_v2("123456789.12345678999-")), "123456789.123456788");
-      assert_eq(hh1.print_time_v2(hh1.parse_time_v2("0+")), "0.000000001");
-      assert_eq(hh1.print_time_v2(hh1.parse_time_v2("0-")), "4294967295.999999999");
-      assert_eq(hh1.print_time_v2(hh1.parse_time_v2("0.-")), "4294967295.999999999");
-      assert_eq(hh1.print_time_v2(hh1.parse_time_v2("0.00-")), "4294967295.999999999");
-
-
       assert_err(hh1.parse_time_v2(""), "Bad timestamp: can't read seconds: ");
       assert_err(hh1.parse_time_v2("a"), "Bad timestamp: can't read seconds: a");
       assert_err(hh1.parse_time_v2("1234567890123"), "Bad timestamp: can't read seconds: 1234567890123"); // >2^32
@@ -146,16 +245,16 @@ int main() {
     {
       // add_time_v1
       DBinfo hh1(DATA_DOUBLE);
-      assert_eq(hh1.print_time_v1(hh1.add_time_v1(hh1.parse_time_v1("1.5"), hh1.parse_time_v1("0.5"))), "2.000000000");
-      assert_eq(hh1.print_time_v1(hh1.add_time_v1(hh1.parse_time_v1("1.999"), hh1.parse_time_v1("1.999"))), "3.998000000");
-      assert_eq(hh1.print_time_v1(hh1.add_time_v1(hh1.parse_time_v1("10"), hh1.parse_time_v1("10"))), "20.000000000");
+      assert_eq(hh1.parse_time_v1("2.0"),   hh1.add_time_v1(hh1.parse_time_v1("1.5"), hh1.parse_time_v1("0.5")));
+      assert_eq(hh1.parse_time_v1("3.998"), hh1.add_time_v1(hh1.parse_time_v1("1.999"), hh1.parse_time_v1("1.999")));
+      assert_eq(hh1.parse_time_v1("20.0"),  hh1.add_time_v1(hh1.parse_time_v1("10"), hh1.parse_time_v1("10")));
     }
     {
       // add_time_v2
       DBinfo hh1(DATA_DOUBLE);
-      assert_eq(hh1.print_time_v2(hh1.add_time_v2(hh1.parse_time_v2("1.5"), hh1.parse_time_v2("0.5"))), "2.000000000");
-      assert_eq(hh1.print_time_v2(hh1.add_time_v2(hh1.parse_time_v2("1.999"), hh1.parse_time_v2("1.999"))), "3.998000000");
-      assert_eq(hh1.print_time_v2(hh1.add_time_v2(hh1.parse_time_v2("10"), hh1.parse_time_v2("10"))), "20.000000000");
+      assert_eq(hh1.parse_time_v2("2.0"),   hh1.add_time_v2(hh1.parse_time_v2("1.5"), hh1.parse_time_v2("0.5")));
+      assert_eq(hh1.parse_time_v2("3.998"), hh1.add_time_v2(hh1.parse_time_v2("1.999"), hh1.parse_time_v2("1.999")));
+      assert_eq(hh1.parse_time_v2("20.0"),  hh1.add_time_v2(hh1.parse_time_v2("10"), hh1.parse_time_v2("10")));
       // 2^31+2^31 >= 2^32
       assert_err(hh1.add_time_v2(hh1.parse_time_v2("2147483648"), hh1.parse_time_v2("2147483648")), "add_time overfull");
     }
@@ -197,6 +296,7 @@ int main() {
         hh1.parse_data(d2));
       assert_eq(hh1.print_data(d0), "0.4 1.4");
     }
+
     {
       // pack/unpack data
       DBinfo hh1(DATA_INT32);
