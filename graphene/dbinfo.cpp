@@ -28,7 +28,7 @@ string
 DBinfo::parse_time(const string & ts) const{
   if      (version==1) return parse_time_v1(ts);
   else if (version==2) return parse_time_v2(ts);
-  else throw Err() << "Unknown database version: " << version;
+  else throw Err() << "Unknown database version: " << (int)version;
 }
 
 // Print timestamp
@@ -36,7 +36,7 @@ std::string
 DBinfo::print_time(const string & s) const{
   if      (version==1) return print_time_v1(s);
   else if (version==2) return print_time_v2(s);
-  else throw Err() << "Unknown database version: " << version;
+  else throw Err() << "Unknown database version: " << (int)version;
 }
 
 // Compare two packed time values, return +1,0,-1 if s1>s2,s1=s2,s1<s2
@@ -44,7 +44,7 @@ int
 DBinfo::cmp_time(const std::string & s1, const std::string & s2) const{
   if      (version==1) return cmp_time_v1(s1,s2);
   else if (version==2) return cmp_time_v2(s1,s2);
-  else throw Err() << "Unknown database version: " << version;
+  else throw Err() << "Unknown database version: " << (int)version;
 }
 
 // Is time equals zero?
@@ -52,7 +52,7 @@ bool
 DBinfo::is_zero_time(const std::string & s1) const {
   if      (version==1) return is_zero_time_v1(s1);
   else if (version==2) return is_zero_time_v2(s1);
-  else throw Err() << "Unknown database version: " << version;
+  else throw Err() << "Unknown database version: " << (int)version;
 }
 
 // Add two packed time values, return packed string
@@ -60,7 +60,7 @@ string
 DBinfo::add_time(const std::string & s1, const std::string & s2) const{
   if      (version==1) return add_time_v1(s1,s2);
   else if (version==2) return add_time_v2(s1,s2);
-  else throw Err() << "Unknown database version: " << version;
+  else throw Err() << "Unknown database version: " << (int)version;
 }
 
 // Add two packed time values, return packed string
@@ -68,7 +68,7 @@ double
 DBinfo::time_diff(const std::string & s1, const std::string & s2) const{
   if      (version==1) return time_diff_v1(s1,s2);
   else if (version==2) return time_diff_v2(s1,s2);
-  else throw Err() << "Unknown database version: " << version;
+  else throw Err() << "Unknown database version: " << (int)version;
 }
 
 /********************************************************************/
@@ -196,6 +196,6 @@ DBinfo::interpolate(
         const string & v1, const string & v2){
   if      (version==1) return interpolate_v1(k0,k1,k2,v1,v2);
   else if (version==2) return interpolate_v2(k0,k1,k2,v1,v2);
-  else throw Err() << "Unknown database version: " << version;
+  else throw Err() << "Unknown database version: " << (int)version;
 }
 
