@@ -1,0 +1,45 @@
+create db1 TEXT
+
+put db1  1  a  b  c
+
+put db1  2  "a  b  c"
+
+put db1  3  \"a  b  c\"
+
+put db1  4  "a  b
+  c"
+
+put db1  5  a  b\
+  c
+
+# comments
+put db1  6  a #  comments
+
+put db1  7  "#a  b
+  c"
+
+
+get\
+db1 1
+
+get\
+db1 2
+
+get\
+db1 3
+
+get\
+db1 4
+
+get\
+ db1 5
+
+get\
+ db1 6
+
+get\
+ db1 7
+
+get_range db1 '1' '7'
+
+delete db1

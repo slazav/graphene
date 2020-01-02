@@ -1,0 +1,36 @@
+#SPP001
+Graphene database. Type cmdlist to see list of commands
+#OK
+#OK
+#OK
+#OK
+#OK
+#OK
+#OK
+#OK
+#OK
+1.000000000 a b c
+#OK
+2.000000000 a  b  c
+#OK
+3.000000000 "a b c"
+#OK
+4.000000000 a  b
+  c
+#OK
+5.000000000 a b c
+#OK
+6.000000000 a
+#OK
+7.000000000 #a  b
+  c
+#OK
+1.000000000 a b c
+2.000000000 a  b  c
+3.000000000 "a b c"
+4.000000000 a  b
+5.000000000 a b c
+6.000000000 a
+7.000000000 #a  b
+#OK
+#OK

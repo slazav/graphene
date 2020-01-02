@@ -96,6 +96,15 @@ stdin, answers are written to stdout. This allows making many requests
 without reopening databases. Opening and closing of databases are long,
 it can be useful to open the connection once and do many operations.
 
+In interactive mode input lines are splitted to argument lists similarly
+to shell splitting.
+ - Comments (everything from # symbol to end of the line) are skipped.
+ - Empty lines are skipped.
+ - Words are splitted by ' ' or '\t' symbols, or by '\' + '\n' sequence.
+ - Words can be quoted by " or '. Quoting can be used to enter multi-line text.
+ - Any symbol (including newline) can be escaped by '\'. Protected newline
+   symbol works as word separator, not as literal \n.
+
 The program implements a Simple Pipe Protocol (see somewhere in my
 `tcl_device` package): When it is started successfully  a prompt message is
 printed to stdout started with "#SPP001" and followed by "#OK" line. In
@@ -314,10 +323,4 @@ Usage: `graphene_tab -D <db_prog> -t <t1> -u <t2> db1 db2 db3 ...`
 Values from db2, db3, etc. are interpolated to points of db1 and printed in a single
 text table. For floating-point databases linear interpolation is used, for integer
 ones nearest values with smaller timestamps are printed.
-
-### Known problems
-
-- Line breaks in text databases. You can put line breaks in text database using
-the command line interface. In interactive mode it is not possible, because
-line breaks always mean starting of a new command.
 

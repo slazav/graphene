@@ -20,7 +20,9 @@
 #include "dbgr.h"
 #include "dbpool.h"
 #include "dbout.h"
+
 #include "err/err.h"
+#include "read_words/read_words.h"
 
 #include <ext/stdio_filebuf.h>
 #include <sys/types.h>
@@ -142,19 +144,6 @@ class Pars{
   }
 
 
-  // get parameters from a string (for interactive mode)
-  void parse_command_string(const string & str){
-    istringstream in(str);
-    pars.clear();
-    while (1) {
-      string a;
-      in >> a;
-      if (!in) break;
-      pars.push_back(a);
-    }
-  }
-
-
   // Interactive mode.
   void run_interactive(std::istream & in, std::ostream & out){
     if (pars.size() !=0) throw Err() << "too many arguments for the interactive mode";
@@ -170,11 +159,11 @@ class Pars{
       out << "#OK\n";
       out.flush();
 
-      while (getline(in, line)){
+      while (1){
         // inner try -- continue to a new command with #Error message
         try {
-          if (line=="") continue;
-          parse_command_string(line);
+          pars = read_words(in);
+          if (pars.size()==0) break;
           run_command(&pool, out);
           out << "#OK\n";
           out.flush();

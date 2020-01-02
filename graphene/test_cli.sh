@@ -412,6 +412,9 @@ assert "$(./graphene -d . get text_3)" "30.000000000 #BBB
 assert "$(printf 'get text_3' | ./graphene -i -d .)"\
   "$(printf "$prompt\n30.000000000 #BBB\n##CCC\n##DDD #EEE\n#OK")"
 
+# quoting in interactive mode:
+assert "$(cat test_data/commands1 | ./graphene -i -d .)"\
+  "$(cat test_data/answer1)"
 
 ###########################################################################
 # duplicated keys (replace by default)
