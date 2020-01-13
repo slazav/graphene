@@ -313,6 +313,9 @@ int main() {
     assert_err(graphene_parse_data_str("1 1.a", DATA_FLOAT),
       "Bad FLOAT value: 1.a");
 
+    assert_err(graphene_parse_data_str("1e88", DATA_FLOAT),
+      "Bad FLOAT value: 1e88");
+
     assert_err(graphene_parse_data_str("", DATA_FLOAT),
       "Some data expected");
 

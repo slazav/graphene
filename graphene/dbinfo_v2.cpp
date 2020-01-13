@@ -42,62 +42,6 @@ DBinfo::pack_time_v2(const uint64_t t) const{
   }
 }
 
-// Parse timestemp from a string (time in seconds, words now, inf, +/- suffixes)
-string
-DBinfo::parse_time_v2(const string & ts) const{
-  uint64_t t=0;
-  if (strcasecmp(ts.c_str(), "now")==0){
-    struct timeval tv;
-    gettimeofday(&tv,NULL);
-    t = ((uint64_t)tv.tv_sec << 32) + (uint64_t)tv.tv_usec*1000;
-  }
-  else if (strcasecmp(ts.c_str(), "now_s")==0){
-    struct timeval tv;
-    gettimeofday(&tv,NULL);
-    t = (uint64_t)tv.tv_sec << 32;
-  }
-  else if (strcasecmp(ts.c_str(), "inf")==0){
-    t = (uint64_t)((uint32_t)-1)<<32;
-    t += (uint64_t)999999999;
-  }
-  else {
-    int add=0;
-    istringstream s;
-    if (ts.size()>0 && (ts[ts.size()-1] == '+' || ts[ts.size()-1] == '-')){
-      add = ts[ts.size()-1]=='+'? +1:-1;
-      s.str(string(ts.begin(), ts.end()-1));
-    }
-    else s.str(ts);
-
-    uint32_t t1=0, t2=0;
-    s >> t1; // read seconds
-    if (s.bad() || s.fail())
-      throw Err() << "Bad timestamp: can't read seconds: " << ts;
-    if (!s.eof()){
-      char c;
-      s >> c; // read decimal dot
-      if (s.bad() || s.fail() || c!='.')
-        throw Err() << "Bad timestamp: can't read decimal dot: " << ts;
-      s >> c;
-      int i=8;
-      while (!s.eof()){
-        if (c<'0'||c>'9')
-          throw Err() << "Bad timestamp: can't read nanoseconds: " << ts;
-        if (i>=0) t2 += (c-'0') * pow(10,i);
-        s >> c;
-        i--;
-      }
-    }
-    t = ((uint64_t)t1<<32) + t2;
-    if (t==0 && add<0){ // same as inf
-      t = (uint64_t)((uint32_t)-1)<<32;
-      t += (uint64_t)999999999;
-    }
-    else t+=add;
-  }
-  return pack_time_v2(t);
-}
-
 // Print timestamp (DB packed string -> printed string)
 std::string
 DBinfo::print_time_v2(const string & s) const{
@@ -179,15 +123,16 @@ DBinfo::interpolate_v2(
   double k = (double)w2/(w1+w2);
 
   // check for correct value size
-  if (v1.size() % dsize() != 0 || v2.size() % dsize() != 0)
+  size_t dsize = graphene_dtype_size(val);
+  if (v1.size() % dsize != 0 || v2.size() % dsize != 0)
     throw Err() << "Broken database: wrong data length";
 
   // number of columns
-  size_t cn1 = v1.size()/dsize();
-  size_t cn2 = v2.size()/dsize();
+  size_t cn1 = v1.size()/dsize;
+  size_t cn2 = v2.size()/dsize;
   size_t cn0 = min(cn1,cn2);
 
-  string v0(dsize()*cn0, '\0');
+  string v0(dsize*cn0, '\0');
   for (size_t i=0; i<cn0; i++){
     switch (val){
       case DATA_FLOAT:

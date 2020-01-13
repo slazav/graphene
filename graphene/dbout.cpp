@@ -116,19 +116,7 @@ DBout::proc_point(DBT *k, DBT *v, const DBinfo & info) {
 
 void
 DBout::print_point(const std::string & str) {
-  if (pars.interactive) {
-    size_t nb=0, ne=0;
-    // print line by line
-    while ((ne = str.find('\n', nb)) != std::string::npos) {
-      if (str.length()>nb && str[nb]=='#') out << '#';
-      out << str.substr(nb, ne-nb+1);
-      nb=ne+1;
-    }
-    if (str.length()>nb && str[nb]=='#') out << '#';
-    out << str.substr(nb, std::string::npos);
-  }
-  else {
-    out << str;
-  }
+  if (pars.interactive) out << graphene_spp_text(str);
+  else out << str;
 }
 

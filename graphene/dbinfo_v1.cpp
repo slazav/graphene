@@ -25,51 +25,6 @@ DBinfo::unpack_time_v1(const string & s) const{
   return *(uint64_t *)s.data();
 }
 
-// Parse timestemp from a string
-string
-DBinfo::parse_time_v1(const string & ts) const{
-  uint64_t t=0;
-  if (strcasecmp(ts.c_str(), "now")==0){
-    struct timeval tv;
-    gettimeofday(&tv,NULL);
-    t = (uint64_t)tv.tv_usec/1000 + (uint64_t)tv.tv_sec*1000;
-  }
-  else if (strcasecmp(ts.c_str(), "now_s")==0){
-    struct timeval tv;
-    gettimeofday(&tv,NULL);
-    t = (uint64_t)tv.tv_sec*1000;
-  }
-  else if (strcasecmp(ts.c_str(), "inf")==0){
-    t = (uint64_t)-1;
-  }
-  else {
-    istringstream s(ts);
-    uint64_t t1=0, t2=0;
-    s >> t1; // read seconds
-    if (s.bad() || s.fail())
-      throw Err() << "Bad timestamp: can't read seconds: " << ts;
-    if (!s.eof()){
-      char c;
-      s >> c; // read decimal dot
-      if (s.bad() || s.fail() || c!='.')
-        throw Err() << "Bad timestamp: can't read decimal dot: " << ts;
-      s >> c;
-      int i=2;
-      while (!s.eof()){
-        if (c<'0'||c>'9')
-          throw Err() << "Bad timestamp: can't read milliseconds: " << ts;
-        if (i>=0) t2 += (c-'0') * pow(10,i);
-        s >> c;
-        i--;
-      }
-    }
-    t = t1*1000+t2;
-  }
-  string ret(sizeof(uint64_t), '\0');
-  *(uint64_t *)ret.data() = t;
-  return ret;
-}
-
 // Print timestamp
 std::string
 DBinfo::print_time_v1(const string & s) const{
@@ -143,15 +98,16 @@ DBinfo::interpolate_v1(
   double k = (double)dt2/(dt1+dt2);
 
   // check for correct value size
-  if (v1.size() % dsize() != 0 || v2.size() % dsize() != 0)
+  size_t dsize = graphene_dtype_size(val);
+  if (v1.size() % dsize != 0 || v2.size() % dsize != 0)
     throw Err() << "Broken database: wrong data length";
 
   // number of columns
-  size_t cn1 = v1.size()/dsize();
-  size_t cn2 = v2.size()/dsize();
+  size_t cn1 = v1.size()/dsize;
+  size_t cn2 = v2.size()/dsize;
   size_t cn0 = min(cn1,cn2);
 
-  string v0(dsize()*cn0, '\0');
+  string v0(dsize*cn0, '\0');
   for (size_t i=0; i<cn0; i++){
     switch (val){
       case DATA_FLOAT:

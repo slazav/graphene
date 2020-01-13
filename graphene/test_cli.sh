@@ -55,7 +55,7 @@ rm -f -- __db.* log.*
 
 # create
 assert "$(./graphene -d . create)" "Error: database name expected"
-assert "$(./graphene -d . create a dfmt)" "Error: Unknown data format: dfmt"
+assert "$(./graphene -d . create a dfmt)" "Error: Unknown data type: dfmt"
 
 assert "$(./graphene -d . create test_1)" ""
 assert "$(./graphene -d . create test_2 UINT16)" ""
@@ -246,7 +246,7 @@ assert "$(./graphene -d . put test_2 2000 1.2345678901234567890123456789e88)" ""
 assert "$(./graphene -d . put test_3 1000 1.2345678901234567890123456789)" ""
 assert "$(./graphene -d . put test_3 2000 1.2345678901234567890123456789e38)" ""
 
-assert "$(./graphene -d . put test_3 2000 1e88)" "Error: Can't put value into FLOAT database: 1e88"
+assert "$(./graphene -d . put test_3 2000 1e88)" "Error: Bad FLOAT value: 1e88"
 
 assert "$(./graphene -d . get_range test_2)" "1000.000000000 1.234567890123457
 2000.000000000 1.234567890123457e+88"

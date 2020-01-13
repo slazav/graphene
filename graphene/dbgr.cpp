@@ -7,6 +7,7 @@
 #include <iostream>
 #include <cstring> /* memset */
 
+#include "data.h"
 #include "dbgr.h"
 #include "err/err.h"
 
@@ -230,10 +231,10 @@ DBgr::read_info(){
     int ret = dbp->get(dbp.get(), txn, &k, &v, 0);
     if (ret != 0)
      throw Err() << name << ".db: " << db_strerror(ret);
-    uint8_t dfmt = *((uint8_t*)v.data);
-    if (dfmt<0 || dfmt > LAST_DATAFMT)
-      throw Err() << name << ".db: broken database, bad data format in the header";
-    db_info.val = static_cast<DataFMT>(dfmt);
+
+    db_info.val = static_cast<DataType>(*((uint8_t*)v.data));
+    graphene_dtype_name(db_info.val); // throw error if not valid
+
     db_info.descr = string((char*)v.data+1, (char*)v.data+v.size);
 
     // Read version
@@ -378,7 +379,7 @@ DBgr::put(const string &t, const vector<string> & dat, const string &dpolicy){
   int ret;
   DBinfo info = read_info();
   string ks = info.parse_time(t);
-  string vs = info.parse_data(dat);
+  string vs = graphene_parse_data(dat, info.val);
 
   // do everything in a single transaction
   DB_TXN *txn = txn_begin();

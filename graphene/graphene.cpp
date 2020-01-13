@@ -257,7 +257,7 @@ class Pars{
     if (strcasecmp(cmd.c_str(), "create")==0){
       if (pars.size()<2) throw Err() << "database name expected";
       DBinfo info(
-        pars.size()<3 ? DEFAULT_DATAFMT : DBinfo::str2datafmt(pars[2]),
+        pars.size()<3 ? DATA_DOUBLE : graphene_parse_dtype(pars[2]),
         pars.size()<4 ? "": pars[3]);
       for (int i=4; i<pars.size(); i++) info.descr+=" "+pars[i];
       // todo: create folders if needed
@@ -301,7 +301,7 @@ class Pars{
       if (pars.size()<2) throw Err() << "database name expected";
       if (pars.size()>2) throw Err() << "too many parameters";
       DBinfo info = pool->get(pars[1], DB_RDONLY).read_info();
-      cout << DBinfo::datafmt2str(info.val);
+      cout << graphene_dtype_name(info.val);
       if (info.descr!="") out << '\t' << info.descr;
       out << "\n";
       return;

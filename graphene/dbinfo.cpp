@@ -9,6 +9,7 @@
 #include <sys/time.h>
 #include <cmath>
 
+#include "data.h"
 #include "dbgr.h"
 #include "err/err.h"
 
@@ -26,8 +27,8 @@ void check_name(const std::string & name_){
 // Parse timestemp from a string
 string
 DBinfo::parse_time(const string & ts) const{
-  if      (version==1) return parse_time_v1(ts);
-  else if (version==2) return parse_time_v2(ts);
+  if      (version==1) return graphene_parse_time(ts, TIME_V1);
+  else if (version==2) return graphene_parse_time(ts, TIME_V2);
   else throw Err() << "Unknown database version: " << (int)version;
 }
 
@@ -71,89 +72,17 @@ DBinfo::time_diff(const std::string & s1, const std::string & s2) const{
   else throw Err() << "Unknown database version: " << (int)version;
 }
 
-/********************************************************************/
-// Data handling
-
-// Parse data string according with data format.
-// Output string is not a c-string!
-// It is used as a convenient data storage, which
-// can be easily converted into Berkleydb data.
-// For text data all arguments are joined with ' ' separator.
-// Quote argument if you want to keep original spaces!
-string
-DBinfo::parse_data(const vector<string> & strs) const{
-  if (strs.size() < 1) throw Err() << "Some data expected";
-  string ret;
-  if (val == DATA_TEXT){ // text: join all data
-    ret = strs[0];
-    for (int i=1; i<strs.size(); i++)
-      ret+= " " + strs[i];
-  }
-  else {    // numbers
-    ret = string(dsize()*strs.size(), '\0');
-    for (int i=0; i<strs.size(); i++){
-
-      istringstream s(strs[i]);
-      string tmp;
-      switch (val){
-        case DATA_INT8:   s >> ((int8_t   *)ret.data())[i]; break;
-        case DATA_UINT8:  s >> ((uint8_t  *)ret.data())[i]; break;
-        case DATA_INT16:  s >> ((int16_t  *)ret.data())[i]; break;
-        case DATA_UINT16: s >> ((uint16_t *)ret.data())[i]; break;
-        case DATA_INT32:  s >> ((int32_t  *)ret.data())[i]; break;
-        case DATA_UINT32: s >> ((uint32_t *)ret.data())[i]; break;
-        case DATA_INT64:  s >> ((int64_t  *)ret.data())[i]; break;
-        case DATA_UINT64: s >> ((uint64_t *)ret.data())[i]; break;
-        case DATA_FLOAT:
-          if (strcasecmp(strs[i].c_str(),"inf")==0 ||
-              strcasecmp(strs[i].c_str(),"+inf")==0) {
-            ((float*)ret.data())[i] = +INFINITY;
-            getline(s, tmp); break;
-          }
-          if (strcasecmp(strs[i].c_str(),"-inf")==0) {
-            ((float*)ret.data())[i] = -INFINITY;
-            getline(s, tmp); break;
-          }
-          if (strcasecmp(strs[i].c_str(),"nan")==0) {
-            ((float*)ret.data())[i] = NAN;
-            getline(s, tmp); break;
-          }
-          s >> ((float *)ret.data())[i]; break;
-
-        case DATA_DOUBLE:
-          if (strcasecmp(strs[i].c_str(),"inf")==0 ||
-              strcasecmp(strs[i].c_str(),"+inf")==0) {
-            ((double*)ret.data())[i] = +INFINITY;
-            getline(s, tmp); break;
-          }
-          if (strcasecmp(strs[i].c_str(),"-inf")==0) {
-            ((double*)ret.data())[i] = -INFINITY;
-            getline(s, tmp); break;
-          }
-          if (strcasecmp(strs[i].c_str(),"nan")==0) {
-            ((double*)ret.data())[i] = NAN;
-            getline(s, tmp); break;
-          }
-          s >> ((double*)ret.data())[i]; break;
-        default: throw Err() << "Unexpected data format";
-      }
-      if (s.bad() || s.fail() || !s.eof())
-        throw Err() << "Can't put value into "
-                    << datafmt2str(val) << " database: " << strs[i];
-    }
-  }
-  return ret;
-}
-
 // Print data
 string
 DBinfo::print_data(const string & s, const int col) const{
   if (val == DATA_TEXT) return s;
 
-  if (s.size() % dsize() != 0)
+  size_t dsize = graphene_dtype_size(val);
+
+  if (s.size() % dsize != 0)
     throw Err() << "Broken database: wrong data length";
   // number of columns
-  size_t cn = s.size()/dsize();
+  size_t cn = s.size()/dsize;
   // column range we want to show:
   size_t c1=0, c2=cn;
   if (col!=-1) { c1=col; c2=col+1; }
