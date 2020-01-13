@@ -67,6 +67,11 @@ int graphene_time_cmp(
   const std::string & t2,
   const TimeType ttype);
 
+// Check if time is zero
+bool graphene_time_zero(
+  const std::string & t,
+  const TimeType ttype);
+
 
 /********************************************************************/
 

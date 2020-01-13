@@ -197,25 +197,6 @@ int main() {
 
     }
     {
-      // is_zero_time_v1
-      DBinfo hh1(DATA_DOUBLE);
-      TimeType ttype = TIME_V1;
-      assert_eq(hh1.is_zero_time_v1(graphene_parse_time("0.0", ttype)), 1);
-      assert_eq(hh1.is_zero_time_v1(graphene_parse_time("0.001", ttype)), 0);
-      assert_eq(hh1.is_zero_time_v1(graphene_parse_time("0.0001", ttype)), 1); // ms precision!
-      assert_eq(hh1.is_zero_time_v1(graphene_parse_time("100", ttype)), 0);
-    }
-    {
-      // is_zero_time_v2
-      DBinfo hh1(DATA_DOUBLE);
-      TimeType ttype = TIME_V2;
-      assert_eq(hh1.is_zero_time_v2(graphene_parse_time("0.0", ttype)), 1);
-      assert_eq(hh1.is_zero_time_v2(graphene_parse_time("0.001", ttype)), 0);
-      assert_eq(hh1.is_zero_time_v2(graphene_parse_time("0.0001", ttype)), 0);
-      assert_eq(hh1.is_zero_time_v2(graphene_parse_time("0.0000000001", ttype)), 1); // ns precision
-      assert_eq(hh1.is_zero_time_v2(graphene_parse_time("100", ttype)), 0);
-    }
-    {
       // add_time_v1
       DBinfo hh1(DATA_DOUBLE);
       TimeType ttype = TIME_V1;

@@ -33,14 +33,6 @@ DBinfo::print_time(const string & s) const{
   else throw Err() << "Unknown database version: " << (int)version;
 }
 
-// Is time equals zero?
-bool
-DBinfo::is_zero_time(const std::string & s1) const {
-  if      (version==1) return is_zero_time_v1(s1);
-  else if (version==2) return is_zero_time_v2(s1);
-  else throw Err() << "Unknown database version: " << (int)version;
-}
-
 // Add two packed time values, return packed string
 string
 DBinfo::add_time(const std::string & s1, const std::string & s2) const{

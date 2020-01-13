@@ -52,9 +52,6 @@ class DBinfo {
   // Print timestamp
   std::string print_time(const std::string & s) const;
 
-  // Is time equals zero?
-  bool is_zero_time(const std::string & s1) const;
-
   // Add two packed time values, return packed string
   std::string add_time(const std::string & s1, const std::string & s2) const;
 
@@ -76,7 +73,6 @@ class DBinfo {
   uint64_t unpack_time_v1(const std::string & s) const;
   std::string print_time_v1(const std::string & s) const;
   int cmp_time_v1(const std::string & s1, const std::string & s2) const;
-  bool is_zero_time_v1(const std::string & s1) const;
   std::string add_time_v1(const std::string & s1, const std::string & s2) const;
   double time_diff_v1(const std::string & s1, const std::string & s2) const;
   std::string interpolate_v1(
@@ -88,7 +84,6 @@ class DBinfo {
   std::string pack_time_v2(const uint64_t t) const;
   uint64_t unpack_time_v2(const std::string & s) const;
   std::string print_time_v2(const std::string & s) const;
-  bool is_zero_time_v2(const std::string & s1) const;
   std::string add_time_v2(const std::string & s1, const std::string & s2) const;
   std::string interpolate_v2(
         const std::string & k0,

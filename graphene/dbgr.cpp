@@ -604,7 +604,7 @@ DBgr::get_range(const string &t1, const string &t2,
         throw Err() << "Broken database (DB_SET_RANGE/DB_NEXT get smaller timestamp)";
 
       // if we want every point, switch to DB_NEXT and repeat
-      if (info.is_zero_time(dtp)){
+      if (graphene_time_zero(dtp, info.ttype)){
         dbo.proc_point(&k, &v, info);
         fl=DB_NEXT;
         continue;

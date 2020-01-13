@@ -360,106 +360,108 @@ int main() {
 
 
     // time_v1
+    TimeType tt = TIME_V1;
 
-    s = graphene_parse_time("0", TIME_V1);
+    s = graphene_parse_time("0", tt);
     assert_eq(s.size(), 8);
     assert_eq(*((uint64_t *)s.data()), 0);
 
-    s = graphene_parse_time("1000.999", TIME_V1);
+    s = graphene_parse_time("1000.999", tt);
     assert_eq(s.size(), 8);
     assert_eq(*((uint64_t *)s.data()), 1000999);
 
-    s = graphene_parse_time("1000.9999", TIME_V1); // value is truncated to ms
+    s = graphene_parse_time("1000.9999", tt); // value is truncated to ms
     assert_eq(s.size(), 8);
     assert_eq(*((uint64_t *)s.data()), 1000999);
 
-    s = graphene_parse_time("now", TIME_V1);
+    s = graphene_parse_time("now", tt);
     assert_eq(s.size(), 8);
     assert_eq(*((uint64_t *)s.data())>1578046981l*1000, true);
     assert_eq(*((uint64_t *)s.data())<4102437600l*1000, true);
 
-    s = graphene_parse_time("now_s", TIME_V1);
+    s = graphene_parse_time("now_s", tt);
     assert_eq(s.size(), 8);
     assert_eq(*((uint64_t *)s.data())>1578046981l*1000, true);
     assert_eq(*((uint64_t *)s.data())<4102437600l*1000, true);
     assert_eq(*((uint64_t *)s.data())%1000==0, true);
 
-    s = graphene_parse_time("18446744073709551.615", TIME_V1); // largest timestamp
+    s = graphene_parse_time("18446744073709551.615", tt); // largest timestamp
     assert_eq(s.size(), 8);
     assert_eq(*((uint64_t *)s.data()), (uint64_t)-1);
 
-    s = graphene_parse_time("inf", TIME_V1); // largest timestamp
+    s = graphene_parse_time("inf", tt); // largest timestamp
     assert_eq(s.size(), 8);
     assert_eq(*((uint64_t *)s.data()), (uint64_t)-1);
 
-    assert_err(graphene_parse_time("18446744073709551.616", TIME_V1),
+    assert_err(graphene_parse_time("18446744073709551.616", tt),
       "Bad V1 timestamp: too large value: 18446744073709551.616");
 
-    assert_err(graphene_parse_time("18446744073709552.000", TIME_V1),
+    assert_err(graphene_parse_time("18446744073709552.000", tt),
       "Bad V1 timestamp: too large value: 18446744073709552.000");
 
-    assert_err(graphene_parse_time("184467440737095520000", TIME_V1),
+    assert_err(graphene_parse_time("184467440737095520000", tt),
       "Bad V1 timestamp: can't read seconds: 184467440737095520000");
 
-    assert_err(graphene_parse_time("-2", TIME_V1),
+    assert_err(graphene_parse_time("-2", tt),
       "Bad V1 timestamp: positive value expected: -2");
 
-    assert_err(graphene_parse_time("a", TIME_V1),
+    assert_err(graphene_parse_time("a", tt),
       "Bad V1 timestamp: can't read seconds: a");
 
-    assert_err(graphene_parse_time("1a", TIME_V1),
+    assert_err(graphene_parse_time("1a", tt),
       "Bad V1 timestamp: can't read decimal dot: 1a");
 
-    assert_err(graphene_parse_time("1.a", TIME_V1),
+    assert_err(graphene_parse_time("1.a", tt),
       "Bad V1 timestamp: can't read milliseconds: 1.a");
 
-    assert_err(graphene_parse_time("", TIME_V1),
+    assert_err(graphene_parse_time("", tt),
       "Empty timestamp");
 
     // time_v2
     uint64_t max = (uint32_t)-1;
+    tt = TIME_V2;
 
-    s = graphene_parse_time("0", TIME_V2);
+    s = graphene_parse_time("0", tt);
     assert_eq(s.size(), 4);
     assert_eq(*((uint32_t *)s.data()), 0);
 
-    s = graphene_parse_time("0.0", TIME_V2);
+    s = graphene_parse_time("0.0", tt);
     assert_eq(s.size(), 4);
     assert_eq(*((uint32_t *)s.data()), 0);
 
-    s = graphene_parse_time("1", TIME_V2);
+    s = graphene_parse_time("1", tt);
     assert_eq(s.size(), 4);
     assert_eq(*((uint32_t *)s.data()), 1);
 
-    s = graphene_parse_time("1.", TIME_V2);
+    s = graphene_parse_time("1.", tt);
     assert_eq(s.size(), 4);
     assert_eq(*((uint32_t *)s.data()), 1);
 
-    s = graphene_parse_time("1.0", TIME_V2);
+    s = graphene_parse_time("1.0", tt);
     assert_eq(s.size(), 4);
     assert_eq(*((uint32_t *)s.data()), 1);
 
-    s = graphene_parse_time("1.001", TIME_V2);
+    s = graphene_parse_time("1.001", tt);
     assert_eq(s.size(), 8);
     assert_eq(*((uint64_t *)s.data()), (1l<<32) + 1e6);
 
-    s = graphene_parse_time("4294967295.0", TIME_V2);
+    s = graphene_parse_time("4294967295.0", tt);
     assert_eq(s.size(), 4);
     assert_eq(*((uint32_t *)s.data()), max);
 
-    s = graphene_parse_time("4294967295.999999999", TIME_V2); // largest value
+    s = graphene_parse_time("4294967295.999999999", tt); // largest value
     assert_eq(s.size(), 8);
     assert_eq(*((uint64_t *)s.data()), (max<<32) + 999999999);
 
-    s = graphene_parse_time("4294967295.99999999999", TIME_V2); // sub-ns fraction is truncated
+    s = graphene_parse_time("4294967295.99999999999", tt); // sub-ns fraction is truncated
     assert_eq(s.size(), 8);
     assert_eq(*((uint64_t *)s.data()), (max<<32) + 999999999);
 
-    s = graphene_parse_time("inf", TIME_V2);
+    s = graphene_parse_time("inf", tt);
     assert_eq(s.size(), 8);
     assert_eq(*((uint64_t *)s.data()), (max<<32) + 999999999);
 
-    s = graphene_parse_time("now", TIME_V2);
+    s = graphene_parse_time("now", tt);
     if (s.size() == 8){
       assert_eq(*((uint64_t *)s.data()) > (1578046981l<<32), true);
       assert_eq(*((uint64_t *)s.data()) < (4102437600l<<32), true);
@@ -470,7 +472,7 @@ int main() {
       assert_eq(*((uint32_t *)s.data()) < 4102437600l, true);
     }
 
-    s = graphene_parse_time("now_s", TIME_V2);
+    s = graphene_parse_time("now_s", tt);
     assert_eq(s.size(), 4);
     assert_eq(*((uint32_t *)s.data()) > 1578046981l, true);
     assert_eq(*((uint32_t *)s.data()) < 4102437600l, true);
@@ -478,249 +480,276 @@ int main() {
     // +/-
 
 
-    s = graphene_parse_time("0+", TIME_V2);
+    s = graphene_parse_time("0+", tt);
     assert_eq(s.size(), 8);
     assert_eq(*((uint64_t *)s.data()), 1);
 
-    s = graphene_parse_time("0-", TIME_V2);
+    s = graphene_parse_time("0-", tt);
     assert_eq(s.size(), 8);
     assert_eq(*((uint64_t *)s.data()), (max<<32) + 999999999);
 
-    s = graphene_parse_time("1+", TIME_V2);
+    s = graphene_parse_time("1+", tt);
     assert_eq(s.size(), 8);
     assert_eq(*((uint64_t *)s.data()), (1l<<32) + 1);
 
-    s = graphene_parse_time("1.+", TIME_V2);
+    s = graphene_parse_time("1.+", tt);
     assert_eq(s.size(), 8);
     assert_eq(*((uint64_t *)s.data()), (1l<<32) + 1);
 
-    s = graphene_parse_time("1.000+", TIME_V2);
+    s = graphene_parse_time("1.000+", tt);
     assert_eq(s.size(), 8);
     assert_eq(*((uint64_t *)s.data()), (1l<<32) + 1);
 
-    s = graphene_parse_time("1-", TIME_V2);
+    s = graphene_parse_time("1-", tt);
     assert_eq(s.size(), 8);
     assert_eq(*((uint64_t *)s.data()), 999999999);
 
-    s = graphene_parse_time("1.999999999+", TIME_V2);
+    s = graphene_parse_time("1.999999999+", tt);
     assert_eq(s.size(), 4);
     assert_eq(*((uint32_t *)s.data()), 2);
 
-    s = graphene_parse_time("1.123456789+", TIME_V2);
+    s = graphene_parse_time("1.123456789+", tt);
     assert_eq(s.size(), 8);
     assert_eq(*((uint64_t *)s.data()), (1l<<32) + 123456790);
 
-    s = graphene_parse_time("1.123456789-", TIME_V2);
+    s = graphene_parse_time("1.123456789-", tt);
     assert_eq(s.size(), 8);
     assert_eq(*((uint64_t *)s.data()), (1l<<32) + 123456788);
 
-    s = graphene_parse_time("4294967295.999999999+", TIME_V2);
+    s = graphene_parse_time("4294967295.999999999+", tt);
     assert_eq(s.size(), 4);
     assert_eq(*((uint32_t *)s.data()), 0);
 
-    assert_err(graphene_parse_time("4294967296.0", TIME_V2),
+    assert_err(graphene_parse_time("4294967296.0", tt),
       "Bad timestamp: can't read seconds: 4294967296.0");
 
-    assert_err(graphene_parse_time("-2", TIME_V2),
+    assert_err(graphene_parse_time("-2", tt),
       "Bad timestamp: positive value expected: -2");
 
-    assert_err(graphene_parse_time("a", TIME_V2),
+    assert_err(graphene_parse_time("a", tt),
       "Bad timestamp: can't read seconds: a");
 
-    assert_err(graphene_parse_time("1a", TIME_V2),
+    assert_err(graphene_parse_time("1a", tt),
       "Bad timestamp: can't read decimal dot: 1a");
 
-    assert_err(graphene_parse_time("1.a", TIME_V2),
+    assert_err(graphene_parse_time("1.a", tt),
       "Bad timestamp: can't read nanoseconds: 1.a");
 
-    assert_err(graphene_parse_time("", TIME_V2),
+    assert_err(graphene_parse_time("", tt),
       "Empty timestamp");
 
     /**************************************************************/
     // Time diff
     /**************************************************************/
-    assert_feq (graphene_time_diff(
-      graphene_parse_time("1", TIME_V1),
-      graphene_parse_time("0", TIME_V1), TIME_V1), +1, 1e-10);
+
+    tt=TIME_V1;
 
     assert_feq (graphene_time_diff(
-      graphene_parse_time("0", TIME_V1),
-      graphene_parse_time("1", TIME_V1), TIME_V1), -1, 1e-10);
+      graphene_parse_time("1", tt),
+      graphene_parse_time("0", tt), tt), +1, 1e-10);
 
     assert_feq (graphene_time_diff(
-      graphene_parse_time("0", TIME_V1),
-      graphene_parse_time("0", TIME_V1), TIME_V1), 0, 1e-10);
+      graphene_parse_time("0", tt),
+      graphene_parse_time("1", tt), tt), -1, 1e-10);
 
     assert_feq (graphene_time_diff(
-      graphene_parse_time("0.123", TIME_V1),
-      graphene_parse_time("0.123", TIME_V1), TIME_V1), 0, 1e-10);
+      graphene_parse_time("0", tt),
+      graphene_parse_time("0", tt), tt), 0, 1e-10);
 
     assert_feq (graphene_time_diff(
-      graphene_parse_time("2.02", TIME_V1),
-      graphene_parse_time("1.03", TIME_V1), TIME_V1), 0.99, 1e-10);
+      graphene_parse_time("0.123", tt),
+      graphene_parse_time("0.123", tt), tt), 0, 1e-10);
 
     assert_feq (graphene_time_diff(
-      graphene_parse_time("2.02", TIME_V1),
-      graphene_parse_time("1.01", TIME_V1), TIME_V1), 1.01, 1e-10);
+      graphene_parse_time("2.02", tt),
+      graphene_parse_time("1.03", tt), tt), 0.99, 1e-10);
 
     assert_feq (graphene_time_diff(
-      graphene_parse_time("1.03", TIME_V1),
-      graphene_parse_time("2.02", TIME_V1), TIME_V1), -0.99, 1e-10);
+      graphene_parse_time("2.02", tt),
+      graphene_parse_time("1.01", tt), tt), 1.01, 1e-10);
 
     assert_feq (graphene_time_diff(
-      graphene_parse_time("1.01", TIME_V1),
-      graphene_parse_time("2.02", TIME_V1), TIME_V1), -1.01, 1e-10);
+      graphene_parse_time("1.03", tt),
+      graphene_parse_time("2.02", tt), tt), -0.99, 1e-10);
 
     assert_feq (graphene_time_diff(
-      graphene_parse_time("inf", TIME_V1),
-      graphene_parse_time("0", TIME_V1), TIME_V1), 18446744073709551.616, 1);
+      graphene_parse_time("1.01", tt),
+      graphene_parse_time("2.02", tt), tt), -1.01, 1e-10);
 
     assert_feq (graphene_time_diff(
-      graphene_parse_time("0", TIME_V1),
-      graphene_parse_time("inf", TIME_V1), TIME_V1), -18446744073709551.616, 1e-10);
+      graphene_parse_time("inf", tt),
+      graphene_parse_time("0", tt), tt), 18446744073709551.616, 1);
 
     assert_feq (graphene_time_diff(
-      graphene_parse_time("inf", TIME_V1),
-      graphene_parse_time("inf", TIME_V1), TIME_V1), 0, 1e-10);
+      graphene_parse_time("0", tt),
+      graphene_parse_time("inf", tt), tt), -18446744073709551.616, 1e-10);
+
+    assert_feq (graphene_time_diff(
+      graphene_parse_time("inf", tt),
+      graphene_parse_time("inf", tt), tt), 0, 1e-10);
 
 
     // same with V2
-    assert_feq (graphene_time_diff(
-      graphene_parse_time("1", TIME_V2),
-      graphene_parse_time("0", TIME_V2), TIME_V2), +1, 1e-10);
+    tt = TIME_V2;
 
     assert_feq (graphene_time_diff(
-      graphene_parse_time("0", TIME_V2),
-      graphene_parse_time("1", TIME_V2), TIME_V2), -1, 1e-10);
+      graphene_parse_time("1", tt),
+      graphene_parse_time("0", tt), tt), +1, 1e-10);
 
     assert_feq (graphene_time_diff(
-      graphene_parse_time("0", TIME_V2),
-      graphene_parse_time("0", TIME_V2), TIME_V2), 0, 1e-10);
+      graphene_parse_time("0", tt),
+      graphene_parse_time("1", tt), tt), -1, 1e-10);
 
     assert_feq (graphene_time_diff(
-      graphene_parse_time("0.123", TIME_V2),
-      graphene_parse_time("0.123", TIME_V2), TIME_V2), 0, 1e-10);
+      graphene_parse_time("0", tt),
+      graphene_parse_time("0", tt), tt), 0, 1e-10);
 
     assert_feq (graphene_time_diff(
-      graphene_parse_time("2.02", TIME_V2),
-      graphene_parse_time("1.03", TIME_V2), TIME_V2), 0.99, 1e-10);
+      graphene_parse_time("0.123", tt),
+      graphene_parse_time("0.123", tt), tt), 0, 1e-10);
 
     assert_feq (graphene_time_diff(
-      graphene_parse_time("2.02", TIME_V2),
-      graphene_parse_time("1.01", TIME_V2), TIME_V2), 1.01, 1e-10);
+      graphene_parse_time("2.02", tt),
+      graphene_parse_time("1.03", tt), tt), 0.99, 1e-10);
 
     assert_feq (graphene_time_diff(
-      graphene_parse_time("1.03", TIME_V2),
-      graphene_parse_time("2.02", TIME_V2), TIME_V2), -0.99, 1e-10);
+      graphene_parse_time("2.02", tt),
+      graphene_parse_time("1.01", tt), tt), 1.01, 1e-10);
 
     assert_feq (graphene_time_diff(
-      graphene_parse_time("1.01", TIME_V2),
-      graphene_parse_time("2.02", TIME_V2), TIME_V2), -1.01, 1e-10);
+      graphene_parse_time("1.03", tt),
+      graphene_parse_time("2.02", tt), tt), -0.99, 1e-10);
 
     assert_feq (graphene_time_diff(
-      graphene_parse_time("inf", TIME_V2),
-      graphene_parse_time("0", TIME_V2), TIME_V2), 4294967296.0, 1e-10);
+      graphene_parse_time("1.01", tt),
+      graphene_parse_time("2.02", tt), tt), -1.01, 1e-10);
 
     assert_feq (graphene_time_diff(
-      graphene_parse_time("0", TIME_V2),
-      graphene_parse_time("inf", TIME_V2), TIME_V2), -4294967296.0, 1e-10);
+      graphene_parse_time("inf", tt),
+      graphene_parse_time("0", tt), tt), 4294967296.0, 1e-10);
 
     assert_feq (graphene_time_diff(
-      graphene_parse_time("inf", TIME_V2),
-      graphene_parse_time("inf", TIME_V2), TIME_V2), 0, 1e-10);
+      graphene_parse_time("0", tt),
+      graphene_parse_time("inf", tt), tt), -4294967296.0, 1e-10);
+
+    assert_feq (graphene_time_diff(
+      graphene_parse_time("inf", tt),
+      graphene_parse_time("inf", tt), tt), 0, 1e-10);
 
     /**************************************************************/
     // Time cmp
     /**************************************************************/
+
+    tt = TIME_V1;
     assert_eq (graphene_time_cmp(
-      graphene_parse_time("1", TIME_V1),
-      graphene_parse_time("0", TIME_V1), TIME_V1), +1);
+      graphene_parse_time("1", tt),
+      graphene_parse_time("0", tt), tt), +1);
 
     assert_eq (graphene_time_cmp(
-      graphene_parse_time("0", TIME_V1),
-      graphene_parse_time("1", TIME_V1), TIME_V1), -1);
+      graphene_parse_time("0", tt),
+      graphene_parse_time("1", tt), tt), -1);
 
     assert_eq (graphene_time_cmp(
-      graphene_parse_time("0", TIME_V1),
-      graphene_parse_time("0", TIME_V1), TIME_V1), 0);
+      graphene_parse_time("0", tt),
+      graphene_parse_time("0", tt), tt), 0);
 
     assert_eq (graphene_time_cmp(
-      graphene_parse_time("0.123", TIME_V1),
-      graphene_parse_time("0.123", TIME_V1), TIME_V1), 0);
+      graphene_parse_time("0.123", tt),
+      graphene_parse_time("0.123", tt), tt), 0);
 
     assert_eq (graphene_time_cmp(
-      graphene_parse_time("2.02", TIME_V1),
-      graphene_parse_time("1.03", TIME_V1), TIME_V1), +1);
+      graphene_parse_time("2.02", tt),
+      graphene_parse_time("1.03", tt), tt), +1);
 
     assert_eq (graphene_time_cmp(
-      graphene_parse_time("2.02", TIME_V1),
-      graphene_parse_time("1.01", TIME_V1), TIME_V1), +1);
+      graphene_parse_time("2.02", tt),
+      graphene_parse_time("1.01", tt), tt), +1);
 
     assert_eq (graphene_time_cmp(
-      graphene_parse_time("1.03", TIME_V1),
-      graphene_parse_time("2.02", TIME_V1), TIME_V1), -1);
+      graphene_parse_time("1.03", tt),
+      graphene_parse_time("2.02", tt), tt), -1);
 
     assert_eq (graphene_time_cmp(
-      graphene_parse_time("1.01", TIME_V1),
-      graphene_parse_time("2.02", TIME_V1), TIME_V1), -1);
+      graphene_parse_time("1.01", tt),
+      graphene_parse_time("2.02", tt), tt), -1);
 
     assert_eq (graphene_time_cmp(
-      graphene_parse_time("inf", TIME_V1),
-      graphene_parse_time("0", TIME_V1), TIME_V1), +1);
+      graphene_parse_time("inf", tt),
+      graphene_parse_time("0", tt), tt), +1);
 
     assert_eq (graphene_time_cmp(
-      graphene_parse_time("0", TIME_V1),
-      graphene_parse_time("inf", TIME_V1), TIME_V1), -1);
+      graphene_parse_time("0", tt),
+      graphene_parse_time("inf", tt), tt), -1);
 
     assert_eq (graphene_time_cmp(
-      graphene_parse_time("inf", TIME_V1),
-      graphene_parse_time("inf", TIME_V1), TIME_V1), 0);
+      graphene_parse_time("inf", tt),
+      graphene_parse_time("inf", tt), tt), 0);
 
 
     // same with V2
+    tt = TIME_V2;
     assert_eq (graphene_time_cmp(
-      graphene_parse_time("1", TIME_V2),
-      graphene_parse_time("0", TIME_V2), TIME_V2), +1);
+      graphene_parse_time("1", tt),
+      graphene_parse_time("0", tt), tt), +1);
 
     assert_eq (graphene_time_cmp(
-      graphene_parse_time("0", TIME_V2),
-      graphene_parse_time("1", TIME_V2), TIME_V2), -1);
+      graphene_parse_time("0", tt),
+      graphene_parse_time("1", tt), tt), -1);
 
     assert_eq (graphene_time_cmp(
-      graphene_parse_time("0", TIME_V2),
-      graphene_parse_time("0", TIME_V2), TIME_V2), 0);
+      graphene_parse_time("0", tt),
+      graphene_parse_time("0", tt), tt), 0);
 
     assert_eq (graphene_time_cmp(
-      graphene_parse_time("0.123", TIME_V2),
-      graphene_parse_time("0.123", TIME_V2), TIME_V2), 0);
+      graphene_parse_time("0.123", tt),
+      graphene_parse_time("0.123", tt), tt), 0);
 
     assert_eq (graphene_time_cmp(
-      graphene_parse_time("2.02", TIME_V2),
-      graphene_parse_time("1.03", TIME_V2), TIME_V2), 1);
+      graphene_parse_time("2.02", tt),
+      graphene_parse_time("1.03", tt), tt), 1);
 
     assert_eq (graphene_time_cmp(
-      graphene_parse_time("2.02", TIME_V2),
-      graphene_parse_time("1.01", TIME_V2), TIME_V2), 1);
+      graphene_parse_time("2.02", tt),
+      graphene_parse_time("1.01", tt), tt), 1);
 
     assert_eq (graphene_time_cmp(
-      graphene_parse_time("1.03", TIME_V2),
-      graphene_parse_time("2.02", TIME_V2), TIME_V2), -1);
+      graphene_parse_time("1.03", tt),
+      graphene_parse_time("2.02", tt), tt), -1);
 
     assert_eq (graphene_time_cmp(
-      graphene_parse_time("1.01", TIME_V2),
-      graphene_parse_time("2.02", TIME_V2), TIME_V2), -1);
+      graphene_parse_time("1.01", tt),
+      graphene_parse_time("2.02", tt), tt), -1);
 
     assert_eq (graphene_time_cmp(
-      graphene_parse_time("inf", TIME_V2),
-      graphene_parse_time("0", TIME_V2), TIME_V2), +1);
+      graphene_parse_time("inf", tt),
+      graphene_parse_time("0", tt), tt), +1);
 
     assert_eq (graphene_time_cmp(
-      graphene_parse_time("0", TIME_V2),
-      graphene_parse_time("inf", TIME_V2), TIME_V2), -1);
+      graphene_parse_time("0", tt),
+      graphene_parse_time("inf", tt), tt), -1);
 
     assert_eq (graphene_time_cmp(
-      graphene_parse_time("inf", TIME_V2),
-      graphene_parse_time("inf", TIME_V2), TIME_V2), 0);
+      graphene_parse_time("inf", tt),
+      graphene_parse_time("inf", tt), tt), 0);
+
+
+    /**************************************************************/
+    // Time zero
+    /**************************************************************/
+    tt = TIME_V1;
+    assert_eq(graphene_time_zero(graphene_parse_time("0.0", tt),tt), 1);
+    assert_eq(graphene_time_zero(graphene_parse_time("0.001", tt),tt), 0);
+    assert_eq(graphene_time_zero(graphene_parse_time("0.0001", tt),tt), 1); // ms precision!
+    assert_eq(graphene_time_zero(graphene_parse_time("100", tt),tt), 0);
+    assert_eq(graphene_time_zero(graphene_parse_time("inf", tt),tt), 0);
+
+    tt = TIME_V2;
+    assert_eq(graphene_time_zero(graphene_parse_time("0.0", tt),tt), 1);
+    assert_eq(graphene_time_zero(graphene_parse_time("0.001", tt),tt), 0);
+    assert_eq(graphene_time_zero(graphene_parse_time("0.000001", tt),tt), 0);
+    assert_eq(graphene_time_zero(graphene_parse_time("0.0000000001", tt),tt), 1); // ns precision!
+    assert_eq(graphene_time_zero(graphene_parse_time("100", tt),tt), 0);
+    assert_eq(graphene_time_zero(graphene_parse_time("inf", tt),tt), 0);
 
 
     /**************************************************************/

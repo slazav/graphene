@@ -53,12 +53,6 @@ DBinfo::print_time_v2(const string & s) const{
   return ss.str();
 }
 
-// Is time equals zero?
-bool
-DBinfo::is_zero_time_v2(const std::string & s1) const {
-  return unpack_time_v2(s1)==0;
-}
-
 // Add two packed time values, return packed string
 string
 DBinfo::add_time_v2(const std::string & s1, const std::string & s2) const{

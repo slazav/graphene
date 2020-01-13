@@ -475,6 +475,14 @@ graphene_time_cmp(const std::string & t1, const std::string & t2,
   throw Err() << "Unknown time type: " << ttype;
 }
 
+bool graphene_time_zero( const std::string & t, const TimeType ttype){
+  switch (ttype){
+    case TIME_V1: return graphene_time_unpack_v1(t)==0;
+    case TIME_V2: return graphene_time_unpack_v2(t)==0;
+  }
+  throw Err() << "Unknown time type: " << ttype;
+}
+
 
 /********************************************************************/
 
