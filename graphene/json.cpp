@@ -181,7 +181,7 @@ Json json_query(const string & dbpath, const std::string & env_type, const Json 
     DBgr db = pool.get(dbo.name, DB_RDONLY);
 
     // check DB format
-    if (db.read_info().val == DATA_TEXT)
+    if (db.read_info().dtype == DATA_TEXT)
       throw Err() << "Can not do query from TEXT database. Use annotations";
 
     // Get data from the database
@@ -229,7 +229,7 @@ Json json_annotations(const string & dbpath, const std::string & env_type, const
   DBgr db = pool.get(dbo.name, DB_RDONLY);
 
   // check DB format
-  if (db.read_info().val != DATA_TEXT)
+  if (db.read_info().dtype != DATA_TEXT)
     throw Err() << "Annotations can be found only in TEXT databases";
 
   ostringstream ss; ss << fixed << (atof(t2.c_str())-atof(t1.c_str()))/MAX_ANNOTATIONS;

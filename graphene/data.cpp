@@ -408,6 +408,74 @@ graphene_parse_time(const std::string & str, const TimeType ttype){
 
   throw Err() << "Unknown time type: " << ttype;
 }
+
+
+/********************************************************************/
+uint64_t
+graphene_time_unpack_v1(const std::string & t){
+  if (t.size()!=sizeof(uint64_t))
+    throw Err() << "Broken database: wrong timestamp size: " << t.size();
+  return *(uint64_t *)t.data();
+}
+
+uint64_t
+graphene_time_unpack_v2(const std::string & t){
+  if (t.size()==sizeof(uint64_t))
+    return *(uint64_t *)t.data();
+  if (t.size()==sizeof(uint32_t)){
+    uint64_t v = (uint64_t)(*(uint32_t *)t.data())<<32;
+    if (v&0xFFFFFFFF > 999999999) throw Err()
+       << "Bad timestamp: too large nanosecond field";
+    return v;
+  }
+  throw Err() << "Broken database: wrong timestamp size: " << t.size();
+}
+
+/********************************************************************/
+double
+graphene_time_diff(const std::string & t1, const std::string & t2,
+                   const TimeType ttype){
+  switch (ttype){
+    case TIME_V1: {
+      uint64_t v1 = graphene_time_unpack_v1(t1);
+      uint64_t v2 = graphene_time_unpack_v1(t2);
+      return v1>v2 ? (double)(v1-v2)/1000.0 :
+                    -(double)(v2-v1)/1000.0;
+    }
+    case TIME_V2: {
+      uint64_t v1 = graphene_time_unpack_v2(t1);
+      uint64_t v2 = graphene_time_unpack_v2(t2);
+      // difference in seconds and in milliseconds
+      int64_t d1 = (int64_t)(v1 >> 32) - (int64_t)(v2 >> 32);
+      int64_t d2 = (int64_t)(v1 & 0xFFFFFFFF) - (int64_t)(v2 & 0xFFFFFFFF);
+      return (double)d1 + (double)d2*1e-9;
+    }
+  }
+  throw Err() << "Unknown time type: " << ttype;
+}
+
+int
+graphene_time_cmp(const std::string & t1, const std::string & t2,
+                  const TimeType ttype){
+  switch (ttype){
+    case TIME_V1: {
+      uint64_t v1 = graphene_time_unpack_v1(t1);
+      uint64_t v2 = graphene_time_unpack_v1(t2);
+      if (v1==v2) return 0;
+      return v1>v2 ? +1:-1;
+    }
+    case TIME_V2: {
+      uint64_t v1 = graphene_time_unpack_v2(t1);
+      uint64_t v2 = graphene_time_unpack_v2(t2);
+      // difference in seconds and in milliseconds
+      if (v1==v2) return 0;
+      return v1>v2 ? 1:-1;
+    }
+  }
+  throw Err() << "Unknown time type: " << ttype;
+}
+
+
 /********************************************************************/
 
 

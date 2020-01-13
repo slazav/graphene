@@ -537,6 +537,193 @@ int main() {
       "Empty timestamp");
 
     /**************************************************************/
+    // Time diff
+    /**************************************************************/
+    assert_feq (graphene_time_diff(
+      graphene_parse_time("1", TIME_V1),
+      graphene_parse_time("0", TIME_V1), TIME_V1), +1, 1e-10);
+
+    assert_feq (graphene_time_diff(
+      graphene_parse_time("0", TIME_V1),
+      graphene_parse_time("1", TIME_V1), TIME_V1), -1, 1e-10);
+
+    assert_feq (graphene_time_diff(
+      graphene_parse_time("0", TIME_V1),
+      graphene_parse_time("0", TIME_V1), TIME_V1), 0, 1e-10);
+
+    assert_feq (graphene_time_diff(
+      graphene_parse_time("0.123", TIME_V1),
+      graphene_parse_time("0.123", TIME_V1), TIME_V1), 0, 1e-10);
+
+    assert_feq (graphene_time_diff(
+      graphene_parse_time("2.02", TIME_V1),
+      graphene_parse_time("1.03", TIME_V1), TIME_V1), 0.99, 1e-10);
+
+    assert_feq (graphene_time_diff(
+      graphene_parse_time("2.02", TIME_V1),
+      graphene_parse_time("1.01", TIME_V1), TIME_V1), 1.01, 1e-10);
+
+    assert_feq (graphene_time_diff(
+      graphene_parse_time("1.03", TIME_V1),
+      graphene_parse_time("2.02", TIME_V1), TIME_V1), -0.99, 1e-10);
+
+    assert_feq (graphene_time_diff(
+      graphene_parse_time("1.01", TIME_V1),
+      graphene_parse_time("2.02", TIME_V1), TIME_V1), -1.01, 1e-10);
+
+    assert_feq (graphene_time_diff(
+      graphene_parse_time("inf", TIME_V1),
+      graphene_parse_time("0", TIME_V1), TIME_V1), 18446744073709551.616, 1);
+
+    assert_feq (graphene_time_diff(
+      graphene_parse_time("0", TIME_V1),
+      graphene_parse_time("inf", TIME_V1), TIME_V1), -18446744073709551.616, 1e-10);
+
+    assert_feq (graphene_time_diff(
+      graphene_parse_time("inf", TIME_V1),
+      graphene_parse_time("inf", TIME_V1), TIME_V1), 0, 1e-10);
+
+
+    // same with V2
+    assert_feq (graphene_time_diff(
+      graphene_parse_time("1", TIME_V2),
+      graphene_parse_time("0", TIME_V2), TIME_V2), +1, 1e-10);
+
+    assert_feq (graphene_time_diff(
+      graphene_parse_time("0", TIME_V2),
+      graphene_parse_time("1", TIME_V2), TIME_V2), -1, 1e-10);
+
+    assert_feq (graphene_time_diff(
+      graphene_parse_time("0", TIME_V2),
+      graphene_parse_time("0", TIME_V2), TIME_V2), 0, 1e-10);
+
+    assert_feq (graphene_time_diff(
+      graphene_parse_time("0.123", TIME_V2),
+      graphene_parse_time("0.123", TIME_V2), TIME_V2), 0, 1e-10);
+
+    assert_feq (graphene_time_diff(
+      graphene_parse_time("2.02", TIME_V2),
+      graphene_parse_time("1.03", TIME_V2), TIME_V2), 0.99, 1e-10);
+
+    assert_feq (graphene_time_diff(
+      graphene_parse_time("2.02", TIME_V2),
+      graphene_parse_time("1.01", TIME_V2), TIME_V2), 1.01, 1e-10);
+
+    assert_feq (graphene_time_diff(
+      graphene_parse_time("1.03", TIME_V2),
+      graphene_parse_time("2.02", TIME_V2), TIME_V2), -0.99, 1e-10);
+
+    assert_feq (graphene_time_diff(
+      graphene_parse_time("1.01", TIME_V2),
+      graphene_parse_time("2.02", TIME_V2), TIME_V2), -1.01, 1e-10);
+
+    assert_feq (graphene_time_diff(
+      graphene_parse_time("inf", TIME_V2),
+      graphene_parse_time("0", TIME_V2), TIME_V2), 4294967296.0, 1e-10);
+
+    assert_feq (graphene_time_diff(
+      graphene_parse_time("0", TIME_V2),
+      graphene_parse_time("inf", TIME_V2), TIME_V2), -4294967296.0, 1e-10);
+
+    assert_feq (graphene_time_diff(
+      graphene_parse_time("inf", TIME_V2),
+      graphene_parse_time("inf", TIME_V2), TIME_V2), 0, 1e-10);
+
+    /**************************************************************/
+    // Time cmp
+    /**************************************************************/
+    assert_eq (graphene_time_cmp(
+      graphene_parse_time("1", TIME_V1),
+      graphene_parse_time("0", TIME_V1), TIME_V1), +1);
+
+    assert_eq (graphene_time_cmp(
+      graphene_parse_time("0", TIME_V1),
+      graphene_parse_time("1", TIME_V1), TIME_V1), -1);
+
+    assert_eq (graphene_time_cmp(
+      graphene_parse_time("0", TIME_V1),
+      graphene_parse_time("0", TIME_V1), TIME_V1), 0);
+
+    assert_eq (graphene_time_cmp(
+      graphene_parse_time("0.123", TIME_V1),
+      graphene_parse_time("0.123", TIME_V1), TIME_V1), 0);
+
+    assert_eq (graphene_time_cmp(
+      graphene_parse_time("2.02", TIME_V1),
+      graphene_parse_time("1.03", TIME_V1), TIME_V1), +1);
+
+    assert_eq (graphene_time_cmp(
+      graphene_parse_time("2.02", TIME_V1),
+      graphene_parse_time("1.01", TIME_V1), TIME_V1), +1);
+
+    assert_eq (graphene_time_cmp(
+      graphene_parse_time("1.03", TIME_V1),
+      graphene_parse_time("2.02", TIME_V1), TIME_V1), -1);
+
+    assert_eq (graphene_time_cmp(
+      graphene_parse_time("1.01", TIME_V1),
+      graphene_parse_time("2.02", TIME_V1), TIME_V1), -1);
+
+    assert_eq (graphene_time_cmp(
+      graphene_parse_time("inf", TIME_V1),
+      graphene_parse_time("0", TIME_V1), TIME_V1), +1);
+
+    assert_eq (graphene_time_cmp(
+      graphene_parse_time("0", TIME_V1),
+      graphene_parse_time("inf", TIME_V1), TIME_V1), -1);
+
+    assert_eq (graphene_time_cmp(
+      graphene_parse_time("inf", TIME_V1),
+      graphene_parse_time("inf", TIME_V1), TIME_V1), 0);
+
+
+    // same with V2
+    assert_eq (graphene_time_cmp(
+      graphene_parse_time("1", TIME_V2),
+      graphene_parse_time("0", TIME_V2), TIME_V2), +1);
+
+    assert_eq (graphene_time_cmp(
+      graphene_parse_time("0", TIME_V2),
+      graphene_parse_time("1", TIME_V2), TIME_V2), -1);
+
+    assert_eq (graphene_time_cmp(
+      graphene_parse_time("0", TIME_V2),
+      graphene_parse_time("0", TIME_V2), TIME_V2), 0);
+
+    assert_eq (graphene_time_cmp(
+      graphene_parse_time("0.123", TIME_V2),
+      graphene_parse_time("0.123", TIME_V2), TIME_V2), 0);
+
+    assert_eq (graphene_time_cmp(
+      graphene_parse_time("2.02", TIME_V2),
+      graphene_parse_time("1.03", TIME_V2), TIME_V2), 1);
+
+    assert_eq (graphene_time_cmp(
+      graphene_parse_time("2.02", TIME_V2),
+      graphene_parse_time("1.01", TIME_V2), TIME_V2), 1);
+
+    assert_eq (graphene_time_cmp(
+      graphene_parse_time("1.03", TIME_V2),
+      graphene_parse_time("2.02", TIME_V2), TIME_V2), -1);
+
+    assert_eq (graphene_time_cmp(
+      graphene_parse_time("1.01", TIME_V2),
+      graphene_parse_time("2.02", TIME_V2), TIME_V2), -1);
+
+    assert_eq (graphene_time_cmp(
+      graphene_parse_time("inf", TIME_V2),
+      graphene_parse_time("0", TIME_V2), TIME_V2), +1);
+
+    assert_eq (graphene_time_cmp(
+      graphene_parse_time("0", TIME_V2),
+      graphene_parse_time("inf", TIME_V2), TIME_V2), -1);
+
+    assert_eq (graphene_time_cmp(
+      graphene_parse_time("inf", TIME_V2),
+      graphene_parse_time("inf", TIME_V2), TIME_V2), 0);
+
+
+    /**************************************************************/
     // SPP text
     /**************************************************************/
     assert_eq(graphene_spp_text("a"), "a");

@@ -53,15 +53,6 @@ DBinfo::print_time_v2(const string & s) const{
   return ss.str();
 }
 
-// Compare two packed time values, return +1,0,-1 if s1>s2,s1=s2,s1<s2
-int
-DBinfo::cmp_time_v2(const std::string & s1, const std::string & s2) const{
-  uint64_t t1 = unpack_time_v2(s1);
-  uint64_t t2 = unpack_time_v2(s2);
-  if (t1==t2) return 0;
-  return t1>t2 ? 1:-1;
-}
-
 // Is time equals zero?
 bool
 DBinfo::is_zero_time_v2(const std::string & s1) const {
@@ -78,19 +69,6 @@ DBinfo::add_time_v2(const std::string & s1, const std::string & s2) const{
   if (sum1 >= ((uint64_t)1<<32) ) throw Err() << "add_time overfull";
   while (sum2 > 999999999) {sum2-=1000000000; sum1++;}
   return pack_time_v2((sum1<<32)+sum2);
-}
-
-// Subtract two packed time values, return number of seconds as a double value
-double
-DBinfo::time_diff_v2(const std::string & s1, const std::string & s2) const{
-  uint64_t t1 = unpack_time_v2(s1);
-  uint64_t t2 = unpack_time_v2(s2);
-
-  // difference in seconds and in milliseconds
-  int64_t d1 = (int64_t)(t1 >> 32) - (int64_t)(t2 >> 32);
-  int64_t d2 = (int64_t)(t1 & 0xFFFFFFFF) - (int64_t)(t2 & 0xFFFFFFFF);
-
-  return (double)d1 + (double)d2*1e-9;
 }
 
 /********************************************************************/
@@ -123,7 +101,7 @@ DBinfo::interpolate_v2(
   double k = (double)w2/(w1+w2);
 
   // check for correct value size
-  size_t dsize = graphene_dtype_size(val);
+  size_t dsize = graphene_dtype_size(dtype);
   if (v1.size() % dsize != 0 || v2.size() % dsize != 0)
     throw Err() << "Broken database: wrong data length";
 
@@ -134,7 +112,7 @@ DBinfo::interpolate_v2(
 
   string v0(dsize*cn0, '\0');
   for (size_t i=0; i<cn0; i++){
-    switch (val){
+    switch (dtype){
       case DATA_FLOAT:
         ((float*)v0.data())[i] = ((float*)v1.data())[i]*k
                                + ((float*)v2.data())[i]*(1-k);

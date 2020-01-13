@@ -301,7 +301,7 @@ class Pars{
       if (pars.size()<2) throw Err() << "database name expected";
       if (pars.size()>2) throw Err() << "too many parameters";
       DBinfo info = pool->get(pars[1], DB_RDONLY).read_info();
-      cout << graphene_dtype_name(info.val);
+      cout << graphene_dtype_name(info.dtype);
       if (info.descr!="") out << '\t' << info.descr;
       out << "\n";
       return;

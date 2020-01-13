@@ -36,15 +36,6 @@ DBinfo::print_time_v1(const string & s) const{
   return ss.str();
 }
 
-// Compare two packed time values, return +1,0,-1 if s1>s2,s1=s2,s1<s2
-int
-DBinfo::cmp_time_v1(const std::string & s1, const std::string & s2) const{
-  uint64_t t1 = unpack_time_v1(s1);
-  uint64_t t2 = unpack_time_v1(s2);
-  if (t1==t2) return 0;
-  return t1>t2 ? 1:-1;
-}
-
 // Is time equals zero?
 bool
 DBinfo::is_zero_time_v1(const std::string & s1) const {
@@ -61,14 +52,6 @@ DBinfo::add_time_v1(const std::string & s1, const std::string & s2) const{
   return ret;
 }
 
-// Subtract two packed time values, return number of seconds as a double value
-double
-DBinfo::time_diff_v1(const std::string & s1, const std::string & s2) const{
-  int64_t t1 = unpack_time_v1(s1);
-  int64_t t2 = unpack_time_v1(s2);
-  string ret(sizeof(uint64_t), '\0');
-  return (double)(t1-t2)/1000.0;
-}
 
 /********************************************************************/
 // interpolation
@@ -98,7 +81,7 @@ DBinfo::interpolate_v1(
   double k = (double)dt2/(dt1+dt2);
 
   // check for correct value size
-  size_t dsize = graphene_dtype_size(val);
+  size_t dsize = graphene_dtype_size(dtype);
   if (v1.size() % dsize != 0 || v2.size() % dsize != 0)
     throw Err() << "Broken database: wrong data length";
 
@@ -109,7 +92,7 @@ DBinfo::interpolate_v1(
 
   string v0(dsize*cn0, '\0');
   for (size_t i=0; i<cn0; i++){
-    switch (val){
+    switch (dtype){
       case DATA_FLOAT:
         ((float*)v0.data())[i] = ((float*)v1.data())[i]*k
                                + ((float*)v2.data())[i]*(1-k);

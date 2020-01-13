@@ -29,7 +29,7 @@ proc_point_str(const std::string & input, const DBinfo & info){
 
   // pack input
   std::string kp = info.parse_time(key);
-  std::string vp = graphene_parse_data(args, info.val);
+  std::string vp = graphene_parse_data(args, info.dtype);
   DBT k = DBgr::mk_dbt(kp);
   DBT v = DBgr::mk_dbt(vp);
 
@@ -67,8 +67,10 @@ int main() {
       DBinfo hh1; // default constructor
       DBinfo hh2(DATA_INT16);
 
-      assert_eq(hh1.val, DATA_DOUBLE);
-      assert_eq(hh2.val, DATA_INT16);
+      assert_eq(hh1.ttype, TIME_V2);
+      assert_eq(hh1.dtype, DATA_DOUBLE);
+      assert_eq(hh2.ttype, TIME_V2);
+      assert_eq(hh2.dtype, DATA_INT16);
     }
 
 
@@ -77,6 +79,7 @@ int main() {
 
       /// version 1 timestamps
       hh1.version = 1;
+      hh1.ttype = TIME_V1;
 
       assert_eq(proc_point_str("1234567890.123000000 0.1 0.2 0.3", hh1),
                 std::string("1234567890.123000000 0.1 0.2 0.3\n"));
@@ -93,8 +96,8 @@ int main() {
                 "18446744073709551.615000000 0.1 0.2 0.3\n");
 
       // overfull
-      assert_eq(proc_point_str("18446744073709551.616 0.1 0.2 0.3", hh1),
-                "0.000000000 0.1 0.2 0.3\n");
+      assert_err(proc_point_str("18446744073709551.616 0.1 0.2 0.3", hh1),
+                "Bad V1 timestamp: too large value: 18446744073709551.616");
 
       // version 1 has 1ms precision
       assert_eq(proc_point_str("1234567890.123123000 0.1 0.2 0.3", hh1),
@@ -108,17 +111,18 @@ int main() {
                 std::string("1.000000000 0.1 0.2 0.3\n"));
 
       assert_err(proc_point_str("-1a 0.1 0.2 0.3", hh1),
-                "Bad timestamp: can't read decimal dot: -1a");
+                "Bad V1 timestamp: positive value expected: -1a");
 
       assert_err(proc_point_str("1a 0.1 0.2 0.3", hh1),
-                "Bad timestamp: can't read decimal dot: 1a");
+                "Bad V1 timestamp: can't read decimal dot: 1a");
 
       assert_err(proc_point_str("1.2a 0.1 0.2 0.3", hh1),
-                "Bad timestamp: can't read milliseconds: 1.2a");
+                "Bad V1 timestamp: can't read milliseconds: 1.2a");
 
 
       /// version 2 timestamps
       hh1.version = 2;
+      hh1.ttype = TIME_V2;
 
       assert_eq(proc_point_str("1234567890.000000000 0.1 0.2 0.3", hh1),
                 std::string("1234567890.000000000 0.1 0.2 0.3\n"));
@@ -192,41 +196,11 @@ int main() {
                 "Unknown database version: 3");
 
     }
-
-    {
-      // pack/unpack timestamps - v2
-      DBinfo hh1(DATA_DOUBLE);
-      hh1.version = 2;
-      assert_err(hh1.parse_time(""), "Bad timestamp: can't read seconds: ");
-      assert_err(hh1.parse_time("a"), "Bad timestamp: can't read seconds: a");
-      assert_err(hh1.parse_time("1234567890123"), "Bad timestamp: can't read seconds: 1234567890123"); // >2^32
-      assert_err(hh1.parse_time("1,"), "Bad timestamp: can't read decimal dot: 1,");
-      assert_err(hh1.parse_time("1.a"), "Bad timestamp: can't read nanoseconds: 1.a");
-      assert_err(hh1.parse_time("1.+a"), "Bad timestamp: can't read nanoseconds: 1.+a");
-      assert_err(hh1.parse_time("1.00-a"), "Bad timestamp: can't read nanoseconds: 1.00-a");
-      assert_err(hh1.parse_time("1.00-1"), "Bad timestamp: can't read nanoseconds: 1.00-1");
-      assert_err(hh1.parse_time("1.00a-"), "Bad timestamp: can't read nanoseconds: 1.00a-");
-    }
-    {
-      // cmp_time_v1
-      DBinfo hh1(DATA_DOUBLE);
-      hh1.version = 1;
-      assert_eq(hh1.cmp_time_v1(hh1.parse_time("0.0"), hh1.parse_time("0.0")), 0);
-      assert_eq(hh1.cmp_time_v1(hh1.parse_time("1.2"), hh1.parse_time("1.1")), 1);
-      assert_eq(hh1.cmp_time_v1(hh1.parse_time("999.2"), hh1.parse_time("1000.1")), -1);
-    }
-    {
-      // cmp_time_v2
-      DBinfo hh1(DATA_DOUBLE);
-      hh1.version = 2;
-      assert_eq(hh1.cmp_time_v2(hh1.parse_time("0.0"), hh1.parse_time("0.0")), 0);
-      assert_eq(hh1.cmp_time_v2(hh1.parse_time("1.2"), hh1.parse_time("1.1")), 1);
-      assert_eq(hh1.cmp_time_v2(hh1.parse_time("999.2"), hh1.parse_time("1000.1")), -1);
-    }
     {
       // is_zero_time_v1
       DBinfo hh1(DATA_DOUBLE);
       hh1.version = 1;
+      hh1.ttype = TIME_V1;
       assert_eq(hh1.is_zero_time_v1(hh1.parse_time("0.0")), 1);
       assert_eq(hh1.is_zero_time_v1(hh1.parse_time("0.001")), 0);
       assert_eq(hh1.is_zero_time_v1(hh1.parse_time("0.0001")), 1); // ms precision!
@@ -236,6 +210,7 @@ int main() {
       // is_zero_time_v2
       DBinfo hh1(DATA_DOUBLE);
       hh1.version = 2;
+      hh1.ttype = TIME_V2;
       assert_eq(hh1.is_zero_time_v2(hh1.parse_time("0.0")), 1);
       assert_eq(hh1.is_zero_time_v2(hh1.parse_time("0.001")), 0);
       assert_eq(hh1.is_zero_time_v2(hh1.parse_time("0.0001")), 0);
@@ -246,6 +221,7 @@ int main() {
       // add_time_v1
       DBinfo hh1(DATA_DOUBLE);
       hh1.version = 1;
+      hh1.ttype = TIME_V1;
       assert_eq(hh1.parse_time("2.0"),   hh1.add_time_v1(hh1.parse_time("1.5"), hh1.parse_time("0.5")));
       assert_eq(hh1.parse_time("3.998"), hh1.add_time_v1(hh1.parse_time("1.999"), hh1.parse_time("1.999")));
       assert_eq(hh1.parse_time("20.0"),  hh1.add_time_v1(hh1.parse_time("10"), hh1.parse_time("10")));
@@ -254,6 +230,7 @@ int main() {
       // add_time_v2
       DBinfo hh1(DATA_DOUBLE);
       hh1.version = 2;
+      hh1.ttype = TIME_V2;
       assert_eq(hh1.parse_time("2.0"),   hh1.add_time_v2(hh1.parse_time("1.5"), hh1.parse_time("0.5")));
       assert_eq(hh1.parse_time("3.998"), hh1.add_time_v2(hh1.parse_time("1.999"), hh1.parse_time("1.999")));
       assert_eq(hh1.parse_time("20.0"),  hh1.add_time_v2(hh1.parse_time("10"), hh1.parse_time("10")));
@@ -262,32 +239,10 @@ int main() {
     }
 
     {
-      // time_diff_v1
-      DBinfo hh1(DATA_DOUBLE);
-      hh1.version = 1;
-      assert_eq(hh1.time_diff_v1(hh1.parse_time("1.5"),   hh1.parse_time("0.5")), 1.0);
-      assert_eq(hh1.time_diff_v1(hh1.parse_time("1.999"), hh1.parse_time("1.999")), 0.0);
-      assert_eq(hh1.time_diff_v1(hh1.parse_time("1.999"), hh1.parse_time("2.9999")), -1.0); // ms precision!
-      assert_eq(hh1.time_diff_v1(hh1.parse_time("2147483648.001"), hh1.parse_time("2147483648.000")), 0.001);
-    }
-    {
-      // time_diff_v2
-      DBinfo hh1(DATA_DOUBLE);
-      hh1.version = 2;
-      assert_eq(hh1.time_diff_v2(hh1.parse_time("1.5"), hh1.parse_time("0.5")), 1.0);
-      assert_eq(hh1.time_diff_v2(hh1.parse_time("1.999"), hh1.parse_time("1.999")), 0.0);
-      assert_eq(hh1.time_diff_v2(hh1.parse_time("1.999"), hh1.parse_time("2.9999")), -1.0009); // ns precision!
-      assert_eq(hh1.time_diff_v2(hh1.parse_time("2147483648.001"), hh1.parse_time("2147483648.000")), 0.001);
-      assert_eq(hh1.time_diff_v2(hh1.parse_time("2147483648.000000001"), hh1.parse_time("2147483648.0")), 1e-9);
-      assert_eq(hh1.time_diff_v2(hh1.parse_time("2147483648"), hh1.parse_time("2147483648.000000001")), -1e-9);
-      assert_eq(hh1.time_diff_v2(hh1.parse_time("2147483648.999999999"), hh1.parse_time("0")), 2147483648.999999999);
-      assert_eq(hh1.time_diff_v2(hh1.parse_time("10"), hh1.parse_time("10")), 0.0);
-    }
-
-    {
       // interpolate_v2
       DBinfo hh1(DATA_DOUBLE);
       hh1.version = 2;
+      hh1.ttype = TIME_V2;
       vector<string> d1,d2;
       d1.push_back("0.2");
       d1.push_back("1.2");
@@ -297,8 +252,8 @@ int main() {
         hh1.parse_time("1.1"),
         hh1.parse_time("1.0"),
         hh1.parse_time("1.4"),
-        graphene_parse_data(d1, hh1.val),
-        graphene_parse_data(d2, hh1.val));
+        graphene_parse_data(d1, hh1.dtype),
+        graphene_parse_data(d2, hh1.dtype));
       assert_eq(hh1.print_data(d0), "0.4 1.4");
     }
 
@@ -318,13 +273,13 @@ int main() {
 
       // store in integer DB
       assert_eq(hh1.print_data(graphene_parse_data(v1, DATA_INT32)), "314 628");
-      assert_err(hh1.print_data(graphene_parse_data(v2, DATA_INT32)), "Can't put value into INT32 database: 3.1415");
-      assert_err(hh1.print_data(graphene_parse_data(v3, DATA_INT32)), "Can't put value into INT32 database: pi"); //!!!
+      assert_err(hh1.print_data(graphene_parse_data(v2, DATA_INT32)), "Bad INT32 value: 3.1415");
+      assert_err(hh1.print_data(graphene_parse_data(v3, DATA_INT32)), "Bad INT32 value: pi"); //!!!
 
       // store in double DB
       assert_eq(hh2.print_data(graphene_parse_data(v1, DATA_DOUBLE)), "314 628");
       assert_eq(hh2.print_data(graphene_parse_data(v2, DATA_DOUBLE)), "3.1415 6.283");
-      assert_err(hh2.print_data(graphene_parse_data(v3, DATA_DOUBLE)), "Can't put value into DOUBLE database: pi");
+      assert_err(hh2.print_data(graphene_parse_data(v3, DATA_DOUBLE)), "Bad DOUBLE value: pi");
 
       // store in text DB
       assert_eq(hh3.print_data(graphene_parse_data(v1, DATA_TEXT)), "314 628");

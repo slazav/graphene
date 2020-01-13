@@ -183,7 +183,7 @@ DBgr::write_info(const DBinfo &info){
       throw Err() << name << ".db: " << db_strerror(ret);
 
     // Write new data:
-    string vs = string(1, (char)info.val)
+    string vs = string(1, (char)info.dtype)
                    + info.descr;
     DBT v = mk_dbt(vs);
     ret = dbp->put(dbp.get(), txn, &k, &v, 0);
@@ -232,8 +232,8 @@ DBgr::read_info(){
     if (ret != 0)
      throw Err() << name << ".db: " << db_strerror(ret);
 
-    db_info.val = static_cast<DataType>(*((uint8_t*)v.data));
-    graphene_dtype_name(db_info.val); // throw error if not valid
+    db_info.dtype = static_cast<DataType>(*((uint8_t*)v.data));
+    graphene_dtype_name(db_info.dtype); // throw error if not valid
 
     db_info.descr = string((char*)v.data+1, (char*)v.data+v.size);
 
@@ -248,6 +248,12 @@ DBgr::read_info(){
       throw Err() << name << ".db: " << db_strerror(ret);
     else
       db_info.version = *((uint8_t*)v.data);
+
+    switch (db_info.version){
+      case 1: db_info.ttype=TIME_V1; break;
+      case 2: db_info.ttype=TIME_V2; break;
+      default: throw Err() << "unsupported database version: " << db_info.version;
+    }
   }
   catch (Err e){
     txn_abort(txn);
@@ -351,7 +357,7 @@ DBgr::backup_upd(const std::string &t){
       }
       else {
         std::string timer = string((char *)v.data, (char *)v.data+v.size);
-        if (info.cmp_time(timer,t)>0){
+        if (graphene_time_cmp(timer,t, info.ttype)>0){
           v = mk_dbt(t);
           ret = dbp->put(dbp.get(), txn, &k, &v, 0);
         }
@@ -379,7 +385,7 @@ DBgr::put(const string &t, const vector<string> & dat, const string &dpolicy){
   int ret;
   DBinfo info = read_info();
   string ks = info.parse_time(t);
-  string vs = graphene_parse_data(dat, info.val);
+  string vs = graphene_parse_data(dat, info.dtype);
 
   // do everything in a single transaction
   DB_TXN *txn = txn_begin();
@@ -466,7 +472,7 @@ DBgr::get_prev(const string &t2, DBout & dbo){
     string tp((char *)k.data, (char *)k.data+k.size);
 
     // if needed, get previous record:
-    if (info.cmp_time(tp,t2p)>0 || !found)
+    if (graphene_time_cmp(tp,t2p, info.ttype)>0 || !found)
       found=c_get(curs, &k, &v, DB_PREV);
 
     if (found) dbo.proc_point(&k, &v, info);
@@ -489,7 +495,7 @@ DBgr::get(const string &t, DBout & dbo){
   DBinfo info = read_info();
 
   /* for non-float databases use get_prev */
-  if (info.val!=DATA_FLOAT && info.val!=DATA_DOUBLE)
+  if (info.dtype!=DATA_FLOAT && info.dtype!=DATA_DOUBLE)
     return get_prev(t, dbo);
 
   string tp = info.parse_time(t);
@@ -518,7 +524,7 @@ DBgr::get(const string &t, DBout & dbo){
     // if "next" record is exactly at t - return it
     t1p = string((char *)k.data, (char *)k.data+k.size);
     v1p = string((char *)v.data, (char *)v.data+v.size);
-    if (info.cmp_time(t1p,tp) == 0){
+    if (graphene_time_cmp(t1p,tp, info.ttype) == 0){
       dbo.proc_point(&k, &v, info);
       goto finish;
     }
@@ -589,12 +595,12 @@ DBgr::get_range(const string &t1, const string &t2,
 
       // unpack new time value and check the range
       string tnp((char *)k.data, (char *)k.data+k.size);
-      if (info.cmp_time(tnp,t2p)>0) break;
+      if (graphene_time_cmp(tnp,t2p,info.ttype)>0) break;
 
       // I have a broken database where DB_SET_RANGE/DB_NEXT can
       // get non-increasing values. Let's check this to prevent the
       // program from infinite loops..
-      if (info.cmp_time(tnp,pre)<0)
+      if (graphene_time_cmp(tnp,pre,info.ttype)<0)
         throw Err() << "Broken database (DB_SET_RANGE/DB_NEXT get smaller timestamp)";
 
       // if we want every point, switch to DB_NEXT and repeat
@@ -606,12 +612,12 @@ DBgr::get_range(const string &t1, const string &t2,
 
       // If dt >0 we continue using fl=DB_SET_RANGE.
       // If new value the same as old
-      if (tlp.size()>0 && info.cmp_time(tlp,tnp)==0){
+      if (tlp.size()>0 && graphene_time_cmp(tlp,tnp,info.ttype)==0){
         // get next value
         if (!c_get(curs, &k, &v, DB_NEXT)) break;
         // unpack new time value and check the range
         tnp = string((char *)k.data, (char *)k.data+k.size);
-        if (info.cmp_time(tnp,t2p) > 0 ) break;
+        if (graphene_time_cmp(tnp,t2p,info.ttype) > 0 ) break;
       }
       dbo.proc_point(&k, &v, info);
       tlp=tnp; // update last printed value
@@ -684,12 +690,12 @@ DBgr::del_range(const string &t1, const string &t2){
 
       // get packed time value and check the range
       string tp((char *)k.data, (char *)k.data+k.size);
-      if (info.cmp_time(tp,t2p)>0) break;
+      if (graphene_time_cmp(tp,t2p,info.ttype)>0) break;
 
       // I have a broken database where DB_SET_RANGE/DB_NEXT can
       // get non-increasing values. Let's check this to prevent the
       // program from infinite loops..
-      if (info.cmp_time(tp,pre)<0)
+      if (graphene_time_cmp(tp,pre,info.ttype)<0)
         throw Err() << "Broken database (DB_SET_RANGE/DB_NEXT get smaller timestamp)";
 
       // delete the point

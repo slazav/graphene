@@ -32,16 +32,18 @@ void check_name(const std::string & name);
 // Class for the database information.
 class DBinfo {
   public:
-  DataType val;
+  DataType dtype;
+  TimeType ttype;
+
   uint8_t  version;
   std::string descr;
 
   DBinfo(const DataType v = DATA_DOUBLE,
          const std::string &d = std::string())
-            : val(v),descr(d),version(DBVERSION) {}
+            : dtype(v),ttype(TIME_V2),descr(d),version(DBVERSION) {}
 
   bool operator==(const DBinfo &o) const{
-    return o.val==val && o.descr==descr && o.version==version; }
+    return o.dtype==dtype && o.ttype==ttype && o.descr==descr && o.version==version; }
 
   // We keep time in a std::string storage, which
   // can be easily converted into Berkleydb data.
@@ -54,17 +56,11 @@ class DBinfo {
   // Print timestamp
   std::string print_time(const std::string & s) const;
 
-  // Compare two packed time values, return +1,0,-1 if s1>s2,s1=s2,s1<s2
-  int cmp_time(const std::string & s1, const std::string & s2) const;
-
   // Is time equals zero?
   bool is_zero_time(const std::string & s1) const;
 
   // Add two packed time values, return packed string
   std::string add_time(const std::string & s1, const std::string & s2) const;
-
-  // Subtract two packed time values, return number of seconds as a double value
-  double time_diff(const std::string & s1, const std::string & s2) const;
 
   // Print data
   std::string print_data(const std::string & s, const int col=-1) const;
@@ -78,10 +74,10 @@ class DBinfo {
 
   // Version-specific functions - use only inside object or in tests
 //  private:
+
   // Pack/Unpack integer timestamp
   std::string pack_time_v1(const uint64_t t) const;
   uint64_t unpack_time_v1(const std::string & s) const;
-
   std::string print_time_v1(const std::string & s) const;
   int cmp_time_v1(const std::string & s1, const std::string & s2) const;
   bool is_zero_time_v1(const std::string & s1) const;
@@ -92,15 +88,12 @@ class DBinfo {
         const std::string & k1, const std::string & k2,
         const std::string & v1, const std::string & v2);
 
-  // Pack/Unpack timestamp
+  // Pack/Unpack integer timestamp
   std::string pack_time_v2(const uint64_t t) const;
   uint64_t unpack_time_v2(const std::string & s) const;
-
   std::string print_time_v2(const std::string & s) const;
-  int cmp_time_v2(const std::string & s1, const std::string & s2) const;
   bool is_zero_time_v2(const std::string & s1) const;
   std::string add_time_v2(const std::string & s1, const std::string & s2) const;
-  double time_diff_v2(const std::string & s1, const std::string & s2) const;
   std::string interpolate_v2(
         const std::string & k0,
         const std::string & k1, const std::string & k2,

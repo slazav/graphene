@@ -18,14 +18,16 @@ int main() {
       DBgr db = pool.get("test", DB_CREATE);
       db.write_info(hh1);
       hh2 = db.read_info();
-      assert_eq(hh1.val, hh2.val);
+      assert_eq(hh1.ttype, hh2.ttype);
+      assert_eq(hh1.dtype, hh2.dtype);
       assert_eq(hh1.descr, hh2.descr);
 
-      hh1.val = DATA_DOUBLE;
+      hh1.dtype = DATA_DOUBLE;
       hh1.descr = "Description";
       db.write_info(hh1);
       hh2 = db.read_info();
-      assert_eq(hh1.val, hh2.val);
+      assert_eq(hh1.ttype, hh2.ttype);
+      assert_eq(hh1.dtype, hh2.dtype);
       assert_eq(hh1.descr, hh2.descr);
     }
 
@@ -33,7 +35,8 @@ int main() {
       DBpool pool(".", true, "txn");
       DBgr db1 = pool.get("test", DB_RDONLY);
       hh2 = db1.read_info();
-      assert_eq(hh1.val, hh2.val);
+      assert_eq(hh1.ttype, hh2.ttype);
+      assert_eq(hh1.dtype, hh2.dtype);
       assert_eq(hh1.descr, hh2.descr);
     }
 

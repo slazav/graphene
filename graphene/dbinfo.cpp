@@ -40,14 +40,6 @@ DBinfo::print_time(const string & s) const{
   else throw Err() << "Unknown database version: " << (int)version;
 }
 
-// Compare two packed time values, return +1,0,-1 if s1>s2,s1=s2,s1<s2
-int
-DBinfo::cmp_time(const std::string & s1, const std::string & s2) const{
-  if      (version==1) return cmp_time_v1(s1,s2);
-  else if (version==2) return cmp_time_v2(s1,s2);
-  else throw Err() << "Unknown database version: " << (int)version;
-}
-
 // Is time equals zero?
 bool
 DBinfo::is_zero_time(const std::string & s1) const {
@@ -64,20 +56,12 @@ DBinfo::add_time(const std::string & s1, const std::string & s2) const{
   else throw Err() << "Unknown database version: " << (int)version;
 }
 
-// Add two packed time values, return packed string
-double
-DBinfo::time_diff(const std::string & s1, const std::string & s2) const{
-  if      (version==1) return time_diff_v1(s1,s2);
-  else if (version==2) return time_diff_v2(s1,s2);
-  else throw Err() << "Unknown database version: " << (int)version;
-}
-
 // Print data
 string
 DBinfo::print_data(const string & s, const int col) const{
-  if (val == DATA_TEXT) return s;
+  if (dtype == DATA_TEXT) return s;
 
-  size_t dsize = graphene_dtype_size(val);
+  size_t dsize = graphene_dtype_size(dtype);
 
   if (s.size() % dsize != 0)
     throw Err() << "Broken database: wrong data length";
@@ -91,7 +75,7 @@ DBinfo::print_data(const string & s, const int col) const{
   for (size_t i=c1; i<c2; i++){
     if (i>c1) ostr << ' ';
     if (i>=cn) { return "NaN"; }
-    switch (val){
+    switch (dtype){
       case DATA_INT8:   ostr << ((int8_t   *)s.data())[i]; break;
       case DATA_UINT8:  ostr << ((uint8_t  *)s.data())[i]; break;
       case DATA_INT16:  ostr << ((int16_t  *)s.data())[i]; break;

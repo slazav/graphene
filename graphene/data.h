@@ -23,18 +23,6 @@ std::string graphene_dtype_name(const DataType dtype);
 // For TEXT 1 is returned.
 size_t graphene_dtype_size(const DataType dtype);
 
-
-// Enum for the time format (later can be joined to data)
-enum TimeType {TIME_V1, TIME_V2};
-
-// Convert string into TimeType number.
-TimeType graphene_parse_ttype(const std::string & s);
-
-// Convert TimeType to string.
-std::string graphene_ttype_name(const TimeType ttype);
-
-/********************************************************************/
-
 // Parse and pack data.
 // Data is coming from user interface as a vector<string>.
 // On output std::string is used as a convenient storage, which
@@ -45,6 +33,17 @@ std::string graphene_parse_data(
   const DataType dtype
 );
 
+/********************************************************************/
+
+// Enum for the time format (later can be joined to data)
+enum TimeType {TIME_V1, TIME_V2};
+
+// Convert string into TimeType number.
+TimeType graphene_parse_ttype(const std::string & s);
+
+// Convert TimeType to string.
+std::string graphene_ttype_name(const TimeType ttype);
+
 // Parse and pack time.
 // Data is coming from user interface as a string.
 // On output std::string is used as a convenient storage, which
@@ -54,6 +53,20 @@ std::string graphene_parse_time(
   const std::string & str,
   const TimeType ttype
 );
+
+// Calculate time difference (t1-t2) for two packed times,
+// return number of seconds as double value
+double graphene_time_diff(
+  const std::string & t1,
+  const std::string & t2,
+  const TimeType ttype);
+
+// Return -1, 0 or 1 if t1<t2, t1==t2, t1>t2
+int graphene_time_cmp(
+  const std::string & t1,
+  const std::string & t2,
+  const TimeType ttype);
+
 
 /********************************************************************/
 

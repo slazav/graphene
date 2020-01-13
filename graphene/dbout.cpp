@@ -83,7 +83,7 @@ DBout::proc_point(DBT *k, DBT *v, const DBinfo & info) {
       break;
     case TIME_REL_S: //relative, seconds
       str << std::fixed << std::setprecision(9)
-          << info.time_diff(ks, info.parse_time(pars.time0));
+          << graphene_time_diff(ks, info.parse_time(pars.time0), info.ttype);
       break;
     default: throw Err() << "unknown time format: " << pars.timefmt;
   }
@@ -92,7 +92,7 @@ DBout::proc_point(DBT *k, DBT *v, const DBinfo & info) {
   std::string s = str.str();
 
   // keep only first line (s always ends with \n - see above)
- if (pars.list==1 && info.val==DATA_TEXT)
+ if (pars.list==1 && info.dtype==DATA_TEXT)
     s.resize(s.find('\n')+1);
 
   // do filtering
