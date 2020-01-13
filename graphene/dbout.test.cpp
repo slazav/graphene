@@ -28,7 +28,7 @@ proc_point_str(const std::string & input, const DBinfo & info){
   DBout dbo("", "dbname", out);
 
   // pack input
-  std::string kp = info.parse_time(key);
+  std::string kp = graphene_parse_time(key, info.ttype);
   std::string vp = graphene_parse_data(args, info.dtype);
   DBT k = DBgr::mk_dbt(kp);
   DBT v = DBgr::mk_dbt(vp);
@@ -199,59 +199,90 @@ int main() {
     {
       // is_zero_time_v1
       DBinfo hh1(DATA_DOUBLE);
-      hh1.version = 1;
-      hh1.ttype = TIME_V1;
-      assert_eq(hh1.is_zero_time_v1(hh1.parse_time("0.0")), 1);
-      assert_eq(hh1.is_zero_time_v1(hh1.parse_time("0.001")), 0);
-      assert_eq(hh1.is_zero_time_v1(hh1.parse_time("0.0001")), 1); // ms precision!
-      assert_eq(hh1.is_zero_time_v1(hh1.parse_time("100")), 0);
+      TimeType ttype = TIME_V1;
+      assert_eq(hh1.is_zero_time_v1(graphene_parse_time("0.0", ttype)), 1);
+      assert_eq(hh1.is_zero_time_v1(graphene_parse_time("0.001", ttype)), 0);
+      assert_eq(hh1.is_zero_time_v1(graphene_parse_time("0.0001", ttype)), 1); // ms precision!
+      assert_eq(hh1.is_zero_time_v1(graphene_parse_time("100", ttype)), 0);
     }
     {
       // is_zero_time_v2
       DBinfo hh1(DATA_DOUBLE);
-      hh1.version = 2;
-      hh1.ttype = TIME_V2;
-      assert_eq(hh1.is_zero_time_v2(hh1.parse_time("0.0")), 1);
-      assert_eq(hh1.is_zero_time_v2(hh1.parse_time("0.001")), 0);
-      assert_eq(hh1.is_zero_time_v2(hh1.parse_time("0.0001")), 0);
-      assert_eq(hh1.is_zero_time_v2(hh1.parse_time("0.0000000001")), 1); // ns precision
-      assert_eq(hh1.is_zero_time_v2(hh1.parse_time("100")), 0);
+      TimeType ttype = TIME_V2;
+      assert_eq(hh1.is_zero_time_v2(graphene_parse_time("0.0", ttype)), 1);
+      assert_eq(hh1.is_zero_time_v2(graphene_parse_time("0.001", ttype)), 0);
+      assert_eq(hh1.is_zero_time_v2(graphene_parse_time("0.0001", ttype)), 0);
+      assert_eq(hh1.is_zero_time_v2(graphene_parse_time("0.0000000001", ttype)), 1); // ns precision
+      assert_eq(hh1.is_zero_time_v2(graphene_parse_time("100", ttype)), 0);
     }
     {
       // add_time_v1
       DBinfo hh1(DATA_DOUBLE);
-      hh1.version = 1;
-      hh1.ttype = TIME_V1;
-      assert_eq(hh1.parse_time("2.0"),   hh1.add_time_v1(hh1.parse_time("1.5"), hh1.parse_time("0.5")));
-      assert_eq(hh1.parse_time("3.998"), hh1.add_time_v1(hh1.parse_time("1.999"), hh1.parse_time("1.999")));
-      assert_eq(hh1.parse_time("20.0"),  hh1.add_time_v1(hh1.parse_time("10"), hh1.parse_time("10")));
+      TimeType ttype = TIME_V1;
+      assert_eq(graphene_parse_time("2.0", ttype),
+        hh1.add_time_v1(
+          graphene_parse_time("1.5", ttype),
+          graphene_parse_time("0.5", ttype)));
+      assert_eq(graphene_parse_time("3.998", ttype),
+        hh1.add_time_v1(
+          graphene_parse_time("1.999", ttype),
+          graphene_parse_time("1.999", ttype)));
+      assert_eq(graphene_parse_time("20.0", ttype),
+        hh1.add_time_v1(
+          graphene_parse_time("10", ttype),
+          graphene_parse_time("10", ttype)));
     }
     {
       // add_time_v2
       DBinfo hh1(DATA_DOUBLE);
-      hh1.version = 2;
-      hh1.ttype = TIME_V2;
-      assert_eq(hh1.parse_time("2.0"),   hh1.add_time_v2(hh1.parse_time("1.5"), hh1.parse_time("0.5")));
-      assert_eq(hh1.parse_time("3.998"), hh1.add_time_v2(hh1.parse_time("1.999"), hh1.parse_time("1.999")));
-      assert_eq(hh1.parse_time("20.0"),  hh1.add_time_v2(hh1.parse_time("10"), hh1.parse_time("10")));
+      TimeType ttype = TIME_V2;
+      assert_eq(graphene_parse_time("2.0", ttype),
+         hh1.add_time_v2(
+           graphene_parse_time("1.5", ttype),
+           graphene_parse_time("0.5", ttype)));
+      assert_eq(graphene_parse_time("3.998", ttype),
+         hh1.add_time_v2(
+           graphene_parse_time("1.999", ttype),
+           graphene_parse_time("1.999", ttype)));
+      assert_eq(graphene_parse_time("20.0", ttype),
+         hh1.add_time_v2(
+           graphene_parse_time("10", ttype),
+           graphene_parse_time("10", ttype)));
       // 2^31+2^31 >= 2^32
-      assert_err(hh1.add_time_v2(hh1.parse_time("2147483648"), hh1.parse_time("2147483648")), "add_time overfull");
+      assert_err(hh1.add_time_v2(
+        graphene_parse_time("2147483648", ttype),
+        graphene_parse_time("2147483648", ttype)), "add_time overfull");
     }
 
     {
       // interpolate_v2
       DBinfo hh1(DATA_DOUBLE);
-      hh1.version = 2;
-      hh1.ttype = TIME_V2;
       vector<string> d1,d2;
       d1.push_back("0.2");
       d1.push_back("1.2");
       d2.push_back("1.0");
       d2.push_back("2.0");
       string d0 = hh1.interpolate_v2(
-        hh1.parse_time("1.1"),
-        hh1.parse_time("1.0"),
-        hh1.parse_time("1.4"),
+        graphene_parse_time("1.1", TIME_V2),
+        graphene_parse_time("1.0", TIME_V2),
+        graphene_parse_time("1.4", TIME_V2),
+        graphene_parse_data(d1, hh1.dtype),
+        graphene_parse_data(d2, hh1.dtype));
+      assert_eq(hh1.print_data(d0), "0.4 1.4");
+    }
+
+    {
+      // interpolate_v1
+      DBinfo hh1(DATA_DOUBLE);
+      vector<string> d1,d2;
+      d1.push_back("0.2");
+      d1.push_back("1.2");
+      d2.push_back("1.0");
+      d2.push_back("2.0");
+      string d0 = hh1.interpolate_v1(
+        graphene_parse_time("1.1", TIME_V1),
+        graphene_parse_time("1.0", TIME_V1),
+        graphene_parse_time("1.4", TIME_V1),
         graphene_parse_data(d1, hh1.dtype),
         graphene_parse_data(d2, hh1.dtype));
       assert_eq(hh1.print_data(d0), "0.4 1.4");
@@ -304,5 +335,7 @@ int main() {
 /***************************************************************/
   } catch (Err E){
     std::cerr << E.str() << "\n";
+    return 1;
   }
+  return 0;
 }

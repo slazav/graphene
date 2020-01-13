@@ -49,10 +49,6 @@ class DBinfo {
   // can be easily converted into Berkleydb data.
   // It is not a c-string!
 
-
-  // Parse timestamp from a string
-  std::string parse_time(const std::string & ts) const;
-
   // Print timestamp
   std::string print_time(const std::string & s) const;
 

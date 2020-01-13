@@ -24,13 +24,6 @@ void check_name(const std::string & name_){
 /********************************************************************/
 // Time handling
 
-// Parse timestemp from a string
-string
-DBinfo::parse_time(const string & ts) const{
-  if      (version==1) return graphene_parse_time(ts, TIME_V1);
-  else if (version==2) return graphene_parse_time(ts, TIME_V2);
-  else throw Err() << "Unknown database version: " << (int)version;
-}
 
 // Print timestamp
 std::string
