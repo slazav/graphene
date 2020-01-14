@@ -257,7 +257,7 @@ class Pars{
     if (strcasecmp(cmd.c_str(), "create")==0){
       if (pars.size()<2) throw Err() << "database name expected";
       DBinfo info(
-        pars.size()<3 ? DATA_DOUBLE : graphene_parse_dtype(pars[2]),
+        pars.size()<3 ? DATA_DOUBLE : graphene_dtype_parse(pars[2]),
         pars.size()<4 ? "": pars[3]);
       for (int i=4; i<pars.size(); i++) info.descr+=" "+pars[i];
       // todo: create folders if needed

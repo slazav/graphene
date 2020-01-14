@@ -290,7 +290,7 @@ DBgr::backup_start(){
      throw Err() << name << ".db: " << db_strerror(ret);
 
     timer = (ret == DB_NOTFOUND)?
-      graphene_parse_time("inf", info.ttype):
+      graphene_time_parse("inf", info.ttype):
       string((char *)v.data, (char *)v.data+v.size);
   }
   catch (Err e){
@@ -384,8 +384,8 @@ void
 DBgr::put(const string &t, const vector<string> & dat, const string &dpolicy){
   int ret;
   DBinfo info = read_info();
-  string ks = graphene_parse_time(t, info.ttype);
-  string vs = graphene_parse_data(dat, info.dtype);
+  string ks = graphene_time_parse(t, info.ttype);
+  string vs = graphene_data_parse(dat, info.dtype);
 
   // do everything in a single transaction
   DB_TXN *txn = txn_begin();
@@ -400,9 +400,9 @@ DBgr::put(const string &t, const vector<string> & dat, const string &dpolicy){
       if (res == DB_KEYEXIST){
         if (dpolicy =="error") throw Err() << name << ".db: " << "Timestamp exists";
         else if (dpolicy =="sshift")
-          ks = graphene_time_add(ks, graphene_parse_time("1", info.ttype), info.ttype);
+          ks = graphene_time_add(ks, graphene_time_parse("1", info.ttype), info.ttype);
         else if (dpolicy =="nsshift")
-          ks = graphene_time_add(ks, graphene_parse_time("0.000000001", info.ttype), info.ttype);
+          ks = graphene_time_add(ks, graphene_time_parse("0.000000001", info.ttype), info.ttype);
         else if (dpolicy =="skip") break;
         else throw Err() << "Unknown dpolicy setting: " << dpolicy;
       }
@@ -424,7 +424,7 @@ DBgr::put(const string &t, const vector<string> & dat, const string &dpolicy){
 void
 DBgr::get_next(const string &t1, DBout & dbo){
   DBinfo info = read_info();
-  string t1p = graphene_parse_time(t1, info.ttype);
+  string t1p = graphene_time_parse(t1, info.ttype);
   DBT k = mk_dbt(t1p);
   DBT v = mk_dbt();
 
@@ -457,7 +457,7 @@ void
 DBgr::get_prev(const string &t2, DBout & dbo){
   DBinfo info = read_info();
 
-  string t2p = graphene_parse_time(t2, info.ttype);
+  string t2p = graphene_time_parse(t2, info.ttype);
   DBT k = mk_dbt(t2p);
   DBT v = mk_dbt();
 
@@ -500,7 +500,7 @@ DBgr::get(const string &t, DBout & dbo){
   if (info.dtype!=DATA_FLOAT && info.dtype!=DATA_DOUBLE)
     return get_prev(t, dbo);
 
-  string tp = graphene_parse_time(t, info.ttype);
+  string tp = graphene_time_parse(t, info.ttype);
   DBT k = mk_dbt(tp);
   DBT v = mk_dbt();
   string t1p, v1p, t2p, v2p, vp;
@@ -573,9 +573,9 @@ DBgr::get_range(const string &t1, const string &t2,
 
   DBinfo info = read_info();
 
-  string t1p = graphene_parse_time(t1, info.ttype);
-  string t2p = graphene_parse_time(t2, info.ttype);
-  string dtp = graphene_parse_time(dt, info.ttype);
+  string t1p = graphene_time_parse(t1, info.ttype);
+  string t2p = graphene_time_parse(t2, info.ttype);
+  string dtp = graphene_time_parse(dt, info.ttype);
   DBT k = mk_dbt(t1p);
   DBT v = mk_dbt();
   string tlp; // last printed value
@@ -646,7 +646,7 @@ void
 DBgr::del(const string &t1){
   int ret;
   DBinfo info = read_info();
-  string t1p = graphene_parse_time(t1, info.ttype);
+  string t1p = graphene_time_parse(t1, info.ttype);
   DBT k = mk_dbt(t1p);
 
   DB_TXN *txn = txn_begin();
@@ -671,8 +671,8 @@ DBgr::del_range(const string &t1, const string &t2){
   DBinfo info = read_info();
   std::string first_del; // for lastmod timestamp
 
-  string t1p = graphene_parse_time(t1, info.ttype);
-  string t2p = graphene_parse_time(t2, info.ttype);
+  string t1p = graphene_time_parse(t1, info.ttype);
+  string t2p = graphene_time_parse(t2, info.ttype);
   DBT k = mk_dbt(t1p);
   DBT v = mk_dbt();
 

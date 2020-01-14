@@ -83,7 +83,7 @@ DBout::proc_point(DBT *k, DBT *v, const DBinfo & info) {
       break;
     case TIME_REL_S: //relative, seconds
       str << std::fixed << std::setprecision(9)
-          << graphene_time_diff(ks, graphene_parse_time(pars.time0, info.ttype), info.ttype);
+          << graphene_time_diff(ks, graphene_time_parse(pars.time0, info.ttype), info.ttype);
       break;
     default: throw Err() << "unknown time format: " << pars.timefmt;
   }

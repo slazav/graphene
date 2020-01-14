@@ -14,7 +14,7 @@ enum DataType { DATA_TEXT,
          DATA_FLOAT, DATA_DOUBLE};
 
 // Convert string into DataType number.
-DataType graphene_parse_dtype(const std::string & s);
+DataType graphene_dtype_parse(const std::string & s);
 
 // Convert DataType to string.
 std::string graphene_dtype_name(const DataType dtype);
@@ -28,7 +28,7 @@ size_t graphene_dtype_size(const DataType dtype);
 // On output std::string is used as a convenient storage, which
 // can be easily converted into Berkleydb data.
 // Output string is not a c-string, it may contain zeros!
-std::string graphene_parse_data(
+std::string graphene_data_parse(
   const std::vector<std::string> & strs,
   const DataType dtype
 );
@@ -39,7 +39,7 @@ std::string graphene_parse_data(
 enum TimeType {TIME_V1, TIME_V2};
 
 // Convert string into TimeType number.
-TimeType graphene_parse_ttype(const std::string & s);
+TimeType graphene_ttype_parse(const std::string & s);
 
 // Convert TimeType to string.
 std::string graphene_ttype_name(const TimeType ttype);
@@ -49,7 +49,7 @@ std::string graphene_ttype_name(const TimeType ttype);
 // On output std::string is used as a convenient storage, which
 // can be easily converted into Berkleydb data.
 // Output string is not a c-string, it may contain zeros!
-std::string graphene_parse_time(
+std::string graphene_time_parse(
   const std::string & str,
   const TimeType ttype
 );

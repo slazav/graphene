@@ -38,7 +38,7 @@ Changes/fixed errors since graphene 2.8:
 */
 
 DataType
-graphene_parse_dtype(const std::string & s){
+graphene_dtype_parse(const std::string & s){
   if (strcasecmp(s.c_str(), "TEXT")==0)   return DATA_TEXT;
   if (strcasecmp(s.c_str(), "INT8")==0)   return DATA_INT8;
   if (strcasecmp(s.c_str(), "UINT8")==0)  return DATA_UINT8;
@@ -92,7 +92,7 @@ graphene_dtype_size(const DataType dtype){
 /********************************************************************/
 
 std::string
-graphene_parse_data(const std::vector<std::string> & strs, const DataType dtype){
+graphene_data_parse(const std::vector<std::string> & strs, const DataType dtype){
 
   // TEXT: join all data
   if (dtype == DATA_TEXT){
@@ -248,7 +248,7 @@ Changes/fixed errors since graphene 2.8:
 */
 
 TimeType
-graphene_parse_ttype(const std::string & s){
+graphene_ttype_parse(const std::string & s){
   if (strcasecmp(s.c_str(), "TIME_V1")==0) return TIME_V1;
   if (strcasecmp(s.c_str(), "TIME_V2")==0) return TIME_V2;
   throw Err() << "Unknown time type: " << s;
@@ -304,7 +304,7 @@ graphene_time_pack_v2(const uint64_t & t){
 /********************************************************************/
 
 std::string
-graphene_parse_time(const std::string & str, const TimeType ttype){
+graphene_time_parse(const std::string & str, const TimeType ttype){
 
   if (str=="") throw Err() << "Empty timestamp";
 
