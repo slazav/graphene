@@ -196,44 +196,6 @@ int main() {
                 "Unknown database version: 3");
 
     }
-    {
-      // add_time_v1
-      DBinfo hh1(DATA_DOUBLE);
-      TimeType ttype = TIME_V1;
-      assert_eq(graphene_parse_time("2.0", ttype),
-        hh1.add_time_v1(
-          graphene_parse_time("1.5", ttype),
-          graphene_parse_time("0.5", ttype)));
-      assert_eq(graphene_parse_time("3.998", ttype),
-        hh1.add_time_v1(
-          graphene_parse_time("1.999", ttype),
-          graphene_parse_time("1.999", ttype)));
-      assert_eq(graphene_parse_time("20.0", ttype),
-        hh1.add_time_v1(
-          graphene_parse_time("10", ttype),
-          graphene_parse_time("10", ttype)));
-    }
-    {
-      // add_time_v2
-      DBinfo hh1(DATA_DOUBLE);
-      TimeType ttype = TIME_V2;
-      assert_eq(graphene_parse_time("2.0", ttype),
-         hh1.add_time_v2(
-           graphene_parse_time("1.5", ttype),
-           graphene_parse_time("0.5", ttype)));
-      assert_eq(graphene_parse_time("3.998", ttype),
-         hh1.add_time_v2(
-           graphene_parse_time("1.999", ttype),
-           graphene_parse_time("1.999", ttype)));
-      assert_eq(graphene_parse_time("20.0", ttype),
-         hh1.add_time_v2(
-           graphene_parse_time("10", ttype),
-           graphene_parse_time("10", ttype)));
-      // 2^31+2^31 >= 2^32
-      assert_err(hh1.add_time_v2(
-        graphene_parse_time("2147483648", ttype),
-        graphene_parse_time("2147483648", ttype)), "add_time overfull");
-    }
 
     {
       // pack/unpack data

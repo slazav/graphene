@@ -265,6 +265,44 @@ graphene_ttype_name(const TimeType ttype){
 
 /********************************************************************/
 
+/********************************************************************/
+uint64_t
+graphene_time_unpack_v1(const std::string & t){
+  if (t.size()!=sizeof(uint64_t))
+    throw Err() << "Broken database: wrong timestamp size: " << t.size();
+  return *(uint64_t *)t.data();
+}
+
+uint64_t
+graphene_time_unpack_v2(const std::string & t){
+  if (t.size()==sizeof(uint64_t))
+    return *(uint64_t *)t.data();
+  if (t.size()==sizeof(uint32_t)){
+    uint64_t v = (uint64_t)(*(uint32_t *)t.data())<<32;
+    if (v&0xFFFFFFFF > 999999999) throw Err()
+       << "Bad timestamp: too large nanosecond field";
+    return v;
+  }
+  throw Err() << "Broken database: wrong timestamp size: " << t.size();
+}
+
+
+std::string
+graphene_time_pack_v2(const uint64_t & t){
+  if (t&0xFFFFFFFF){
+    std::string ret(sizeof(uint64_t), '\0');
+    *(uint64_t *)ret.data() = t;
+    return ret;
+  }
+  else {
+    std::string ret(sizeof(uint32_t), '\0');
+    *(uint32_t *)ret.data() = t>>32;
+    return ret;
+  }
+}
+
+/********************************************************************/
+
 std::string
 graphene_parse_time(const std::string & str, const TimeType ttype){
 
@@ -342,17 +380,7 @@ graphene_parse_time(const std::string & str, const TimeType ttype){
       // assemble time
       t = ((uint64_t)t1<<32) + t2;
     }
-
-    if ((t&0xFFFFFFFF) == 0){
-      std::string ret = std::string(sizeof(uint32_t), '\0');
-      *(uint32_t*)ret.data() = (t>>32);
-      return ret;
-    }
-    else {
-      std::string ret = std::string(sizeof(uint64_t), '\0');
-      *(uint64_t*)ret.data() = t;
-      return ret;
-    }
+    return graphene_time_pack_v2(t);
   }
 
   /// TIME_V1: uint64_t with unix time in milliseconds
@@ -410,26 +438,6 @@ graphene_parse_time(const std::string & str, const TimeType ttype){
 }
 
 
-/********************************************************************/
-uint64_t
-graphene_time_unpack_v1(const std::string & t){
-  if (t.size()!=sizeof(uint64_t))
-    throw Err() << "Broken database: wrong timestamp size: " << t.size();
-  return *(uint64_t *)t.data();
-}
-
-uint64_t
-graphene_time_unpack_v2(const std::string & t){
-  if (t.size()==sizeof(uint64_t))
-    return *(uint64_t *)t.data();
-  if (t.size()==sizeof(uint32_t)){
-    uint64_t v = (uint64_t)(*(uint32_t *)t.data())<<32;
-    if (v&0xFFFFFFFF > 999999999) throw Err()
-       << "Bad timestamp: too large nanosecond field";
-    return v;
-  }
-  throw Err() << "Broken database: wrong timestamp size: " << t.size();
-}
 
 /********************************************************************/
 double
@@ -479,6 +487,32 @@ bool graphene_time_zero( const std::string & t, const TimeType ttype){
   switch (ttype){
     case TIME_V1: return graphene_time_unpack_v1(t)==0;
     case TIME_V2: return graphene_time_unpack_v2(t)==0;
+  }
+  throw Err() << "Unknown time type: " << ttype;
+}
+
+std::string
+graphene_time_add(const std::string & t1, const std::string & t2,
+                  const TimeType ttype){
+  switch (ttype){
+    case TIME_V1: {
+      uint64_t v1 = graphene_time_unpack_v1(t1);
+      uint64_t v2 = graphene_time_unpack_v1(t2);
+      std::string ret(sizeof(uint64_t), '\0');
+      uint64_t v = v1+v2;
+      if (v<v1 || v<v2) throw Err() << "graphene_time_add overfull";
+      *(uint64_t *)ret.data() = v;
+      return ret;
+    }
+    case TIME_V2: {
+      uint64_t v1 = graphene_time_unpack_v2(t1);
+      uint64_t v2 = graphene_time_unpack_v2(t2);
+      uint64_t sum1 = (v1 >> 32) + (v2 >> 32);
+      uint64_t sum2 = (v1 & 0xFFFFFFFF) + (v2 & 0xFFFFFFFF);
+      while (sum2 > 999999999) {sum2-=1000000000; sum1++;}
+      if (sum1 >= ((uint64_t)1<<32) ) throw Err() << "graphene_time_add overfull";
+      return graphene_time_pack_v2((sum1<<32)+sum2);
+    }
   }
   throw Err() << "Unknown time type: " << ttype;
 }

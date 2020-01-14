@@ -752,92 +752,150 @@ int main() {
     assert_eq(graphene_time_zero(graphene_parse_time("inf", tt),tt), 0);
 
     /**************************************************************/
+    // Time add
+    /**************************************************************/
+
+    tt = TIME_V1;
+
+    assert_eq (graphene_time_add(
+      graphene_parse_time("1", tt),
+      graphene_parse_time("2", tt), tt),
+      graphene_parse_time("3", tt));
+
+    assert_eq (graphene_time_add(
+      graphene_parse_time("1.999", tt),
+      graphene_parse_time("2.999", tt), tt),
+      graphene_parse_time("4.998", tt));
+
+    assert_err (graphene_time_add(
+      graphene_parse_time("inf", tt),
+      graphene_parse_time("0.01", tt), tt),
+      "graphene_time_add overfull");
+
+    assert_err (graphene_time_add(
+      graphene_parse_time("inf", tt),
+      graphene_parse_time("inf", tt), tt),
+      "graphene_time_add overfull");
+
+    assert_eq (graphene_time_add(
+      graphene_parse_time("0", tt),
+      graphene_parse_time("inf", tt), tt),
+      graphene_parse_time("inf", tt));
+
+    tt = TIME_V2;
+
+    assert_eq (graphene_time_add(
+      graphene_parse_time("1", tt),
+      graphene_parse_time("2", tt), tt),
+      graphene_parse_time("3", tt));
+
+    assert_eq (graphene_time_add(
+      graphene_parse_time("1.999", tt),
+      graphene_parse_time("2.999", tt), tt),
+      graphene_parse_time("4.998", tt));
+
+    assert_err (graphene_time_add(
+      graphene_parse_time("inf", tt),
+      graphene_parse_time("0.01", tt), tt),
+      "graphene_time_add overfull");
+
+    assert_err (graphene_time_add(
+      graphene_parse_time("inf", tt),
+      graphene_parse_time("inf", tt), tt),
+      "graphene_time_add overfull");
+
+    assert_eq (graphene_time_add(
+      graphene_parse_time("0", tt),
+      graphene_parse_time("inf", tt), tt),
+      graphene_parse_time("inf", tt));
+
+    /**************************************************************/
     // Interpolation
     /**************************************************************/
 
     {
-      TimeType ttype = TIME_V1;
+      tt = TIME_V1;
       string d;
       d = graphene_interpolate(
-        graphene_parse_time("1.1", ttype),
-        graphene_parse_time("1.0", ttype),
-        graphene_parse_time("1.4", ttype),
+        graphene_parse_time("1.1", tt),
+        graphene_parse_time("1.0", tt),
+        graphene_parse_time("1.4", tt),
         graphene_parse_data_str("0.2 1.2", DATA_DOUBLE),
-        graphene_parse_data_str("1.0 2.0", DATA_DOUBLE), ttype, DATA_DOUBLE);
+        graphene_parse_data_str("1.0 2.0", DATA_DOUBLE), tt, DATA_DOUBLE);
       assert_eq(d.size(), 2*sizeof(double));
       assert_feq(((double *)d.data())[0], 0.4, 1e-6);
       assert_feq(((double *)d.data())[1], 1.4, 1e-6);
 
       d = graphene_interpolate(
-        graphene_parse_time("1.4", ttype),
-        graphene_parse_time("1.0", ttype),
-        graphene_parse_time("1.4", ttype),
+        graphene_parse_time("1.4", tt),
+        graphene_parse_time("1.0", tt),
+        graphene_parse_time("1.4", tt),
         graphene_parse_data_str("0.2 1.2", DATA_DOUBLE),
-        graphene_parse_data_str("1.0 2.0 3.4", DATA_DOUBLE), ttype, DATA_DOUBLE);
+        graphene_parse_data_str("1.0 2.0 3.4", DATA_DOUBLE), tt, DATA_DOUBLE);
       assert_eq(d.size(), 2*sizeof(double));
       assert_feq(((double *)d.data())[0], 1.0, 1e-6);
       assert_feq(((double *)d.data())[1], 2.0, 1e-6);
 
       d = graphene_interpolate(
-        graphene_parse_time("0.9", ttype),
-        graphene_parse_time("1.0", ttype),
-        graphene_parse_time("1.4", ttype),
+        graphene_parse_time("0.9", tt),
+        graphene_parse_time("1.0", tt),
+        graphene_parse_time("1.4", tt),
         graphene_parse_data_str("0.2 1.2 1.2", DATA_DOUBLE),
-        graphene_parse_data_str("1.0 2.0", DATA_DOUBLE), ttype, DATA_DOUBLE);
+        graphene_parse_data_str("1.0 2.0", DATA_DOUBLE), tt, DATA_DOUBLE);
       assert_eq(d.size(), 2*sizeof(double));
       assert_feq(((double *)d.data())[0], 0.0, 1e-6);
       assert_feq(((double *)d.data())[1], 1.0, 1e-6);
 
       d = graphene_interpolate(
-        graphene_parse_time("1.1", ttype),
-        graphene_parse_time("1.0", ttype),
-        graphene_parse_time("1.4", ttype),
+        graphene_parse_time("1.1", tt),
+        graphene_parse_time("1.0", tt),
+        graphene_parse_time("1.4", tt),
         graphene_parse_data_str("0.2 1.2", DATA_FLOAT),
-        graphene_parse_data_str("1.0 2.0", DATA_FLOAT), ttype, DATA_FLOAT);
+        graphene_parse_data_str("1.0 2.0", DATA_FLOAT), tt, DATA_FLOAT);
       assert_eq(d.size(), 2*sizeof(float));
       assert_feq(((float *)d.data())[0], 0.4, 1e-6);
       assert_feq(((float *)d.data())[1], 1.4, 1e-6);
     }
 
     {
-      TimeType ttype = TIME_V2;
+      tt = TIME_V2;
       string d;
       d = graphene_interpolate(
-        graphene_parse_time("1.1", ttype),
-        graphene_parse_time("1.0", ttype),
-        graphene_parse_time("1.4", ttype),
+        graphene_parse_time("1.1", tt),
+        graphene_parse_time("1.0", tt),
+        graphene_parse_time("1.4", tt),
         graphene_parse_data_str("0.2 1.2", DATA_DOUBLE),
-        graphene_parse_data_str("1.0 2.0", DATA_DOUBLE), ttype, DATA_DOUBLE);
+        graphene_parse_data_str("1.0 2.0", DATA_DOUBLE), tt, DATA_DOUBLE);
       assert_eq(d.size(), 2*sizeof(double));
       assert_feq(((double *)d.data())[0], 0.4, 1e-6);
       assert_feq(((double *)d.data())[1], 1.4, 1e-6);
 
       d = graphene_interpolate(
-        graphene_parse_time("1.4", ttype),
-        graphene_parse_time("1.0", ttype),
-        graphene_parse_time("1.4", ttype),
+        graphene_parse_time("1.4", tt),
+        graphene_parse_time("1.0", tt),
+        graphene_parse_time("1.4", tt),
         graphene_parse_data_str("0.2 1.2", DATA_DOUBLE),
-        graphene_parse_data_str("1.0 2.0 3.4", DATA_DOUBLE), ttype, DATA_DOUBLE);
+        graphene_parse_data_str("1.0 2.0 3.4", DATA_DOUBLE), tt, DATA_DOUBLE);
       assert_eq(d.size(), 2*sizeof(double));
       assert_feq(((double *)d.data())[0], 1.0, 1e-6);
       assert_feq(((double *)d.data())[1], 2.0, 1e-6);
 
       d = graphene_interpolate(
-        graphene_parse_time("0.9", ttype),
-        graphene_parse_time("1.0", ttype),
-        graphene_parse_time("1.4", ttype),
+        graphene_parse_time("0.9", tt),
+        graphene_parse_time("1.0", tt),
+        graphene_parse_time("1.4", tt),
         graphene_parse_data_str("0.2 1.2 1.2", DATA_DOUBLE),
-        graphene_parse_data_str("1.0 2.0", DATA_DOUBLE), ttype, DATA_DOUBLE);
+        graphene_parse_data_str("1.0 2.0", DATA_DOUBLE), tt, DATA_DOUBLE);
       assert_eq(d.size(), 2*sizeof(double));
       assert_feq(((double *)d.data())[0], 0.0, 1e-6);
       assert_feq(((double *)d.data())[1], 1.0, 1e-6);
 
       d = graphene_interpolate(
-        graphene_parse_time("1.1", ttype),
-        graphene_parse_time("1.0", ttype),
-        graphene_parse_time("1.4", ttype),
+        graphene_parse_time("1.1", tt),
+        graphene_parse_time("1.0", tt),
+        graphene_parse_time("1.4", tt),
         graphene_parse_data_str("0.2 1.2", DATA_FLOAT),
-        graphene_parse_data_str("1.0 2.0", DATA_FLOAT), ttype, DATA_FLOAT);
+        graphene_parse_data_str("1.0 2.0", DATA_FLOAT), tt, DATA_FLOAT);
       assert_eq(d.size(), 2*sizeof(float));
       assert_feq(((float *)d.data())[0], 0.4, 1e-6);
       assert_feq(((float *)d.data())[1], 1.4, 1e-6);

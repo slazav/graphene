@@ -52,9 +52,6 @@ class DBinfo {
   // Print timestamp
   std::string print_time(const std::string & s) const;
 
-  // Add two packed time values, return packed string
-  std::string add_time(const std::string & s1, const std::string & s2) const;
-
   // Print data
   std::string print_data(const std::string & s, const int col=-1) const;
 
@@ -62,19 +59,13 @@ class DBinfo {
   // Version-specific functions - use only inside object or in tests
 //  private:
 
-  // Pack/Unpack integer timestamp
-  std::string pack_time_v1(const uint64_t t) const;
+  // Pack/Unpack integer timestamp  std::string pack_time_v1(const uint64_t t) const;
   uint64_t unpack_time_v1(const std::string & s) const;
   std::string print_time_v1(const std::string & s) const;
-  int cmp_time_v1(const std::string & s1, const std::string & s2) const;
-  std::string add_time_v1(const std::string & s1, const std::string & s2) const;
-  double time_diff_v1(const std::string & s1, const std::string & s2) const;
 
   // Pack/Unpack integer timestamp
-  std::string pack_time_v2(const uint64_t t) const;
   uint64_t unpack_time_v2(const std::string & s) const;
   std::string print_time_v2(const std::string & s) const;
-  std::string add_time_v2(const std::string & s1, const std::string & s2) const;
 
 };
 

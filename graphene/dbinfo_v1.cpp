@@ -36,14 +36,3 @@ DBinfo::print_time_v1(const string & s) const{
   return ss.str();
 }
 
-// Add two packed time values, return packed string
-string
-DBinfo::add_time_v1(const std::string & s1, const std::string & s2) const{
-  uint64_t t1 = unpack_time_v1(s1);
-  uint64_t t2 = unpack_time_v1(s2);
-  string ret(sizeof(uint64_t), '\0');
-  *(uint64_t *)ret.data() = t1+t2;
-  return ret;
-}
-
-

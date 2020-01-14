@@ -72,6 +72,15 @@ bool graphene_time_zero(
   const std::string & t,
   const TimeType ttype);
 
+// Add two timestamps represented as packed strings, return
+// result as a packed string.
+std::string
+graphene_time_add(
+  const std::string & t1,
+  const std::string & t2,
+  const TimeType ttype);
+
+
 /********************************************************************/
 
 // Interpolate data (for FLOAT and DOUBLE values).

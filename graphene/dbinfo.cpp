@@ -33,14 +33,6 @@ DBinfo::print_time(const string & s) const{
   else throw Err() << "Unknown database version: " << (int)version;
 }
 
-// Add two packed time values, return packed string
-string
-DBinfo::add_time(const std::string & s1, const std::string & s2) const{
-  if      (version==1) return add_time_v1(s1,s2);
-  else if (version==2) return add_time_v2(s1,s2);
-  else throw Err() << "Unknown database version: " << (int)version;
-}
-
 // Print data
 string
 DBinfo::print_data(const string & s, const int col) const{

@@ -399,8 +399,10 @@ DBgr::put(const string &t, const vector<string> & dat, const string &dpolicy){
       res = dbp->put(dbp.get(), txn, &k, &v, flags);
       if (res == DB_KEYEXIST){
         if (dpolicy =="error") throw Err() << name << ".db: " << "Timestamp exists";
-        else if (dpolicy =="sshift")  ks = info.add_time(ks, graphene_parse_time("1", info.ttype));
-        else if (dpolicy =="nsshift") ks = info.add_time(ks, graphene_parse_time("0.000000001", info.ttype));
+        else if (dpolicy =="sshift")
+          ks = graphene_time_add(ks, graphene_parse_time("1", info.ttype), info.ttype);
+        else if (dpolicy =="nsshift")
+          ks = graphene_time_add(ks, graphene_parse_time("0.000000001", info.ttype), info.ttype);
         else if (dpolicy =="skip") break;
         else throw Err() << "Unknown dpolicy setting: " << dpolicy;
       }
@@ -623,7 +625,7 @@ DBgr::get_range(const string &t1, const string &t2,
       tlp=tnp; // update last printed value
 
       // add dt to the key for the next loop:
-      string sp = info.add_time(tlp, dtp);
+      string sp = graphene_time_add(tlp, dtp, info.ttype);
       memcpy(k.data,sp.data(),k.size);
       k = mk_dbt(sp);
     }
