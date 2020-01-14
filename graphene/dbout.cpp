@@ -76,23 +76,12 @@ DBout::proc_point(DBT *k, DBT *v, const DBinfo & info) {
   // print values into a string (always \n in the end!)
   std::ostringstream str;
 
-  // print time (according with timefmt)
-  switch (pars.timefmt) {
-    case TIME_DEF: // default: seconds.nanoseconds
-      str << graphene_time_print(ks, info.ttype);
-      break;
-    case TIME_REL_S: //relative, seconds
-      str << std::fixed << std::setprecision(9)
-          << graphene_time_diff(ks, graphene_time_parse(pars.time0, info.ttype), info.ttype);
-      break;
-    default: throw Err() << "unknown time format: " << pars.timefmt;
-  }
-
-  str << " " << info.print_data(vs, col) << "\n"; // data
-  std::string s = str.str();
+  std::string s =
+    graphene_time_print(ks, info.ttype, pars.timefmt, pars.time0) + " " +
+    info.print_data(vs, col) + "\n";
 
   // keep only first line (s always ends with \n - see above)
- if (pars.list==1 && info.dtype==DATA_TEXT)
+  if (pars.list==1 && info.dtype==DATA_TEXT)
     s.resize(s.find('\n')+1);
 
   // do filtering

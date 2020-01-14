@@ -5,6 +5,8 @@
 #include <string>
 #include <iostream>
 
+#include "data.h"
+
 /***********************************************************/
 // Class for an extended dataset object.
 //
@@ -24,29 +26,13 @@
 class DBout {
   public:
 
-  // time format setting
-  enum timefmt_t {TIME_DEF, TIME_REL_S};
-
   struct Pars {
     bool list;           // list mode -- print 1 line per point
     bool interactive;    // interactive mode (protect # in the beginning of line)
-    timefmt_t timefmt;   // time format
+    TimeFMT timefmt;     // time format
     std::string time0;   // zero time for relative time output or ""
 
-    Pars(): interactive(false), list(false), timefmt(TIME_DEF) {};
-
-    void set_timefmt(const std::string & s){
-      if (strcasecmp(s.c_str(),"default") == 0) {timefmt=TIME_DEF; return;}
-      if (strcasecmp(s.c_str(),"rel_s") == 0) {timefmt=TIME_REL_S; return;}
-    }
-
-    std::string print_timefmt() const {
-      switch (timefmt){
-        case TIME_DEF:   return "default";
-        case TIME_REL_S: return "rel_s";
-        default: throw Err() << "Unknown time format: " << timefmt;
-      }
-    }
+    Pars(): interactive(false), list(false), timefmt(TFMT_DEF) {};
   };
 
 

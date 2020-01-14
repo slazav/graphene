@@ -259,13 +259,29 @@ graphene_ttype_name(const TimeType ttype){
   switch (ttype) {
     case TIME_V1: return "TIME_V1";
     case TIME_V2: return "TIME_V2";
-    default: throw Err() << "Unknown time type: " << ttype;
   }
+  throw Err() << "Unknown time type: " << ttype;
 }
 
 /********************************************************************/
 
+TimeFMT graphene_tfmt_parse(const std::string & s){
+  if (strcasecmp(s.c_str(),"def") == 0) {return TFMT_DEF;}
+  if (strcasecmp(s.c_str(),"rel") == 0) {return TFMT_REL;}
+  throw Err() << "Unknown time format: " << s;
+}
+
+std::string graphene_tfmt_name(const TimeFMT tfmt){
+  switch (tfmt){
+    case TFMT_DEF: return "def";
+    case TFMT_REL: return "rel";
+  }
+  throw Err() << "Unknown time format: " << tfmt;
+}
+
+
 /********************************************************************/
+
 uint64_t
 graphene_time_unpack_v1(const std::string & t){
   if (t.size()!=sizeof(uint64_t))
@@ -519,26 +535,42 @@ graphene_time_add(const std::string & t1, const std::string & t2,
 }
 
 std::string
-graphene_time_print(const std::string & s, const TimeType ttype){
-  switch (ttype){
-    case TIME_V1: {
-      uint64_t t = graphene_time_unpack_v1(s);
+graphene_time_print(const std::string & t, const TimeType ttype,
+                    const TimeFMT tfmt, const std::string & t0){
+
+  switch (tfmt){
+
+    case TFMT_DEF:
+      switch (ttype){
+        case TIME_V1: {
+          uint64_t v = graphene_time_unpack_v1(t);
+          std::ostringstream ss;
+          ss << v/1000;
+          //if (t%1000)
+          ss << "." << std::setw(9) << std::setfill('0') << (v%1000)*1000000;
+          return ss.str();
+        }
+        case TIME_V2: {
+          uint64_t v = graphene_time_unpack_v2(t);
+          std::ostringstream ss;
+          ss << (v>>32);
+          //if (t&0xFFFFFFFF)
+          ss << "." << std::setw(9) << std::setfill('0') << (v&0xFFFFFFFF);
+          return ss.str();
+        }
+        default: throw Err() << "Unknown time type: " << ttype;
+      }
+
+    case TFMT_REL: {
+      std::string t0s = graphene_time_parse(t0, ttype);
       std::ostringstream ss;
-      ss << t/1000;
-      //if (t%1000)
-      ss << "." << std::setw(9) << std::setfill('0') << (t%1000)*1000000;
+      ss << std::fixed << std::setprecision(9)
+         << graphene_time_diff(t, t0s, ttype);
       return ss.str();
     }
-    case TIME_V2: {
-      uint64_t t = graphene_time_unpack_v2(s);
-      std::ostringstream ss;
-      ss << (t>>32);
-      //if (t&0xFFFFFFFF)
-      ss << "." << std::setw(9) << std::setfill('0') << (t&0xFFFFFFFF);
-      return ss.str();
-    }
+
+    default: throw Err() << "Unknown time format " << tfmt;
   }
-  throw Err() << "Unknown time type: " << ttype;
 }
 
 

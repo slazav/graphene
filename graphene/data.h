@@ -7,7 +7,7 @@
 #include <string>
 
 /********************************************************************/
-// Enum for the data format
+// Enum for the data type
 enum DataType { DATA_TEXT,
          DATA_INT8, DATA_UINT8, DATA_INT16, DATA_UINT16,
          DATA_INT32, DATA_UINT32, DATA_INT64, DATA_UINT64,
@@ -35,7 +35,7 @@ std::string graphene_data_parse(
 
 /********************************************************************/
 
-// Enum for the time format (later can be joined to data)
+// Enum for the timestamp type (later can be joined to data)
 enum TimeType {TIME_V1, TIME_V2};
 
 // Convert string into TimeType number.
@@ -43,6 +43,17 @@ TimeType graphene_ttype_parse(const std::string & s);
 
 // Convert TimeType to string.
 std::string graphene_ttype_name(const TimeType ttype);
+
+
+// Format for time printing.
+enum TimeFMT {TFMT_DEF, TFMT_REL};
+
+// Convert string into TimeFMT.
+TimeFMT graphene_tfmt_parse(const std::string & s);
+
+// Convert TimeFMT to string.
+std::string graphene_tfmt_name(const TimeFMT tfmt);
+
 
 // Parse and pack time.
 // Data is coming from user interface as a string.
@@ -80,10 +91,13 @@ std::string graphene_time_add(
   const TimeType ttype);
 
 
-// Print timestamp
+// Print timestamp.
+// t0 is the reference time for relative output (non-parsed text string!).
 std::string graphene_time_print(
-  const std::string & s,
-  const TimeType ttype);
+  const std::string & t,
+  const TimeType ttype,
+  const TimeFMT tfmt = TFMT_DEF,
+  const std::string & t0 = "");
 
 
 /********************************************************************/

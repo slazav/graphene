@@ -71,6 +71,9 @@ int main() {
     assert_eq(graphene_ttype_name(TIME_V1),  "TIME_V1" );
     assert_eq(graphene_ttype_name(TIME_V2),  "TIME_V2");
 
+    assert_eq(graphene_tfmt_name(TFMT_DEF), "def" );
+    assert_eq(graphene_tfmt_name(TFMT_REL), "rel");
+
     assert_eq(DATA_TEXT,   graphene_dtype_parse("TEXT"  ));
     assert_eq(DATA_INT8,   graphene_dtype_parse("INT8"  ));
     assert_eq(DATA_UINT8,  graphene_dtype_parse("UINT8" ));
@@ -85,6 +88,9 @@ int main() {
 
     assert_eq(TIME_V1,  graphene_ttype_parse("TIME_V1" ));
     assert_eq(TIME_V2,  graphene_ttype_parse("TIME_V2" ));
+
+    assert_eq(TFMT_DEF, graphene_tfmt_parse("def" ));
+    assert_eq(TFMT_REL, graphene_tfmt_parse("rel" ));
 
     assert_eq(DATA_DOUBLE, graphene_dtype_parse("DOUBLE"));
     assert_err(graphene_dtype_parse("X"), "Unknown data type: X");
@@ -826,6 +832,15 @@ int main() {
     assert_eq(graphene_time_print(graphene_time_parse("1000.999", tt), tt), "1000.999000000");
     assert_eq(graphene_time_print(graphene_time_parse("inf",      tt), tt), "4294967295.999999999");
     assert_eq(graphene_time_print(graphene_time_parse("4294967295.999999999+", tt), tt), "0.000000000");
+
+    // TFMT_REL -- relative output
+    assert_eq(graphene_time_print(
+       graphene_time_parse("0", tt), tt, TFMT_REL, "123.456"),
+       "-123.456000000");
+
+    assert_eq(graphene_time_print(
+       graphene_time_parse("123.456", tt), tt, TFMT_REL, "12.345"),
+       "111.111000000");
 
     /**************************************************************/
     // Interpolation

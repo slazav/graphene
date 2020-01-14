@@ -51,7 +51,7 @@ class Pars{
     dpolicy = GRAPHENE_DEF_DPOLICY;
     env_type = GRAPHENE_DEF_ENV;
     interactive = false;
-    timefmt = "default";
+    timefmt = "def";
     readonly  = false;
     if (argc<1) return; // needed for print_help()
     /* parse  options */
@@ -66,7 +66,7 @@ class Pars{
         case 'h': print_help();
         case 'i': interactive = true; break;
         case 's': sockname = optarg; break;
-        case 'r': timefmt  = "rel_s"; break;
+        case 'r': timefmt  = "rel"; break;
         case 'R': readonly = true; break;
       }
     }
@@ -355,8 +355,8 @@ class Pars{
       if (pars.size()>3) throw Err() << "too many parameters";
       string t1 = pars.size()>2? pars[2]: "0";
       DBout dbo(dbpath, pars[1], out);
-      dbo.pars.set_timefmt(timefmt);
-      dbo.pars.time0       = t1;
+      dbo.pars.timefmt = graphene_tfmt_parse(timefmt);
+      dbo.pars.time0   = t1;
       dbo.pars.interactive = interactive;
       pool->get(dbo.name, DB_RDONLY).get_next(t1, dbo);
       return;
@@ -369,8 +369,8 @@ class Pars{
       if (pars.size()>3) throw Err() << "too many parameters";
       string t2 = pars.size()>2? pars[2]: "inf";
       DBout dbo(dbpath, pars[1], out);
-      dbo.pars.set_timefmt(timefmt);
-      dbo.pars.time0       = t2;
+      dbo.pars.timefmt = graphene_tfmt_parse(timefmt);
+      dbo.pars.time0   = t2;
       dbo.pars.interactive = interactive;
       pool->get(dbo.name, DB_RDONLY).get_prev(t2, dbo);
       return;
@@ -383,8 +383,8 @@ class Pars{
       if (pars.size()>3) throw Err() << "too many parameters";
       string t2 = pars.size()>2? pars[2]: "inf";
       DBout dbo(dbpath, pars[1], out);
-      dbo.pars.set_timefmt(timefmt);
-      dbo.pars.time0       = t2;
+      dbo.pars.timefmt = graphene_tfmt_parse(timefmt);
+      dbo.pars.time0   = t2;
       dbo.pars.interactive = interactive;
       pool->get(dbo.name, DB_RDONLY).get(t2, dbo);
       return;
@@ -399,8 +399,8 @@ class Pars{
       string t2 = pars.size()>3? pars[3]: "inf";
       string dt = pars.size()>4? pars[4]: "0";
       DBout dbo(dbpath, pars[1], out);
-      dbo.pars.set_timefmt(timefmt);
-      dbo.pars.time0       = t1;
+      dbo.pars.timefmt = graphene_tfmt_parse(timefmt);
+      dbo.pars.time0   = t1;
       dbo.pars.interactive = interactive;
       dbo.pars.list        = true;
       pool->get(dbo.name, DB_RDONLY).get_range(t1,t2,dt, dbo);
