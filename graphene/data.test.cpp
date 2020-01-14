@@ -810,6 +810,24 @@ int main() {
       graphene_parse_time("inf", tt));
 
     /**************************************************************/
+    // Time print
+    /**************************************************************/
+
+    tt = TIME_V1;
+
+    assert_eq(graphene_time_print(graphene_parse_time("0",        tt), tt), "0.000000000");
+    assert_eq(graphene_time_print(graphene_parse_time("1000.999", tt), tt), "1000.999000000");
+    assert_eq(graphene_time_print(graphene_parse_time("inf",      tt), tt), "18446744073709551.615000000");
+
+    tt = TIME_V2;
+
+    assert_eq(graphene_time_print(graphene_parse_time("0",        tt), tt), "0.000000000");
+    assert_eq(graphene_time_print(graphene_parse_time("0+",       tt), tt), "0.000000001");
+    assert_eq(graphene_time_print(graphene_parse_time("1000.999", tt), tt), "1000.999000000");
+    assert_eq(graphene_time_print(graphene_parse_time("inf",      tt), tt), "4294967295.999999999");
+    assert_eq(graphene_time_print(graphene_parse_time("4294967295.999999999+", tt), tt), "0.000000000");
+
+    /**************************************************************/
     // Interpolation
     /**************************************************************/
 

@@ -189,12 +189,6 @@ int main() {
 //      assert_eq(proc_point_str("inf+ 0.1 0.2 0.3", hh1),
 //                std::string("0.000000000 0.1 0.2 0.3\n"));
 
-      /// version 2 timestamps
-      hh1.version = 3;
-
-      assert_err(proc_point_str("1.0 0.1 0.2 0.3", hh1),
-                "Unknown database version: 3");
-
     }
 
     {

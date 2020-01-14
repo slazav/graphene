@@ -25,14 +25,6 @@ void check_name(const std::string & name_){
 // Time handling
 
 
-// Print timestamp
-std::string
-DBinfo::print_time(const string & s) const{
-  if      (version==1) return print_time_v1(s);
-  else if (version==2) return print_time_v2(s);
-  else throw Err() << "Unknown database version: " << (int)version;
-}
-
 // Print data
 string
 DBinfo::print_data(const string & s, const int col) const{

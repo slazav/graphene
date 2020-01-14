@@ -49,23 +49,8 @@ class DBinfo {
   // can be easily converted into Berkleydb data.
   // It is not a c-string!
 
-  // Print timestamp
-  std::string print_time(const std::string & s) const;
-
   // Print data
   std::string print_data(const std::string & s, const int col=-1) const;
-
-
-  // Version-specific functions - use only inside object or in tests
-//  private:
-
-  // Pack/Unpack integer timestamp  std::string pack_time_v1(const uint64_t t) const;
-  uint64_t unpack_time_v1(const std::string & s) const;
-  std::string print_time_v1(const std::string & s) const;
-
-  // Pack/Unpack integer timestamp
-  uint64_t unpack_time_v2(const std::string & s) const;
-  std::string print_time_v2(const std::string & s) const;
 
 };
 

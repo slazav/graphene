@@ -79,7 +79,7 @@ DBout::proc_point(DBT *k, DBT *v, const DBinfo & info) {
   // print time (according with timefmt)
   switch (pars.timefmt) {
     case TIME_DEF: // default: seconds.nanoseconds
-      str << info.print_time(ks);
+      str << graphene_time_print(ks, info.ttype);
       break;
     case TIME_REL_S: //relative, seconds
       str << std::fixed << std::setprecision(9)

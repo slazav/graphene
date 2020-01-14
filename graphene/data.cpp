@@ -483,7 +483,8 @@ graphene_time_cmp(const std::string & t1, const std::string & t2,
   throw Err() << "Unknown time type: " << ttype;
 }
 
-bool graphene_time_zero( const std::string & t, const TimeType ttype){
+bool
+graphene_time_zero( const std::string & t, const TimeType ttype){
   switch (ttype){
     case TIME_V1: return graphene_time_unpack_v1(t)==0;
     case TIME_V2: return graphene_time_unpack_v2(t)==0;
@@ -512,6 +513,29 @@ graphene_time_add(const std::string & t1, const std::string & t2,
       while (sum2 > 999999999) {sum2-=1000000000; sum1++;}
       if (sum1 >= ((uint64_t)1<<32) ) throw Err() << "graphene_time_add overfull";
       return graphene_time_pack_v2((sum1<<32)+sum2);
+    }
+  }
+  throw Err() << "Unknown time type: " << ttype;
+}
+
+std::string
+graphene_time_print(const std::string & s, const TimeType ttype){
+  switch (ttype){
+    case TIME_V1: {
+      uint64_t t = graphene_time_unpack_v1(s);
+      std::ostringstream ss;
+      ss << t/1000;
+      //if (t%1000)
+      ss << "." << std::setw(9) << std::setfill('0') << (t%1000)*1000000;
+      return ss.str();
+    }
+    case TIME_V2: {
+      uint64_t t = graphene_time_unpack_v2(s);
+      std::ostringstream ss;
+      ss << (t>>32);
+      //if (t&0xFFFFFFFF)
+      ss << "." << std::setw(9) << std::setfill('0') << (t&0xFFFFFFFF);
+      return ss.str();
     }
   }
   throw Err() << "Unknown time type: " << ttype;

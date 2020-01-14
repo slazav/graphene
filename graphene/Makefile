@@ -1,5 +1,5 @@
 MOD_HEADERS := dbgr.h dbinfo.h dbout.h dbpool.h json.h data.h
-MOD_SOURCES := dbgr.cpp dbinfo.cpp dbinfo_v2.cpp dbinfo_v1.cpp dbout.cpp dbpool.cpp json.cpp data.cpp
+MOD_SOURCES := dbgr.cpp dbinfo.cpp dbout.cpp dbpool.cpp json.cpp data.cpp
 
 SIMPLE_TESTS := dbout dbpool json0 data
 SCRIPT_TESTS := json1

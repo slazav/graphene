@@ -298,7 +298,7 @@ DBgr::backup_start(){
     throw e;
   }
   txn_commit(txn);
-  return info.print_time(timer);;
+  return graphene_time_print(timer, info.ttype);
 }
 
 void

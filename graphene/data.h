@@ -74,10 +74,15 @@ bool graphene_time_zero(
 
 // Add two timestamps represented as packed strings, return
 // result as a packed string.
-std::string
-graphene_time_add(
+std::string graphene_time_add(
   const std::string & t1,
   const std::string & t2,
+  const TimeType ttype);
+
+
+// Print timestamp
+std::string graphene_time_print(
+  const std::string & s,
   const TimeType ttype);
 
 
