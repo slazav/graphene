@@ -532,11 +532,11 @@ DBgr::get(const string &t, DBout & dbo){
     // get the previous value and do interpolation
     // find prev value
     found = c_get(curs, &k, &v, DB_PREV);
-    if (!found) goto finish;
+    if (!found || k.size < 4) goto finish; // not found or not a timestamp
 
     t2p = string((char *)k.data, (char *)k.data+k.size);
     v2p = string((char *)v.data, (char *)v.data+v.size);
-    vp = info.interpolate(tp, t1p, t2p, v1p, v2p);
+    vp = graphene_interpolate(tp, t1p, t2p, v1p, v2p, info.ttype, info.dtype);
     if (vp!=""){
       DBT k0 = mk_dbt(tp);
       DBT v0 = mk_dbt(vp);

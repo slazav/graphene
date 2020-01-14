@@ -58,12 +58,6 @@ class DBinfo {
   // Print data
   std::string print_data(const std::string & s, const int col=-1) const;
 
-  // interpolate data (for FLOAT and DOUBLE values)
-  // k0,k1,k2,v1,v2 are packed strings!
-  std::string interpolate(
-        const std::string & k0,
-        const std::string & k1, const std::string & k2,
-        const std::string & v1, const std::string & v2);
 
   // Version-specific functions - use only inside object or in tests
 //  private:
@@ -75,20 +69,12 @@ class DBinfo {
   int cmp_time_v1(const std::string & s1, const std::string & s2) const;
   std::string add_time_v1(const std::string & s1, const std::string & s2) const;
   double time_diff_v1(const std::string & s1, const std::string & s2) const;
-  std::string interpolate_v1(
-        const std::string & k0,
-        const std::string & k1, const std::string & k2,
-        const std::string & v1, const std::string & v2);
 
   // Pack/Unpack integer timestamp
   std::string pack_time_v2(const uint64_t t) const;
   uint64_t unpack_time_v2(const std::string & s) const;
   std::string print_time_v2(const std::string & s) const;
   std::string add_time_v2(const std::string & s1, const std::string & s2) const;
-  std::string interpolate_v2(
-        const std::string & k0,
-        const std::string & k1, const std::string & k2,
-        const std::string & v1, const std::string & v2);
 
 };
 

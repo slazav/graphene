@@ -236,40 +236,6 @@ int main() {
     }
 
     {
-      // interpolate_v2
-      DBinfo hh1(DATA_DOUBLE);
-      vector<string> d1,d2;
-      d1.push_back("0.2");
-      d1.push_back("1.2");
-      d2.push_back("1.0");
-      d2.push_back("2.0");
-      string d0 = hh1.interpolate_v2(
-        graphene_parse_time("1.1", TIME_V2),
-        graphene_parse_time("1.0", TIME_V2),
-        graphene_parse_time("1.4", TIME_V2),
-        graphene_parse_data(d1, hh1.dtype),
-        graphene_parse_data(d2, hh1.dtype));
-      assert_eq(hh1.print_data(d0), "0.4 1.4");
-    }
-
-    {
-      // interpolate_v1
-      DBinfo hh1(DATA_DOUBLE);
-      vector<string> d1,d2;
-      d1.push_back("0.2");
-      d1.push_back("1.2");
-      d2.push_back("1.0");
-      d2.push_back("2.0");
-      string d0 = hh1.interpolate_v1(
-        graphene_parse_time("1.1", TIME_V1),
-        graphene_parse_time("1.0", TIME_V1),
-        graphene_parse_time("1.4", TIME_V1),
-        graphene_parse_data(d1, hh1.dtype),
-        graphene_parse_data(d2, hh1.dtype));
-      assert_eq(hh1.print_data(d0), "0.4 1.4");
-    }
-
-    {
       // pack/unpack data
       DBinfo hh1(DATA_INT32);
       DBinfo hh2(DATA_DOUBLE);

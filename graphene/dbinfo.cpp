@@ -80,20 +80,3 @@ DBinfo::print_data(const string & s, const int col) const{
   return ostr.str();
 }
 
-/********************************************************************/
-// interpolation
-
-// interpolate data (for FLOAT and DOUBLE values)
-// s1 and s2 are _packed_ strings!
-// k is a weight of first point, 0 <= k <= 1
-//
-string
-DBinfo::interpolate(
-        const string & k0,
-        const string & k1, const string & k2,
-        const string & v1, const string & v2){
-  if      (version==1) return interpolate_v1(k0,k1,k2,v1,v2);
-  else if (version==2) return interpolate_v2(k0,k1,k2,v1,v2);
-  else throw Err() << "Unknown database version: " << (int)version;
-}
-

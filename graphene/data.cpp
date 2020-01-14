@@ -486,6 +486,46 @@ bool graphene_time_zero( const std::string & t, const TimeType ttype){
 
 /********************************************************************/
 
+std::string
+graphene_interpolate(
+        const std::string & k0,
+        const std::string & k1, const std::string & k2,
+        const std::string & v1, const std::string & v2,
+        const TimeType ttype, const DataType dtype){
+
+  double dt1 = graphene_time_diff(k0,k1, ttype);
+  double dt2 = graphene_time_diff(k2,k0, ttype);
+  double k = dt2/(dt1+dt2); // first point weight
+
+  // check for correct value size
+  size_t dsize = graphene_dtype_size(dtype);
+  if (v1.size() % dsize != 0 || v2.size() % dsize != 0)
+    throw Err() << "Broken database: wrong data length";
+
+  // number of columns
+  size_t cn1 = v1.size()/dsize;
+  size_t cn2 = v2.size()/dsize;
+  size_t cn0 = std::min(cn1,cn2);
+
+  std::string v0(dsize*cn0, '\0');
+  for (size_t i=0; i<cn0; i++){
+    switch (dtype){
+      case DATA_FLOAT:
+        ((float*)v0.data())[i] = ((float*)v1.data())[i]*k
+                               + ((float*)v2.data())[i]*(1-k);
+        break;
+      case DATA_DOUBLE:
+        ((double*)v0.data())[i] = ((double*)v1.data())[i]*k
+                                + ((double*)v2.data())[i]*(1-k);
+        break;
+      default: throw Err() << "FLOAT or DOUBLE data expected for interpolation";
+    }
+  }
+  return v0;
+}
+
+
+/********************************************************************/
 
 std::string
 graphene_spp_text(const std::string & data){

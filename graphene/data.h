@@ -72,6 +72,16 @@ bool graphene_time_zero(
   const std::string & t,
   const TimeType ttype);
 
+/********************************************************************/
+
+// Interpolate data (for FLOAT and DOUBLE values).
+// Arguments k0,k1,k2,v1,v2 and return value are packed strings!
+
+std::string graphene_interpolate(
+        const std::string & k0,
+        const std::string & k1, const std::string & k2,
+        const std::string & v1, const std::string & v2,
+        const TimeType ttype, const DataType dtype);
 
 /********************************************************************/
 
