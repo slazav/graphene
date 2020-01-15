@@ -27,12 +27,8 @@ class DBout {
   public:
 
   struct Pars {
-    bool list;           // list mode -- print 1 line per point
     bool interactive;    // interactive mode (protect # in the beginning of line)
-    TimeFMT timefmt;     // time format
-    std::string time0;   // zero time for relative time output or ""
-
-    Pars(): interactive(false), list(false), timefmt(TFMT_DEF) {};
+    Pars(): interactive(false) {};
   };
 
 
@@ -56,7 +52,7 @@ class DBout {
   // and call print_point().
   // <list> parameter changes output of TEXT records in a list mode
   // (only first line is shown).
-  void proc_point(DBT *k, DBT *v, const DBinfo & info);
+  void proc_point(const std::string & s);
 
   // print_point  -- by default it just prints the line to out,
   // but this function can be overriden.

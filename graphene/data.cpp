@@ -209,6 +209,45 @@ graphene_data_parse(const std::vector<std::string> & strs, const DataType dtype)
   }
 }
 
+std::string
+graphene_data_print(const std::string & s, const int col, const DataType dtype){
+  if (dtype == DATA_TEXT) return s;
+
+  size_t dsize = graphene_dtype_size(dtype);
+
+  if (s.size() % dsize != 0)
+    throw Err() << "Broken database: wrong data length";
+  // number of columns
+  size_t cn = s.size()/dsize;
+  // column range we want to show:
+  size_t c1=0, c2=cn;
+  if (col!=-1) { c1=col; c2=col+1; }
+
+  std::ostringstream ostr;
+  for (size_t i=c1; i<c2; i++){
+    if (i>c1) ostr << ' ';
+    if (i>=cn) { return "NaN"; }
+    switch (dtype){
+      case DATA_INT8:   ostr << ((int8_t   *)s.data())[i]; break;
+      case DATA_UINT8:  ostr << ((uint8_t  *)s.data())[i]; break;
+      case DATA_INT16:  ostr << ((int16_t  *)s.data())[i]; break;
+      case DATA_UINT16: ostr << ((uint16_t *)s.data())[i]; break;
+      case DATA_INT32:  ostr << ((int32_t  *)s.data())[i]; break;
+      case DATA_UINT32: ostr << ((uint32_t *)s.data())[i]; break;
+      case DATA_INT64:  ostr << ((int64_t  *)s.data())[i]; break;
+      case DATA_UINT64: ostr << ((uint64_t *)s.data())[i]; break;
+      // No loss of information happens if we convert float and double
+      // numbers into strings with 9 and 17 significant digits.
+      // We use one less digit to have round values (3.1415 instead of 3.1415000
+      case DATA_FLOAT:  ostr << std::setprecision(8)  << ((float  *)s.data())[i]; break;
+      case DATA_DOUBLE: ostr << std::setprecision(16) << ((double *)s.data())[i]; break;
+      default: throw Err() << "Unexpected data format";
+    }
+  }
+  return ostr.str();
+}
+
+
 /********************************************************************/
 /*
 ### Graphene time types

@@ -13,8 +13,11 @@
 #include <sstream>
 #include <cstring> /* memset */
 #include <db.h>
-#include "dbinfo.h"
+
+#include "err/err.h"
 #include "dbout.h"
+
+#include <iomanip>
 
 // bercleydb:
 //  http://docs.oracle.com/cd/E17076_02/html/gsg/C/index.html
@@ -27,9 +30,19 @@
 #define KEY_BACKUP_MAIN  0x10
 #define KEY_BACKUP_TMP   0x11
 
+#define DEF_DBVERSION  2
+#define DEF_TIMETYPE   TIME_V2
+
+
+/************************************/
+// Check database or filter name
+// All names (not only for reading/writing, but
+// also for moving or deleting should be checked).
+void check_name(const std::string & name);
+
 /***********************************************************/
 // type for data processing function.
-typedef void(process_data_func)(DBT*,DBT*,const DBinfo&, void *usr_data);
+//typedef void(process_data_func)(DBT*,DBT*,const DBinfo&, void *usr_data);
 
 
 /***********************************************************/
@@ -65,15 +78,20 @@ class DBgr{
     std::string name;    // database name
     uint32_t open_flags; // database open flags
     uint32_t env_flags;  // environment flags
-    DBinfo db_info;      // database information
     bool info_is_actual; // is the info the same as in the file?
+
+    uint8_t  version;  // database version
+    DataType dtype;    // data type
+    TimeType ttype;    // timestamp type
+    std::string descr; // database description
+
+    TimeFMT timefmt;     // output time format
+    std::string time0;   // zero time for relative time output (not parsed)
 
   // database deleter
   struct D {
     void operator()(DB* dbp) { dbp->close(dbp, 0); }
   };
-
-
 
   /************************************/
   public:
@@ -105,8 +123,8 @@ class DBgr{
   // key = (uint8_t)0 (1byte),  value = data_fmt (1byte) + description
   // key = (uint8_t)1 (1byte),  value = version  (1byte)
   public:
-    void write_info(const DBinfo &info);
-    DBinfo read_info();
+    void write_info();
+    void read_info();
 
   /****************************/
   // Backup system:
@@ -137,7 +155,7 @@ class DBgr{
            const std::string &dpolicy);
 
   // All get* functions get some data from the database
-  // and call dbo.proc_point() for each key-value pair
+  // and call proc_point() for each key-value pair
 
   // get data from the database -- get_next
   void get_next(const std::string &t1, DBout & dbo);
@@ -168,6 +186,28 @@ class DBgr{
   // dump file in a db_dump format
   // (db_dump utility can be used instead)
   void dump(const std::string &file);
+
+
+  void proc_point(DBT *k, DBT *v, DBout & dbo, const bool list = false) {
+    // check for correct key size (do not parse DB info)
+    if (k->size!=sizeof(uint64_t) && k->size!=sizeof(uint32_t) ) return;
+    // convert DBT to strings
+    std::string ks((char *)k->data, (char *)k->data+k->size);
+    std::string vs((char *)v->data, (char *)v->data+v->size);
+    // print values into a string (always \n in the end!)
+    std::ostringstream str;
+
+    std::string s =
+      graphene_time_print(ks, ttype, timefmt, time0) + " " +
+      graphene_data_print(vs, dbo.col, dtype) + "\n";
+
+    // keep only first line (s always ends with \n - see above)
+    if (list && dtype==DATA_TEXT)
+      s.resize(s.find('\n')+1);
+
+    dbo.proc_point(s);
+  }
+
 
 };
 

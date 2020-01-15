@@ -5,10 +5,10 @@
 #include "err/err.h"
 #include "err/assert_err.h"
 
-#include "dbinfo.h"
 #include "dbout.h"
 #include "dbgr.h"
 
+/*
 std::string
 proc_point_str(const std::string & input, const DBinfo & info){
 
@@ -36,6 +36,7 @@ proc_point_str(const std::string & input, const DBinfo & info){
   dbo.proc_point(&k,&v, info);
   return out.str();
 }
+*/
 
 using namespace std;
 int main() {
@@ -63,6 +64,8 @@ int main() {
       {DBout dbn(".","abc:-1",cout); assert_eq(dbn.col, -1);}
       {DBout dbn(".","abc:-2",cout); assert_eq(dbn.col, -1);}
     }
+
+/*
     {
       DBinfo hh1; // default constructor
       DBinfo hh2(DATA_INT16);
@@ -191,49 +194,7 @@ int main() {
 
     }
 
-    {
-      // pack/unpack data
-      DBinfo hh1(DATA_INT32);
-      DBinfo hh2(DATA_DOUBLE);
-      DBinfo hh3(DATA_TEXT);
-
-      vector<string> v1,v2,v3;
-      v1.push_back("314");
-      v1.push_back("628");
-      v2.push_back("3.1415");
-      v2.push_back("6.2830");
-      v3.push_back("pi");
-      v3.push_back("2pi");
-
-      // store in integer DB
-      assert_eq(hh1.print_data(graphene_data_parse(v1, DATA_INT32)), "314 628");
-      assert_err(hh1.print_data(graphene_data_parse(v2, DATA_INT32)), "Bad INT32 value: 3.1415");
-      assert_err(hh1.print_data(graphene_data_parse(v3, DATA_INT32)), "Bad INT32 value: pi"); //!!!
-
-      // store in double DB
-      assert_eq(hh2.print_data(graphene_data_parse(v1, DATA_DOUBLE)), "314 628");
-      assert_eq(hh2.print_data(graphene_data_parse(v2, DATA_DOUBLE)), "3.1415 6.283");
-      assert_err(hh2.print_data(graphene_data_parse(v3, DATA_DOUBLE)), "Bad DOUBLE value: pi");
-
-      // store in text DB
-      assert_eq(hh3.print_data(graphene_data_parse(v1, DATA_TEXT)), "314 628");
-      assert_eq(hh3.print_data(graphene_data_parse(v2, DATA_TEXT)), "3.1415 6.2830");
-      assert_eq(hh3.print_data(graphene_data_parse(v3, DATA_TEXT)), "pi 2pi");
-
-      // colums
-      assert_eq(hh1.print_data(graphene_data_parse(v1, DATA_INT32), 0), "314");
-      assert_eq(hh1.print_data(graphene_data_parse(v1, DATA_INT32), 1), "628");
-      assert_eq(hh1.print_data(graphene_data_parse(v1, DATA_INT32), 2), "NaN");
-
-      assert_eq(hh2.print_data(graphene_data_parse(v2, DATA_DOUBLE), 0), "3.1415");
-      assert_eq(hh2.print_data(graphene_data_parse(v2, DATA_DOUBLE), 1), "6.283");
-      assert_eq(hh2.print_data(graphene_data_parse(v2, DATA_DOUBLE), 2), "NaN");
-
-      // column is ignored for the text database
-      assert_eq(hh3.print_data(graphene_data_parse(v2, DATA_TEXT), 0), "3.1415 6.2830");
-      assert_eq(hh3.print_data(graphene_data_parse(v2, DATA_TEXT), 1), "3.1415 6.2830");
-      assert_eq(hh3.print_data(graphene_data_parse(v2, DATA_TEXT), 2), "3.1415 6.2830");
-    }
+*/
 
 /***************************************************************/
   } catch (Err E){

@@ -364,6 +364,47 @@ int main() {
       assert_eq(graphene_data_parse_str("", DATA_TEXT), "");
     }
 
+    {
+      vector<string> v1,v2,v3;
+      v1.push_back("314");
+      v1.push_back("628");
+      v2.push_back("3.1415");
+      v2.push_back("6.2830");
+      v3.push_back("pi");
+      v3.push_back("2pi");
+
+      // data_print
+      // store in integer DB
+      assert_eq(graphene_data_print(graphene_data_parse(v1, DATA_INT32), -1,DATA_INT32), "314 628");
+      assert_err(graphene_data_print(graphene_data_parse(v2, DATA_INT32),-1,DATA_INT32), "Bad INT32 value: 3.1415");
+      assert_err(graphene_data_print(graphene_data_parse(v3, DATA_INT32),-1,DATA_INT32), "Bad INT32 value: pi");
+
+      // store in double DB
+      assert_eq(graphene_data_print(graphene_data_parse(v1, DATA_DOUBLE), -1,DATA_DOUBLE), "314 628");
+      assert_eq(graphene_data_print(graphene_data_parse(v2, DATA_DOUBLE), -1,DATA_DOUBLE), "3.1415 6.283");
+      assert_err(graphene_data_print(graphene_data_parse(v3, DATA_DOUBLE),-1,DATA_DOUBLE), "Bad DOUBLE value: pi");
+
+      // store in text DB
+      assert_eq(graphene_data_print(graphene_data_parse(v1, DATA_TEXT),-1,DATA_TEXT), "314 628");
+      assert_eq(graphene_data_print(graphene_data_parse(v2, DATA_TEXT),-1,DATA_TEXT), "3.1415 6.2830");
+      assert_eq(graphene_data_print(graphene_data_parse(v3, DATA_TEXT),-1,DATA_TEXT), "pi 2pi");
+
+      // colums
+      assert_eq(graphene_data_print(graphene_data_parse(v1, DATA_INT32), 0, DATA_INT32), "314");
+      assert_eq(graphene_data_print(graphene_data_parse(v1, DATA_INT32), 1, DATA_INT32), "628");
+      assert_eq(graphene_data_print(graphene_data_parse(v1, DATA_INT32), 2, DATA_INT32), "NaN");
+
+      assert_eq(graphene_data_print(graphene_data_parse(v2, DATA_DOUBLE), 0, DATA_DOUBLE), "3.1415");
+      assert_eq(graphene_data_print(graphene_data_parse(v2, DATA_DOUBLE), 1, DATA_DOUBLE), "6.283");
+      assert_eq(graphene_data_print(graphene_data_parse(v2, DATA_DOUBLE), 2, DATA_DOUBLE), "NaN");
+
+      // column is ignored for the text database
+      assert_eq(graphene_data_print(graphene_data_parse(v2, DATA_TEXT), 0, DATA_TEXT), "3.1415 6.2830");
+      assert_eq(graphene_data_print(graphene_data_parse(v2, DATA_TEXT), 1, DATA_TEXT), "3.1415 6.2830");
+      assert_eq(graphene_data_print(graphene_data_parse(v2, DATA_TEXT), 2, DATA_TEXT), "3.1415 6.2830");
+    }
+
+    /****************************************************************/
 
     // time_v1
     TimeType tt = TIME_V1;

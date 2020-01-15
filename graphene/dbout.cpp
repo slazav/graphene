@@ -67,22 +67,7 @@ DBout::~DBout(){
 
 
 void
-DBout::proc_point(DBT *k, DBT *v, const DBinfo & info) {
-  // check for correct key size (do not parse DB info)
-  if (k->size!=sizeof(uint64_t) && k->size!=sizeof(uint32_t) ) return;
-  // convert DBT to strings
-  std::string ks((char *)k->data, (char *)k->data+k->size);
-  std::string vs((char *)v->data, (char *)v->data+v->size);
-  // print values into a string (always \n in the end!)
-  std::ostringstream str;
-
-  std::string s =
-    graphene_time_print(ks, info.ttype, pars.timefmt, pars.time0) + " " +
-    info.print_data(vs, col) + "\n";
-
-  // keep only first line (s always ends with \n - see above)
-  if (pars.list==1 && info.dtype==DATA_TEXT)
-    s.resize(s.find('\n')+1);
+DBout::proc_point(const std::string & s) {
 
   // do filtering
   if (pid>0){

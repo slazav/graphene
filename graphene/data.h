@@ -33,6 +33,14 @@ std::string graphene_data_parse(
   const DataType dtype
 );
 
+// Print packed data for output
+std::string graphene_data_print(
+  const std::string & s,
+  const int col,
+  const DataType dtype
+);
+
+
 /********************************************************************/
 
 // Enum for the timestamp type (later can be joined to data)

@@ -256,12 +256,12 @@ class Pars{
     // args: create <name> [<data_fmt>] [<description>]
     if (strcasecmp(cmd.c_str(), "create")==0){
       if (pars.size()<2) throw Err() << "database name expected";
-      DBinfo info(
-        pars.size()<3 ? DATA_DOUBLE : graphene_dtype_parse(pars[2]),
-        pars.size()<4 ? "": pars[3]);
-      for (int i=4; i<pars.size(); i++) info.descr+=" "+pars[i];
-      // todo: create folders if needed
-      pool->get(pars[1], DB_CREATE | DB_EXCL).write_info(info);
+      DataType dtype = pars.size()<3 ? DATA_DOUBLE : graphene_dtype_parse(pars[2]);
+      DBgr db = pool->get(pars[1], DB_CREATE | DB_EXCL);
+      db.dtype = dtype;
+      db.descr = pars.size()<4 ? "": pars[3];
+      for (int i=4; i<pars.size(); i++) db.descr+=" "+pars[i];
+      db.write_info();
       return;
     }
 
@@ -288,10 +288,10 @@ class Pars{
     if (strcasecmp(cmd.c_str(), "set_descr")==0){
       if (pars.size()<3) throw Err() << "database name and new description text expected";
       DBgr db = pool->get(pars[1]);
-      DBinfo info = db.read_info();
-      info.descr = pars[2];
-      for (int i=3; i<pars.size(); i++) info.descr+=" "+pars[i];
-      db.write_info(info);
+      db.read_info();
+      db.descr = pars[2];
+      for (int i=3; i<pars.size(); i++) db.descr+=" "+pars[i];
+      db.write_info();
       return;
     }
 
@@ -300,9 +300,10 @@ class Pars{
     if (strcasecmp(cmd.c_str(), "info")==0){
       if (pars.size()<2) throw Err() << "database name expected";
       if (pars.size()>2) throw Err() << "too many parameters";
-      DBinfo info = pool->get(pars[1], DB_RDONLY).read_info();
-      cout << graphene_dtype_name(info.dtype);
-      if (info.descr!="") out << '\t' << info.descr;
+      DBgr db = pool->get(pars[1], DB_RDONLY);
+      db.read_info();
+      cout << graphene_dtype_name(db.dtype);
+      if (db.descr!="") out << '\t' << db.descr;
       out << "\n";
       return;
     }
@@ -354,11 +355,13 @@ class Pars{
       if (pars.size()<2) throw Err() << "database name expected";
       if (pars.size()>3) throw Err() << "too many parameters";
       string t1 = pars.size()>2? pars[2]: "0";
+
       DBout dbo(dbpath, pars[1], out);
-      dbo.pars.timefmt = graphene_tfmt_parse(timefmt);
-      dbo.pars.time0   = t1;
+      DBgr db = pool->get(dbo.name, DB_RDONLY);
+      db.timefmt = graphene_tfmt_parse(timefmt);
+      db.time0   = t1;
       dbo.pars.interactive = interactive;
-      pool->get(dbo.name, DB_RDONLY).get_next(t1, dbo);
+      db.get_next(t1, dbo);
       return;
     }
 
@@ -369,10 +372,11 @@ class Pars{
       if (pars.size()>3) throw Err() << "too many parameters";
       string t2 = pars.size()>2? pars[2]: "inf";
       DBout dbo(dbpath, pars[1], out);
-      dbo.pars.timefmt = graphene_tfmt_parse(timefmt);
-      dbo.pars.time0   = t2;
+      DBgr db = pool->get(dbo.name, DB_RDONLY);
+      db.timefmt = graphene_tfmt_parse(timefmt);
+      db.time0   = t2;
       dbo.pars.interactive = interactive;
-      pool->get(dbo.name, DB_RDONLY).get_prev(t2, dbo);
+      db.get_prev(t2, dbo);
       return;
     }
 
@@ -383,10 +387,11 @@ class Pars{
       if (pars.size()>3) throw Err() << "too many parameters";
       string t2 = pars.size()>2? pars[2]: "inf";
       DBout dbo(dbpath, pars[1], out);
-      dbo.pars.timefmt = graphene_tfmt_parse(timefmt);
-      dbo.pars.time0   = t2;
+      DBgr db = pool->get(dbo.name, DB_RDONLY);
+      db.timefmt = graphene_tfmt_parse(timefmt);
+      db.time0   = t2;
       dbo.pars.interactive = interactive;
-      pool->get(dbo.name, DB_RDONLY).get(t2, dbo);
+      db.get(t2, dbo);
       return;
     }
 
@@ -399,11 +404,11 @@ class Pars{
       string t2 = pars.size()>3? pars[3]: "inf";
       string dt = pars.size()>4? pars[4]: "0";
       DBout dbo(dbpath, pars[1], out);
-      dbo.pars.timefmt = graphene_tfmt_parse(timefmt);
-      dbo.pars.time0   = t1;
+      DBgr db = pool->get(dbo.name, DB_RDONLY);
+      db.timefmt = graphene_tfmt_parse(timefmt);
+      db.time0   = t1;
       dbo.pars.interactive = interactive;
-      dbo.pars.list        = true;
-      pool->get(dbo.name, DB_RDONLY).get_range(t1,t2,dt, dbo);
+      db.get_range(t1,t2,dt, dbo);
       return;
     }
 

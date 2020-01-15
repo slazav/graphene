@@ -11,34 +11,23 @@ using namespace std;
 int main() {
   try{
     // creating database, writing/reading data format
-    DBinfo hh1(DATA_INT16, "AAA");
-    DBinfo hh2;
-    {
       DBpool pool(".", false, "txn");
       DBgr db = pool.get("test", DB_CREATE);
-      db.write_info(hh1);
-      hh2 = db.read_info();
-      assert_eq(hh1.ttype, hh2.ttype);
-      assert_eq(hh1.dtype, hh2.dtype);
-      assert_eq(hh1.descr, hh2.descr);
+      db.dtype = DATA_INT16;
+      db.descr = "AAA";
+      db.write_info();
+      db.read_info();
+      assert_eq(db.version, 2);
+      assert_eq(db.ttype, TIME_V2);
+      assert_eq(db.dtype, DATA_INT16);
+      assert_eq(db.descr, "AAA");
 
-      hh1.dtype = DATA_DOUBLE;
-      hh1.descr = "Description";
-      db.write_info(hh1);
-      hh2 = db.read_info();
-      assert_eq(hh1.ttype, hh2.ttype);
-      assert_eq(hh1.dtype, hh2.dtype);
-      assert_eq(hh1.descr, hh2.descr);
-    }
-
-    {
-      DBpool pool(".", true, "txn");
-      DBgr db1 = pool.get("test", DB_RDONLY);
-      hh2 = db1.read_info();
-      assert_eq(hh1.ttype, hh2.ttype);
-      assert_eq(hh1.dtype, hh2.dtype);
-      assert_eq(hh1.descr, hh2.descr);
-    }
+      DBpool pool1(".", true, "txn");
+      DBgr db1 = pool1.get("test", DB_RDONLY);
+      db1.read_info();
+      assert_eq(db.ttype, db1.ttype);
+      assert_eq(db.dtype, db1.dtype);
+      assert_eq(db.descr, db1.descr);
 
 /***************************************************************/
   } catch (Err E){
