@@ -257,7 +257,7 @@ class Pars{
     if (strcasecmp(cmd.c_str(), "create")==0){
       if (pars.size()<2) throw Err() << "database name expected";
       DataType dtype = pars.size()<3 ? DATA_DOUBLE : graphene_dtype_parse(pars[2]);
-      DBgr db = pool->get(pars[1], DB_CREATE | DB_EXCL);
+      DBgr & db = pool->get(pars[1], DB_CREATE | DB_EXCL);
       db.dtype = dtype;
       db.descr = pars.size()<4 ? "": pars[3];
       for (int i=4; i<pars.size(); i++) db.descr+=" "+pars[i];
@@ -287,8 +287,7 @@ class Pars{
     // args: set_descr <name> <description>
     if (strcasecmp(cmd.c_str(), "set_descr")==0){
       if (pars.size()<3) throw Err() << "database name and new description text expected";
-      DBgr db = pool->get(pars[1]);
-      db.read_info();
+      DBgr & db = pool->get(pars[1]);
       db.descr = pars[2];
       for (int i=3; i<pars.size(); i++) db.descr+=" "+pars[i];
       db.write_info();
@@ -300,8 +299,7 @@ class Pars{
     if (strcasecmp(cmd.c_str(), "info")==0){
       if (pars.size()<2) throw Err() << "database name expected";
       if (pars.size()>2) throw Err() << "too many parameters";
-      DBgr db = pool->get(pars[1], DB_RDONLY);
-      db.read_info();
+      DBgr & db = pool->get(pars[1], DB_RDONLY);
       cout << graphene_dtype_name(db.dtype);
       if (db.descr!="") out << '\t' << db.descr;
       out << "\n";
@@ -357,7 +355,7 @@ class Pars{
       string t1 = pars.size()>2? pars[2]: "0";
 
       DBout dbo(dbpath, pars[1], out);
-      DBgr db = pool->get(dbo.name, DB_RDONLY);
+      DBgr & db = pool->get(dbo.name, DB_RDONLY);
       db.timefmt = graphene_tfmt_parse(timefmt);
       db.time0   = t1;
       dbo.pars.interactive = interactive;
@@ -372,7 +370,7 @@ class Pars{
       if (pars.size()>3) throw Err() << "too many parameters";
       string t2 = pars.size()>2? pars[2]: "inf";
       DBout dbo(dbpath, pars[1], out);
-      DBgr db = pool->get(dbo.name, DB_RDONLY);
+      DBgr & db = pool->get(dbo.name, DB_RDONLY);
       db.timefmt = graphene_tfmt_parse(timefmt);
       db.time0   = t2;
       dbo.pars.interactive = interactive;
@@ -387,7 +385,7 @@ class Pars{
       if (pars.size()>3) throw Err() << "too many parameters";
       string t2 = pars.size()>2? pars[2]: "inf";
       DBout dbo(dbpath, pars[1], out);
-      DBgr db = pool->get(dbo.name, DB_RDONLY);
+      DBgr & db = pool->get(dbo.name, DB_RDONLY);
       db.timefmt = graphene_tfmt_parse(timefmt);
       db.time0   = t2;
       dbo.pars.interactive = interactive;
@@ -404,7 +402,7 @@ class Pars{
       string t2 = pars.size()>3? pars[3]: "inf";
       string dt = pars.size()>4? pars[4]: "0";
       DBout dbo(dbpath, pars[1], out);
-      DBgr db = pool->get(dbo.name, DB_RDONLY);
+      DBgr & db = pool->get(dbo.name, DB_RDONLY);
       db.timefmt = graphene_tfmt_parse(timefmt);
       db.time0   = t1;
       dbo.pars.interactive = interactive;
@@ -455,7 +453,7 @@ class Pars{
       if (pars.size()<3) throw Err() << "database name and dump file expected";
       if (pars.size()>3) throw Err() << "too many parameters";
       DBpool simple_pool(dbpath, false, "none");
-      DBgr db = simple_pool.get(pars[1], DB_CREATE | DB_EXCL);
+      DBgr & db = simple_pool.get(pars[1], DB_CREATE | DB_EXCL);
       db.load(pars[2]);
       return;
     }
@@ -466,7 +464,7 @@ class Pars{
       if (pars.size()<3) throw Err() << "database name and dump file expected";
       if (pars.size()>3) throw Err() << "too many parameters";
       DBpool simple_pool(dbpath, false, "none");
-      DBgr db = simple_pool.get(pars[1], DB_RDONLY);
+      DBgr & db = simple_pool.get(pars[1], DB_RDONLY);
       db.dump(pars[2]);
       return;
     }

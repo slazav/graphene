@@ -181,7 +181,6 @@ Json json_query(const string & dbpath, const std::string & env_type, const Json 
     DBgr db = pool.get(dbo.name, DB_RDONLY);
 
     // check DB format
-    db.read_info();
     if (db.dtype == DATA_TEXT)
       throw Err() << "Can not do query from TEXT database. Use annotations";
 
@@ -230,7 +229,6 @@ Json json_annotations(const string & dbpath, const std::string & env_type, const
   DBgr db = pool.get(dbo.name, DB_RDONLY);
 
   // check DB format
-  db.read_info();
   if (db.dtype != DATA_TEXT)
     throw Err() << "Annotations can be found only in TEXT databases";
 

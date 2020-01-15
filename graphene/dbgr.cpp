@@ -73,9 +73,7 @@ DBgr::DBgr(DB_ENV *env_,
      const string & name_,
      const int flags):
        env(env_), name(name_), timefmt(TFMT_DEF),
-       ttype(DEF_TIMETYPE), dtype(DATA_DOUBLE), version(DEF_DBVERSION) {
-
-  info_is_actual = false;
+       ttype(DEF_TIMETYPE), dtype(DEF_DATATYPE), version(DEF_DBVERSION) {
 
   check_name(name); // check the name
 
@@ -119,6 +117,8 @@ DBgr::DBgr(DB_ENV *env_,
   if (ret != 0){
     throw Err() << name << ".db: " << db_strerror(ret);
   }
+  if ((flags & DB_CREATE) == 0) read_info();
+
 }
 
 /************************************/
@@ -216,10 +216,8 @@ DBgr::write_info(){
     txn_abort(txn);
     throw e;
   }
-
+  sync();
   txn_commit(txn);
-  sync(); // this may be important if write_info is followed by read_info
-  info_is_actual = true;
 }
 
 /************************************/
@@ -227,7 +225,6 @@ DBgr::write_info(){
 //
 void
 DBgr::read_info(){
-  if (info_is_actual) return;
 
   // do everything in a single transaction (with snapshot isolation)
   DB_TXN *txn = txn_begin(DB_TXN_SNAPSHOT);
@@ -268,14 +265,12 @@ DBgr::read_info(){
     throw e;
   }
   txn_commit(txn);
-  info_is_actual = true;
 }
 
 /************************************/
 std::string
 DBgr::backup_start(){
   std::string timer;
-  read_info();
 
   DB_TXN *txn = txn_begin();
   DBC *curs = NULL;
@@ -344,7 +339,6 @@ DBgr::backup_end(){
 
 void
 DBgr::backup_upd(const std::string &t){
-  read_info();
 
   DB_TXN *txn = txn_begin();
   try {
@@ -390,7 +384,6 @@ DBgr::backup_upd(const std::string &t){
 void
 DBgr::put(const string &t, const vector<string> & dat, const string &dpolicy){
   int ret;
-  read_info();
   string ks = graphene_time_parse(t, ttype);
   string vs = graphene_data_parse(dat, dtype);
 
@@ -430,7 +423,6 @@ DBgr::put(const string &t, const vector<string> & dat, const string &dpolicy){
 //
 void
 DBgr::get_next(const string &t1, DBout & dbo){
-  read_info();
   string t1p = graphene_time_parse(t1, ttype);
   DBT k = mk_dbt(t1p);
   DBT v = mk_dbt();
@@ -462,7 +454,6 @@ DBgr::get_next(const string &t1, DBout & dbo){
 //
 void
 DBgr::get_prev(const string &t2, DBout & dbo){
-  read_info();
 
   string t2p = graphene_time_parse(t2, ttype);
   DBT k = mk_dbt(t2p);
@@ -501,7 +492,6 @@ DBgr::get_prev(const string &t2, DBout & dbo){
 //
 void
 DBgr::get(const string &t, DBout & dbo){
-  read_info();
 
   /* for non-float databases use get_prev */
   if (dtype!=DATA_FLOAT && dtype!=DATA_DOUBLE)
@@ -578,8 +568,6 @@ void
 DBgr::get_range(const string &t1, const string &t2,
                 const string &dt, DBout & dbo){
 
-  read_info();
-
   string t1p = graphene_time_parse(t1, ttype);
   string t2p = graphene_time_parse(t2, ttype);
   string dtp = graphene_time_parse(dt, ttype);
@@ -652,7 +640,6 @@ DBgr::get_range(const string &t1, const string &t2,
 void
 DBgr::del(const string &t1){
   int ret;
-  read_info();
   string t1p = graphene_time_parse(t1, ttype);
   DBT k = mk_dbt(t1p);
 
@@ -675,7 +662,6 @@ DBgr::del(const string &t1){
 void
 DBgr::del_range(const string &t1, const string &t2){
   int ret;
-  read_info();
   std::string first_del; // for lastmod timestamp
 
   string t1p = graphene_time_parse(t1, ttype);

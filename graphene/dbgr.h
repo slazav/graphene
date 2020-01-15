@@ -32,6 +32,7 @@
 
 #define DEF_DBVERSION  2
 #define DEF_TIMETYPE   TIME_V2
+#define DEF_DATATYPE   DATA_DOUBLE
 
 
 /************************************/
@@ -78,7 +79,6 @@ class DBgr{
     std::string name;    // database name
     uint32_t open_flags; // database open flags
     uint32_t env_flags;  // environment flags
-    bool info_is_actual; // is the info the same as in the file?
 
     uint8_t  version;  // database version
     DataType dtype;    // data type
