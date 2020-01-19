@@ -1,7 +1,7 @@
 /*  Command-line interface for the Graphene time series database.
 */
 
-#define VERSION "2.7"
+#define VERSION "2.8"
 #define GRAPHENE_DEF_ENV "lock"
 #define GRAPHENE_DEF_DPOLICY "replace"
 #define GRAPHENE_DEF_DBPATH  "."
