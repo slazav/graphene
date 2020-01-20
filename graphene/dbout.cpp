@@ -8,19 +8,11 @@
 #include <errno.h>
 #include <wait.h>
 
-DBout::DBout(const std::string & filterpath,
-      const std::string & str,
-      std::ostream & out):  col(-1), name(str), out(out) {
-
-  // extract filter
-  size_t cp = name.rfind('|');
-  if (cp!=std::string::npos){
-    filter = name.substr(cp+1,-1);
-    name = name.substr(0,cp);
-  }
+DBout::DBout(const std::string & name_, std::ostream & out_):
+          col(-1), name(name_), out(out_) {
 
   // extract column
-  cp = name.rfind(':');
+  size_t cp = name.rfind(':');
   if (cp!=std::string::npos){
     char *e;
     col = strtol(name.substr(cp+1,-1).c_str(), &e, 10);
@@ -29,64 +21,7 @@ DBout::DBout(const std::string & filterpath,
   }
   if (col < -1) col = -1;
   check_name(name);
-  check_name(filter);
-
-  fd1[0]=fd1[1]=fd2[0]=fd2[1]=-1;
-  pid = -1;
-  if (filter!=""){
-    // two pipes and a fork
-    if (pipe(fd1)!=0 || pipe(fd2)!=0) throw Err() << "can't create pipes";
-    pid = fork();
-    if (pid < 0) throw Err() << "can't do fork";
-
-    // in the child process we set redirect pipe to stdin
-    // and run filter program
-    if (pid == 0) {
-      if (dup2(fd1[0], 0)!=0 || close(fd1[0]) != 0 || close(fd1[1]) != 0)
-        throw Err() << "can't redirect stdin";
-      if (dup2(fd2[1], 1)!=1 || close(fd2[0]) != 0 || close(fd2[1]) != 0)
-        throw Err() << "can't redirect stdout";
-      std::string f = filterpath + "/" + filter;
-      execl(f.c_str(), f.c_str(), NULL);
-      exit(0); // how to terminate process correctly?!
-    }
-    close(fd1[0]); fd1[0] = -1;
-    close(fd2[1]); fd2[1] = -1;
-  }
 }
-
-
-DBout::~DBout(){
-  for (int i=0; i<2; i++){
-    if (fd1[i]!=-1) close(fd1[i]);
-    if (fd2[i]!=-1) close(fd2[i]);
-  }
-  int st;
-  if (pid>0) waitpid(pid, &st, 0);
-}
-
-
-void
-DBout::proc_point(const std::string & s) {
-
-  // do filtering
-  if (pid>0){
-    if (write(fd1[1], s.data(), s.length()) != s.length())
-      throw Err() << "can't send data to the filter program";
-    char buf[256];
-    size_t n;
-    std::string out;
-    while ((n = read(fd2[0], buf, sizeof(buf)))>0){
-      out+=std::string(buf, buf+n);
-      if (out.find('\n')!=std::string::npos) break;
-    }
-    print_point(out);
-  }
-  else{
-    print_point(s);
-  }
-};
-
 
 void
 DBout::print_point(const std::string & str) {

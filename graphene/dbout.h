@@ -31,32 +31,20 @@ class DBout {
     Pars(): interactive(false) {};
   };
 
-
   std::string name;    // primary database name
   std::ostream & out;  // stream for output
   int col; // column number, for the main database
   Pars pars;
 
-  // filter name, pid, in/out descriptors
-  std::string filter;  // filter program
-  pid_t pid;
-  int fd1[2], fd2[2];
-
   // constructor -- parse the dataset string, create iostream
-  DBout(const std::string & filterpath,
-        const std::string & str,
-        std::ostream & out = std::cout);
-  ~DBout();
+  DBout(const std::string & str, std::ostream & out = std::cout);
 
-  // Process a single point (select a column, make tables, filtering)
-  // and call print_point().
-  // <list> parameter changes output of TEXT records in a list mode
-  // (only first line is shown).
+  // Process a single point (select a column) and call print_point().
   void proc_point(const std::string & s);
 
   // print_point  -- by default it just prints the line to out,
   // but this function can be overriden.
-  virtual void print_point(const std::string & str);
+  virtual void print_point(const std::string & name);
 
 };
 

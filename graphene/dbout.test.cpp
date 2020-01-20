@@ -55,14 +55,14 @@ int main() {
       assert_err(check_name("/abc/def\t"), e1+"/abc/def\t");
       assert_err(check_name("/abc/def\n"), e1+"/abc/def\n");
 
-      {DBout dbn(".","abc",cout);    assert_eq(dbn.name, "abc");
+      {DBout dbn("abc",cout);    assert_eq(dbn.name, "abc");
                             assert_eq(dbn.col, -1);}
-      {DBout dbn(".","abc_",cout);   assert_eq(dbn.name, "abc_");}
+      {DBout dbn("abc_",cout);   assert_eq(dbn.name, "abc_");}
 
-      {DBout dbn(".","abc:1",cout);
+      {DBout dbn("abc:1",cout);
          assert_eq(dbn.name, "abc"); assert_eq(dbn.col, 1);}
-      {DBout dbn(".","abc:-1",cout); assert_eq(dbn.col, -1);}
-      {DBout dbn(".","abc:-2",cout); assert_eq(dbn.col, -1);}
+      {DBout dbn("abc:-1",cout); assert_eq(dbn.col, -1);}
+      {DBout dbn("abc:-2",cout); assert_eq(dbn.col, -1);}
     }
 
 /*

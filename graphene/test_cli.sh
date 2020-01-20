@@ -278,32 +278,6 @@ assert "$(./graphene -d . get_range test_3)" "10.000000000 1
 assert "$(./graphene -d . delete test_3)" ""
 
 ###########################################################################
-# filters
-
-echo "#!/bin/sh" > test_flt
-echo "while read t v; do echo \$t \$((\$v*\$v)); done" >> test_flt
-chmod 755 test_flt
-
-assert "$(./graphene -d . create test_3)" ""
-assert "$(./graphene -d . create test_4 uint32 Uint 32 database)" ""
-assert "$(./graphene -d . put test_3 10 1 4)" ""
-assert "$(./graphene -d . put test_3 11 2 3)" ""
-assert "$(./graphene -d . put test_3 12 3 2)" ""
-assert "$(./graphene -d . put test_3 13 4 1)" ""
-assert "$(./graphene -d . get_range test_3:0)" "10.000000000 1
-11.000000000 2
-12.000000000 3
-13.000000000 4"
-assert "$(./graphene -d . get_range 'test_3:0|test_flt')" "10.000000000 1
-11.000000000 4
-12.000000000 9
-13.000000000 16"
-
-rm -f test_flt
-assert "$(./graphene -d . delete test_3)" ""
-assert "$(./graphene -d . delete test_4)" ""
-
-###########################################################################
 # TEXT database
 assert "$(./graphene -d . create test_4 TEXT)" ""
 

@@ -205,7 +205,7 @@ class DBgr{
     if (list && dtype==DATA_TEXT)
       s.resize(s.find('\n')+1);
 
-    dbo.proc_point(s);
+    dbo.print_point(s);
   }
 
 

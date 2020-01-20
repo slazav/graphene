@@ -354,7 +354,7 @@ class Pars{
       if (pars.size()>3) throw Err() << "too many parameters";
       string t1 = pars.size()>2? pars[2]: "0";
 
-      DBout dbo(dbpath, pars[1], out);
+      DBout dbo(pars[1], out);
       DBgr & db = pool->get(dbo.name, DB_RDONLY);
       db.timefmt = graphene_tfmt_parse(timefmt);
       db.time0   = t1;
@@ -369,7 +369,7 @@ class Pars{
       if (pars.size()<2) throw Err() << "database name expected";
       if (pars.size()>3) throw Err() << "too many parameters";
       string t2 = pars.size()>2? pars[2]: "inf";
-      DBout dbo(dbpath, pars[1], out);
+      DBout dbo(pars[1], out);
       DBgr & db = pool->get(dbo.name, DB_RDONLY);
       db.timefmt = graphene_tfmt_parse(timefmt);
       db.time0   = t2;
@@ -384,7 +384,7 @@ class Pars{
       if (pars.size()<2) throw Err() << "database name expected";
       if (pars.size()>3) throw Err() << "too many parameters";
       string t2 = pars.size()>2? pars[2]: "inf";
-      DBout dbo(dbpath, pars[1], out);
+      DBout dbo(pars[1], out);
       DBgr & db = pool->get(dbo.name, DB_RDONLY);
       db.timefmt = graphene_tfmt_parse(timefmt);
       db.time0   = t2;
@@ -401,7 +401,7 @@ class Pars{
       string t1 = pars.size()>2? pars[2]: "0";
       string t2 = pars.size()>3? pars[3]: "inf";
       string dt = pars.size()>4? pars[4]: "0";
-      DBout dbo(dbpath, pars[1], out);
+      DBout dbo(pars[1], out);
       DBgr & db = pool->get(dbo.name, DB_RDONLY);
       db.timefmt = graphene_tfmt_parse(timefmt);
       db.time0   = t1;

@@ -106,7 +106,7 @@ class DBoutJSON: public DBout{
   bool isnum; // numerical or text data
 
   DBoutJSON(const std::string & dbpath, const std::string & str, const bool isnum_):
-    DBout(dbpath, str, std::cout), json_buffer(Json::array()), isnum(isnum_){ };
+    DBout(str, std::cout), json_buffer(Json::array()), isnum(isnum_){ };
 
   void print_point(const std::string & str) {
     if (isnum){ //read timestamp and one value from the line:
