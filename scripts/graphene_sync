@@ -103,6 +103,7 @@ else {
 
 foreach my $src_name (@names) {
   print "$src_name:" if $verb;
+  flush STDOUT if $verb;
   my $dst_name="$dst_pref$src_name";
 
   spp_write(\*SI, "info $src_name");
@@ -129,29 +130,39 @@ foreach my $src_name (@names) {
   chomp($tstamp);
 
   # calculate backup range
-  my $range = ($full || $newdb) ? "0 inf" : "$tstamp inf";
-  print " $range: " if $verb;
+  $tstamp = 0 if $full;
+  print " start data transfer from $tstamp: " if $verb;
+  flush STDOUT if $verb;
 
   # delete the range in destination database:
-  spp_write(\*DI, "del_range $dst_name $range");
+  spp_write(\*DI, "del_range $dst_name $tstamp inf");
   spp_read(\*DO, 0);
 
   # get range from source database, put values into destination one:
-  spp_write(\*SI, "get_range $src_name $range");
+  spp_write(\*SI, "get_range $src_name $tstamp inf");
   my $num=0;
   while( my $line = <SO>)  {
     die $line if $line =~ /^#Error/;
     last if $line =~/^\#OK/;
-
     spp_write(\*DI, "put $dst_name $line");
-    spp_read(\*DO, 0);
     $num++;
+  }
+
+  print "$num records: " if $verb;
+  flush STDOUT if $verb;
+
+  # read all answers
+  while($num>0)  {
+    spp_read(\*DO, 0);
+    $num--;
   }
 
   spp_write(\*SI, "backup_end $src_name");
   spp_read(\*SO, 0);
 
-  print "$num records\n" if $verb;
+  print "OK\n" if $verb;
+  flush STDOUT if $verb;
+
 }
 
 kill HUP => $spid;
