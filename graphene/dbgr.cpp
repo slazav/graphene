@@ -55,12 +55,6 @@ int cmpfunc(DB *dbp, const DBT *a, const DBT *b){
   return 0;
 }
 
-/***********************************************************/
-void check_name(const std::string & name){
-  static const char *reject = ".:+| \n\t/";
-  if (strcspn(name.c_str(), reject)!=name.length())
-    throw Err() << "symbols '.:+| \\n\\t/' are not allowed in the database name: " << name;
-}
 
 /***********************************************************/
 // DBgr class

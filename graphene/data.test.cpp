@@ -987,6 +987,33 @@ int main() {
       "#0 0.1 100.001\n#abc\n #cde\nff\n"),
       "##0 0.1 100.001\n##abc\n #cde\nff\n");
 
+    /**************************************************************/
+    // check_name
+    /**************************************************************/
+    check_name("abcABCefz0123_,%");
+
+    std::string msg = "symbols '.:+| \\n\\t/' are not allowed in the database name: ";
+    assert_err(check_name("a b"), msg + "a b");
+    assert_err(check_name("a.b"), msg + "a.b");
+    assert_err(check_name("a:b"), msg + "a:b");
+    assert_err(check_name("+a"), msg + "+a");
+    assert_err(check_name("|a"), msg + "|a");
+    assert_err(check_name("a\n"), msg + "a\n");
+    assert_err(check_name("a\t"), msg + "a\t");
+    assert_err(check_name("//"), msg + "//");
+
+    int c;
+    assert_eq(parse_ext_name("abc:1", c), "abc"); assert_eq(c, 1);
+    assert_eq(parse_ext_name("abc:0", c), "abc"); assert_eq(c, 0);
+    assert_eq(parse_ext_name("abc", c), "abc");   assert_eq(c, -1);
+
+    assert_err(parse_ext_name("abc :1", c), msg + "abc ");
+    assert_err(parse_ext_name("abc:", c), msg + "abc:");
+    assert_err(parse_ext_name("abc:a", c), "bad column name: a");
+
+    assert_err(parse_ext_name("abc:-2", c), "bad column name: -2");
+    assert_err(parse_ext_name("abc:1.2", c), "bad column name: 1.2");
+
   } catch (Err E){
     std::cerr << E.str() << "\n";
     return 1;

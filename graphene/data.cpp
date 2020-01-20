@@ -670,3 +670,27 @@ graphene_spp_text(const std::string & data){
   return out;
 }
 
+/***********************************************************/
+void
+check_name(const std::string & name){
+  static const char *reject = ".:+| \n\t/";
+  if (strcspn(name.c_str(), reject)!=name.length())
+    throw Err() << "symbols '.:+| \\n\\t/' are not allowed in the database name: " << name;
+}
+
+std::string
+parse_ext_name(const std::string & name, int & col){
+  // extract column
+  col = -1;
+  std::string dbname = name;
+  size_t cp = name.rfind(':');
+  if (cp!=std::string::npos && cp!=name.size()-1){
+    char *e;
+    col = strtol(name.substr(cp+1,-1).c_str(), &e, 10);
+    if (e!=NULL && *e=='\0' && col>=0) dbname = name.substr(0,cp);
+    else throw Err() << "bad column name: " << name.substr(cp+1,-1);
+  }
+  check_name(dbname);
+  return dbname;
+}
+

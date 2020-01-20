@@ -35,17 +35,6 @@
 #define DEF_DATATYPE   DATA_DOUBLE
 
 
-/************************************/
-// Check database or filter name
-// All names (not only for reading/writing, but
-// also for moving or deleting should be checked).
-void check_name(const std::string & name);
-
-/***********************************************************/
-// type for data processing function.
-//typedef void(process_data_func)(DBT*,DBT*,const DBinfo&, void *usr_data);
-
-
 /***********************************************************/
 /* class for wrapping BerkleyDB */
 class DBgr{

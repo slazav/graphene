@@ -124,4 +124,14 @@ std::string graphene_interpolate(
 // Protect # symbol in beginning of each line for SPP protocol
 std::string graphene_spp_text(const std::string & data);
 
+/***********************************************************/
+// Check database or filter name
+// All names (not only for reading/writing, but
+// also for moving or deleting should be checked).
+void check_name(const std::string & name);
+
+// Parse extended dataset name (<dbname>:<column>) fill
+// column variable, return dbname
+std::string parse_ext_name(const std::string & name, int & col);
+
 #endif

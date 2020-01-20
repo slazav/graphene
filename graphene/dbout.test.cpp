@@ -61,8 +61,6 @@ int main() {
 
       {DBout dbn("abc:1",cout);
          assert_eq(dbn.name, "abc"); assert_eq(dbn.col, 1);}
-      {DBout dbn("abc:-1",cout); assert_eq(dbn.col, -1);}
-      {DBout dbn("abc:-2",cout); assert_eq(dbn.col, -1);}
     }
 
 /*
