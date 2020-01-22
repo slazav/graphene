@@ -105,8 +105,10 @@ class DBoutJSON: public DBout{
   Json json_buffer;
   bool isnum; // numerical or text data
 
-  DBoutJSON(const std::string & dbpath, const std::string & str, const bool isnum_):
-    DBout(str, std::cout), json_buffer(Json::array()), isnum(isnum_){ };
+  DBoutJSON(const std::string & dbpath, const bool isnum_):
+    DBout(std::cout), json_buffer(Json::array()), isnum(isnum_){
+    col=0; // default
+  };
 
   void print_point(const std::string & str) {
     if (isnum){ //read timestamp and one value from the line:
@@ -173,12 +175,14 @@ Json json_query(const string & dbpath, const std::string & env_type, const Json 
   DBpool pool(dbpath, true, env_type);
   for (int i=0; i<ji["targets"].size(); i++){
 
+    // Get a database
+    int col;
+    std::string name = parse_ext_name(ji["targets"][i]["target"].as_string(), col);
+    DBgr db = pool.get(name, DB_RDONLY);
 
-    // extract db name and column number
-    DBoutJSON dbo(dbpath, ji["targets"][i]["target"].as_string(), true);
-
-    // get a database
-    DBgr db = pool.get(dbo.name, DB_RDONLY);
+    // output formatter
+    DBoutJSON dbo(dbpath, true);
+    dbo.col = col<0 ? 0:col;
 
     // check DB format
     if (db.dtype == DATA_TEXT)
@@ -191,7 +195,7 @@ Json json_query(const string & dbpath, const std::string & env_type, const Json 
     jt.set("target", ji["targets"][i]["target"]);
     jt.set("datapoints", dbo.json_buffer);
     out.append(jt);
-    pool.close(dbo.name);
+    pool.close(name);
   }
 
   return out;
@@ -221,12 +225,16 @@ Json json_annotations(const string & dbpath, const std::string & env_type, const
   string t2 = convert_time( ji["range"]["to"].as_string() );
   if (t1=="" || t2=="") throw Err() << "Bad range setting";
 
-  // extract db name
-  DBoutJSON dbo(dbpath, ji["annotation"]["name"].as_string(), false);
 
   // Get a database
   DBpool pool(dbpath, true, env_type);
-  DBgr db = pool.get(dbo.name, DB_RDONLY);
+  int col;
+  std::string name = parse_ext_name(ji["annotation"]["name"].as_string(), col);
+  DBgr db = pool.get(name, DB_RDONLY);
+
+  // output formatter
+  DBoutJSON dbo(dbpath, false);
+  dbo.col = col<0 ? 0:col;
 
   // check DB format
   if (db.dtype != DATA_TEXT)
@@ -238,7 +246,7 @@ Json json_annotations(const string & dbpath, const std::string & env_type, const
   for (size_t i=0; i<dbo.json_buffer.size(); i++){
     dbo.json_buffer[i].set("annotation", ji["annotation"]);
   }
-  pool.close(dbo.name);
+  pool.close(name);
   return dbo.json_buffer;
 }
 

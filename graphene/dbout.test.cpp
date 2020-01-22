@@ -44,6 +44,7 @@ int main() {
 /***************************************************************/
     // FMT object, data and time formats
 
+/*
     {  // check names and extract column numbers
       check_name("abc");
       std::string e1("symbols '.:+| \\n\\t/' are not allowed in the database name: ");
@@ -63,7 +64,6 @@ int main() {
          assert_eq(dbn.name, "abc"); assert_eq(dbn.col, 1);}
     }
 
-/*
     {
       DBinfo hh1; // default constructor
       DBinfo hh2(DATA_INT16);

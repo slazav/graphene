@@ -8,15 +8,12 @@
 #include <errno.h>
 #include <wait.h>
 
-DBout::DBout(const std::string & name_, std::ostream & out_):
-          col(-1), name(name_), out(out_) {
-
-  name = parse_ext_name(name, col);
-}
+DBout::DBout(std::ostream & out_):
+          col(-1), out(out_), spp(false) {}
 
 void
 DBout::print_point(const std::string & str) {
-  if (pars.interactive) out << graphene_spp_text(str);
+  if (spp) out << graphene_spp_text(str);
   else out << str;
 }
 

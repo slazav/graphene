@@ -353,12 +353,14 @@ class Pars{
       if (pars.size()<2) throw Err() << "database name expected";
       if (pars.size()>3) throw Err() << "too many parameters";
       string t1 = pars.size()>2? pars[2]: "0";
-
-      DBout dbo(pars[1], out);
-      DBgr & db = pool->get(dbo.name, DB_RDONLY);
+      int col = -1;
+      std::string name = parse_ext_name(pars[1], col);
+      DBgr & db = pool->get(name, DB_RDONLY);
+      DBout dbo(out);
+      dbo.col    = col;
       db.timefmt = graphene_tfmt_parse(timefmt);
       db.time0   = t1;
-      dbo.pars.interactive = interactive;
+      dbo.spp    = interactive;
       db.get_next(t1, dbo);
       return;
     }
@@ -369,11 +371,14 @@ class Pars{
       if (pars.size()<2) throw Err() << "database name expected";
       if (pars.size()>3) throw Err() << "too many parameters";
       string t2 = pars.size()>2? pars[2]: "inf";
-      DBout dbo(pars[1], out);
-      DBgr & db = pool->get(dbo.name, DB_RDONLY);
+      int col = -1;
+      std::string name = parse_ext_name(pars[1], col);
+      DBgr & db = pool->get(name, DB_RDONLY);
+      DBout dbo(out);
+      dbo.col    = col;
       db.timefmt = graphene_tfmt_parse(timefmt);
       db.time0   = t2;
-      dbo.pars.interactive = interactive;
+      dbo.spp    = interactive;
       db.get_prev(t2, dbo);
       return;
     }
@@ -384,11 +389,14 @@ class Pars{
       if (pars.size()<2) throw Err() << "database name expected";
       if (pars.size()>3) throw Err() << "too many parameters";
       string t2 = pars.size()>2? pars[2]: "inf";
-      DBout dbo(pars[1], out);
-      DBgr & db = pool->get(dbo.name, DB_RDONLY);
+      int col = -1;
+      std::string name = parse_ext_name(pars[1], col);
+      DBgr & db = pool->get(name, DB_RDONLY);
+      DBout dbo(out);
+      dbo.col    = col;
       db.timefmt = graphene_tfmt_parse(timefmt);
       db.time0   = t2;
-      dbo.pars.interactive = interactive;
+      dbo.spp    = interactive;
       db.get(t2, dbo);
       return;
     }
@@ -401,11 +409,14 @@ class Pars{
       string t1 = pars.size()>2? pars[2]: "0";
       string t2 = pars.size()>3? pars[3]: "inf";
       string dt = pars.size()>4? pars[4]: "0";
-      DBout dbo(pars[1], out);
-      DBgr & db = pool->get(dbo.name, DB_RDONLY);
+      int col = -1;
+      std::string name = parse_ext_name(pars[1], col);
+      DBgr & db = pool->get(name, DB_RDONLY);
+      DBout dbo(out);
+      dbo.col    = col;
       db.timefmt = graphene_tfmt_parse(timefmt);
       db.time0   = t1;
-      dbo.pars.interactive = interactive;
+      dbo.spp    = interactive;
       db.get_range(t1,t2,dt, dbo);
       return;
     }

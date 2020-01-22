@@ -26,18 +26,13 @@
 class DBout {
   public:
 
-  struct Pars {
-    bool interactive;    // interactive mode (protect # in the beginning of line)
-    Pars(): interactive(false) {};
-  };
+  bool spp;    // SPP mode (protect # in the beginning of line)
 
-  std::string name;    // primary database name
   std::ostream & out;  // stream for output
   int col; // column number, for the main database
-  Pars pars;
 
   // constructor -- parse the dataset string, create iostream
-  DBout(const std::string & str, std::ostream & out = std::cout);
+  DBout(std::ostream & out = std::cout);
 
   // Process a single point (select a column) and call print_point().
   void proc_point(const std::string & s);
