@@ -1,6 +1,11 @@
 all:
 	make -C graphene
 
+prefix  ?= /usr
+bindir  ?= $(prefix)/bin
+sysconfdir ?= /etc
+initdir    ?= $(sysconfdir)/init.d
+
 install: all
 	mkdir -p ${bindir} ${initdir}
 	install graphene/graphene ${bindir}
