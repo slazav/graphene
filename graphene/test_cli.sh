@@ -1,4 +1,4 @@
-#!/bin/bash -u
+#!/bin/bash -x
 
 # test command line interface program ./graphene
 
@@ -466,11 +466,12 @@ assert "$(./graphene -d . -R rename test_1 test_2)" "Error: can't rename databas
 assert "$(./graphene -d . delete test_1)" ""
 
 ###########################################################################
-# lastmod system
+# backup system
 
-# in the new database backup timer is set to the largest time
+# in the new database backup timer is set to 0
 assert "$(./graphene -d . create test_1 UINT32)" ""
-assert "$(./graphene -d . backup_start test_1)" "4294967295.999999999"
+assert "$(./graphene -d . backup_print test_1)" "0.000000000"
+assert "$(./graphene -d . backup_start test_1)" "0.000000000"
 
 # on put operations timer shifts to lower times
 assert "$(./graphene -d . put test_1 1234 1)" ""
@@ -508,6 +509,19 @@ assert "$(./graphene -d . backup_start test_1)" "1235.000000000"
 
 assert "$(./graphene -d . del_range test_1 100 1234)" ""
 assert "$(./graphene -d . backup_start test_1)" "1233.000000000"
+
+# reset, end with timestamp
+assert "$(./graphene -d . backup_reset test_1)" ""
+assert "$(./graphene -d . backup_print test_1)" "0.000000000"
+assert "$(./graphene -d . backup_start test_1)" "0.000000000"
+assert "$(./graphene -d . put test_1 1234 1)" ""
+assert "$(./graphene -d . backup_print test_1)" "0.000000000"
+assert "$(./graphene -d . backup_end 1000)" ""
+assert "$(./graphene -d . backup_print test_1)" "1000.000000000"
+assert "$(./graphene -d . backup_start test_1)" "1000.000000000"
+assert "$(./graphene -d . put test_1 1234 1)" ""
+assert "$(./graphene -d . backup_end 2000)" ""
+assert "$(./graphene -d . backup_print test_1)" "1234.000000000"
 
 
 assert "$(./graphene -d . delete test_1)" ""

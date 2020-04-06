@@ -221,42 +221,39 @@ used if you want to close unused databases and sync data.
 #### Backup  system:
 
 Graphene database supportes incremental backups. This can be done using
-`backup_*` commands: database.
+`backup_*` commands.
 
-It is assumed that thre is one backup process for a database. It notifies
+It is assumed that there is one backup process for a database. It notifies
 the database before and after data transfer. Database answers which time
 range was modified since the last transfer.
 
-- `backup_start <name>` -- notify that we want to backup the database `name`,
-get time value of he earliest change since last backup.
+- `backup_start <name>` -- Notify that we want to backup the database `name`,
+get time value of the earliest change since last backup or zero if
+no backup was done or backup timer was reset.
 
-- `backup_end <name>` -- notify that backup finished successfully.
+- `backup_end <name> [<t>]` -- Notify that backup finished successfully
+up to timestamp `<t>` (`inf` by default).
 
-Internally there are two timers with contains earliest time of database
+- `backup_print <name>` -- Print backup timer value.
+
+- `backup_reset <name>` -- Reset backup timer value.
+
+Internally there are two timers which contain earliest time of database
 modification: main and temporary one. Each database modification command
-(`put`, `del`, or `del_range`) decreases both timer values to the
+(`put`, `del`, or `del_range`) decreases temporary timer values to the
 smallest time of modified record: (`timer = min(timer,
-modification_time)`). In new databases (and in databases created before
-graphene-2.8 where backup timers appear) both timers are at at the
-largest possible time.
+modification_time)`).
 
 The temporary timer is reset before backup starts (`backup_start`
 command) and commited to the main timer after backup process is
 successfully finished (`backup_end` command). Main timer value is
-returned by `backup_start` command.
+returned by `backup_start` and `backup_print` commands.
 
 For incremental backup the following procedure can be done:
-- first time:
-  - create secondary database
-  - `backup_start` in the master database, ignore timer value
-  - `get_range` in the master database, put all values to the secondary one.
-  - `backup_end` in the master database
-
-- incremental syncronization
-  - `backup_start` in the master database, save timer value
-  - `del_range <timer>` in the secondary database
-  - `get_range <timer>` in the master database, put all values to the secondary one.
-  - `backup_end` in the master database
+- `backup_start` in the master database, save timer value
+- `del_range <timer>` in the secondary database
+- `get_range <timer>` in the master database, put all values to the secondary one.
+- `backup_end` in the master database
 
 Such backup should be efficient in normal operation, when records with
 contineously-increasing timestamps are added to the master database and

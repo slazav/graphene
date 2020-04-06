@@ -215,7 +215,7 @@ DBgr::write_info(){
 }
 
 /************************************/
-// Get database information
+// Get database information (version, ttype, dtype)
 //
 void
 DBgr::read_info(){
@@ -286,7 +286,7 @@ DBgr::backup_start(){
      throw Err() << name << ".db: " << db_strerror(ret);
 
     timer = (ret == DB_NOTFOUND)?
-      graphene_time_parse("inf", ttype):
+      graphene_time_parse("0", ttype):
       string((char *)v.data, (char *)v.data+v.size);
   }
   catch (Err e){
@@ -298,7 +298,7 @@ DBgr::backup_start(){
 }
 
 void
-DBgr::backup_end(){
+DBgr::backup_end(const std::string & t2){
 
   // do everything in a single transaction
   DB_TXN *txn = txn_begin();
@@ -316,13 +316,20 @@ DBgr::backup_end(){
     // Commit the temporary timer to the main one
     x=KEY_BACKUP_MAIN;
     k = mk_dbt(&x);
+    std::string timer;
     if (ret == DB_NOTFOUND)
-      ret = dbp->del(dbp.get(), txn, &k, 0);
+      timer = graphene_time_parse("inf",ttype); // no changes to the database, backup is finished
+    else if (ret==0) {
+      std::string t2s = graphene_time_parse(t2, ttype);
+      timer = string((char *)v.data, (char *)v.data+v.size);
+      if (graphene_time_cmp(timer,t2s, ttype)>0)
+        timer = t2s;
+    }
     else
-      ret = dbp->put(dbp.get(), txn, &k, &v, 0);
-
-    if (ret != 0 && ret != DB_NOTFOUND)
       throw Err() << name << ".db: " << db_strerror(ret);
+
+    v = mk_dbt(timer);
+    ret = dbp->put(dbp.get(), txn, &k, &v, 0);
   }
   catch (Err e){
     txn_abort(txn);
@@ -331,6 +338,64 @@ DBgr::backup_end(){
   txn_commit(txn);
 }
 
+// reset main backup timer to 0
+void
+DBgr::backup_reset(){
+  // do everything in a single transaction
+  DB_TXN *txn = txn_begin();
+  try {
+    int ret;
+    {// Reset main backup timer:
+      uint8_t x=KEY_BACKUP_MAIN;
+      DBT k = mk_dbt(&x);
+      ret = dbp->del(dbp.get(), txn, &k, 0);
+      if (ret != 0 && ret != DB_NOTFOUND)
+        throw Err() << name << ".db: " << db_strerror(ret);
+    }
+
+    {// Reset temporary backup timer:
+      uint8_t x=KEY_BACKUP_TMP;
+      DBT k = mk_dbt(&x);
+      ret = dbp->del(dbp.get(), txn, &k, 0);
+      if (ret != 0 && ret != DB_NOTFOUND)
+        throw Err() << name << ".db: " << db_strerror(ret);
+    }
+  }
+  catch (Err e){
+    txn_abort(txn);
+    throw e;
+  }
+  txn_commit(txn);
+}
+
+// print main backup timer
+std::string
+DBgr::backup_print(){
+  std::string timer;
+  DB_TXN *txn = txn_begin();
+  try {
+    int ret;
+    // Read main backup timer
+    uint8_t x = KEY_BACKUP_MAIN;
+    DBT k = mk_dbt(&x);
+    DBT v = mk_dbt();
+    ret = dbp->get(dbp.get(), txn, &k, &v, 0);
+    if (ret != 0 && ret != DB_NOTFOUND)
+     throw Err() << name << ".db: " << db_strerror(ret);
+
+    timer = (ret == DB_NOTFOUND)?
+      graphene_time_parse("0", ttype):
+      string((char *)v.data, (char *)v.data+v.size);
+  }
+  catch (Err e){
+    txn_abort(txn);
+    throw e;
+  }
+  txn_commit(txn);
+  return graphene_time_print(timer, ttype);
+}
+
+// function to be called after each database modification
 void
 DBgr::backup_upd(const std::string &t){
 

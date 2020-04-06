@@ -119,15 +119,21 @@ class DBgr{
   // Backup system:
 
   // backup start: notify that we are going to start backup.
-  // - reset temporary backup timer
+  // - reset temporary backup timer to inf
   // - return value of the main backup timer
   // args: backup_start <name>
   std::string backup_start();
 
   // backup end: notify that backup is successfully done
-  // - commit temporary backup timer into main one
-  // args: backup_end <name>
-  void backup_end();
+  // - commit min(temporary backup timer and timestamp) into main one
+  // args: backup_end <name> [<timestamp>]
+  void backup_end(const std::string & t2);
+
+  // reset main backup timer to 0
+  void backup_reset();
+
+  // print main backup timer
+  std::string backup_print();
 
   // Internal function, should be calld after each
   // database modification.

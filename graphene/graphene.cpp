@@ -115,7 +115,9 @@ class Pars{
             "  get_time -- print current time (unix seconds with microsecond precision)\n"
             "  libdb_version -- print libdb version\n"
             "  backup start <name> -- notify that we are going to start backup, return backup timestamp.\n"
-            "  backup_end <name> -- notify that backup is successfully finished\n"
+            "  backup_end <name> [<timestamp>] -- notify that backup is successfully finished\n"
+            "  backup_reset <name> -- reset backup timer\n"
+            "  backup_print <name> -- print backup timer\n"
             "\n"
             "For more information see https://github.com/slazav/graphene/\n"
     ;
@@ -327,14 +329,30 @@ class Pars{
 
     // backup end: notify that backup is successfully done
     // - commit temporary backup timer into main one
-    // args: backup_end <name>
+    // args: backup_end <name> [<timestamp>]
     if (strcasecmp(cmd.c_str(), "backup_end")==0){
-      if (pars.size()!=2) throw Err() << "database name expected";
-      pool->get(pars[1]).backup_end();
+      if (pars.size()<2) throw Err() << "database name expected";
+      if (pars.size()>3) throw Err() << "too many parameters";
+      string t2 = pars.size()>2? pars[2]: "inf";
+      pool->get(pars[1]).backup_end(t2);
       return;
     }
 
+    // reset backup timer
+    // args: backup_start <name>
+    if (strcasecmp(cmd.c_str(), "backup_reset")==0){
+      if (pars.size()!=2) throw Err() << "database name expected";
+      pool->get(pars[1]).backup_reset();
+      return;
+    }
 
+    // print backup timer
+    // args: backup_print <name>
+    if (strcasecmp(cmd.c_str(), "backup_print")==0){
+      if (pars.size()!=2) throw Err() << "database name expected";
+      out << pool->get(pars[1]).backup_print() << "\n";
+      return;
+    }
 
     // write data
     // args: put <name> <time> <value1> ...
