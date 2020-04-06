@@ -32,14 +32,15 @@ class DBout {
   int col; // column number, for the main database
 
   // constructor -- parse the dataset string, create iostream
-  DBout(std::ostream & out = std::cout);
-
-  // Process a single point (select a column) and call print_point().
-  void proc_point(const std::string & s);
+  DBout(std::ostream & out_ = std::cout):
+          col(-1), out(out_), spp(false) {}
 
   // print_point  -- by default it just prints the line to out,
   // but this function can be overriden.
-  virtual void print_point(const std::string & name);
+  virtual void print_point(const std::string & str){
+    if (spp) out << graphene_spp_text(str);
+    else out << str;
+  }
 
 };
 
