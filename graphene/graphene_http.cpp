@@ -95,6 +95,7 @@ static int request_answer(void * cls, struct MHD_Connection * connection, const 
         Log(3) << ">>> " << in_data << "\n";
         Log(4) << "<<< " << out_data << "\n";
 
+        MHD_add_response_header (response, "Content-Type", "application/json");
         response = MHD_create_response_from_buffer(
           out_data.size(), (void *)out_data.data(), MHD_RESPMEM_MUST_COPY);
         if (response==NULL) return MHD_NO;
@@ -141,6 +142,7 @@ static int request_answer(void * cls, struct MHD_Connection * connection, const 
       else throw Err() << "bad command: " << cmd.c_str();
 
       string out_data = dbo.get_str();
+      MHD_add_response_header (response, "Content-Type", "text/plain");
       response = MHD_create_response_from_buffer(
           out_data.size(), (void *)out_data.data(), MHD_RESPMEM_MUST_COPY);
     }
