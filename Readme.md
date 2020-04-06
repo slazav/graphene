@@ -305,10 +305,10 @@ Options:
 
 In addition to simple JSON interface `graphene_http` also implements
 a simple GET read-only interface to access data:
-- database name is specified as URL
-- `cmd` is graphene command, one of `get` (default), `get_prev`,
-  `get_next`, or `get_range`
-- `t1` parameter is timestamp for `get_*` commands
+- URL is graphene command, one of `get`, `get_prev`,
+  `get_next`, `get_range`, or `list`
+- `name` parameter is a database name
+- `t1` parameter is timestamp for all `get_*` commands
 - `t2` and `dt` parameters are second timestamp and time interval
   for `get_range` command
 - `tfmt` parameter is time format `def`, or `rel`.

@@ -57,20 +57,24 @@ assert_cmd "echo $a" "Error: Bad range setting" 0
 
 
 # GET with non-empty url -- access to a database (get by default)
-a=$(wget localhost:$port/tmp_db -O - -o /dev/null 2>&1)
+a=$(wget localhost:$port/get?name=tmp_db -O - -o /dev/null 2>&1)
 assert_cmd "echo $a" "12.000000000 125" 0
 
 # get_next
-a=$(wget "localhost:$port/tmp_db?cmd=get_next" -O - -o /dev/null 2>&1)
+a=$(wget "localhost:$port/get_next?name=tmp_db" -O - -o /dev/null 2>&1)
 assert_cmd "echo $a" "10.000000000 123" 0
 
 # get_range
-a=$(wget "localhost:$port/tmp_db?cmd=get_range&t1=10&t2=12&tfmt=rel" -O - -o /dev/null 2>&1)
+a=$(wget "localhost:$port/get_range?name=tmp_db&t1=10&t2=12&tfmt=rel" -O - -o /dev/null 2>&1)
 assert_cmd "echo $a" "0.000000000 123 1.000000000 124 2.000000000 125" 0
 
 # get_range
-a=$(wget "localhost:$port/tmp_db?cmd=get_range&t1=10&t2=12" -O - -o /dev/null 2>&1)
+a=$(wget "localhost:$port/get_range?name=tmp_db&t1=10&t2=12" -O - -o /dev/null 2>&1)
 assert_cmd "echo $a" "10.000000000 123 11.000000000 124 12.000000000 125" 0
+
+# list
+a=$(wget "localhost:$port/list" -O - -o /dev/null 2>&1)
+assert_cmd "echo $a" "tmp_db" 0
 
 
 

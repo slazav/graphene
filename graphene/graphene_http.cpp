@@ -117,30 +117,43 @@ static int request_answer(void * cls, struct MHD_Connection * connection, const 
     // GET with database name as an URL
     else if (strcmp(method, "GET")==0){
       int col = -1;
-      std::string name = parse_ext_name(string(url).substr(1), col);
+ 
+      const char * n   = MHD_lookup_connection_value(connection, MHD_GET_ARGUMENT_KIND, "name");
       const char * t1  = MHD_lookup_connection_value(connection, MHD_GET_ARGUMENT_KIND, "t1");
       const char * t2  = MHD_lookup_connection_value(connection, MHD_GET_ARGUMENT_KIND, "t2");
       const char * dt  = MHD_lookup_connection_value(connection, MHD_GET_ARGUMENT_KIND, "dt");
-      const char *cmd  = MHD_lookup_connection_value(connection, MHD_GET_ARGUMENT_KIND, "cmd");
       const char *tfmt = MHD_lookup_connection_value(connection, MHD_GET_ARGUMENT_KIND, "tfmt");
-      if (cmd == NULL) cmd="get"; // default
+
+      std::string cmd  = string(url).substr(1);
+      std::string name = parse_ext_name(n? n:"", col);
 
       DBpool pool(spars->dbpath, true, spars->env_type);
-      DBgr & db = pool.get(name, DB_RDONLY);
       DBoutS dbo;
       dbo.col    = col;
-      db.timefmt = graphene_tfmt_parse(tfmt? tfmt : "def");
-      db.time0   = t1 ? t1 : "0";
 
-      if (strcasecmp(cmd,"get")==0){
+      if (strcasecmp(cmd.c_str(),"get")==0){
+         DBgr & db = pool.get(name, DB_RDONLY);
+         db.timefmt = graphene_tfmt_parse(tfmt? tfmt : "def");
+         db.time0   = t1 ? t1 : "0";
          db.get(t1? t1:"inf", dbo); }
-      else if (strcasecmp(cmd,"get_next")==0) {
+      else if (strcasecmp(cmd.c_str(),"get_next")==0) {
+         DBgr & db = pool.get(name, DB_RDONLY);
+         db.timefmt = graphene_tfmt_parse(tfmt? tfmt : "def");
+         db.time0   = t1 ? t1 : "0";
          db.get_next(t1? t1:"0", dbo); }
-      else if (strcasecmp(cmd,"get_prev")==0) {
+      else if (strcasecmp(cmd.c_str(),"get_prev")==0) {
+         DBgr & db = pool.get(name, DB_RDONLY);
+         db.timefmt = graphene_tfmt_parse(tfmt? tfmt : "def");
+         db.time0   = t1 ? t1 : "0";
          db.get_prev(t1? t1:"inf", dbo); }
-      else if (strcasecmp(cmd,"get_range")==0){
+      else if (strcasecmp(cmd.c_str(),"get_range")==0){
+         DBgr & db = pool.get(name, DB_RDONLY);
+         db.timefmt = graphene_tfmt_parse(tfmt? tfmt : "def");
+         db.time0   = t1 ? t1 : "0";
          db.get_range(t1? t1:"0", t2? t2:"inf", dt? dt:"0", dbo); }
-      else throw Err() << "bad command: " << cmd;
+      else if (strcasecmp(cmd.c_str(), "list")==0){
+         for (auto const & n: pool.dblist()) dbo.print_point(n); }
+      else throw Err() << "bad command: " << cmd.c_str();
 
       string out_data = dbo.get_str();
       response = MHD_create_response_from_buffer(
