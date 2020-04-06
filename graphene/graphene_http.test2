@@ -25,6 +25,27 @@ assert_cmd "echo $a" "HTTP/1.1 200 OK" 0
 a=$(wget localhost:$port --method OPTIONS -O - -nv -S 2>&1 | grep HTTP)
 assert_cmd "echo $a" "HTTP/1.1 200 OK" 0
 
+# GET with non-empty url -- unknown HTTP request
+a=$(wget localhost:$port/a --method GET -O - -nv -S 2>&1 | grep Error:)
+assert_cmd "echo $a" "Error: unknown HTTP request" 0
+
+# POST with empty url -- unknown query
+a=$(wget localhost:$port --post-data "{}" -O - -nv -S 2>&1 | grep Error:)
+assert_cmd "echo $a" "Error: Unknown query" 0
+
+# search - empty list
+a=$(wget localhost:$port/search --post-data "{}" -O - -nv -S 2>&1 | grep HTTP)
+assert_cmd "echo $a" "HTTP/1.1 200 OK" 0
+
+# query
+a=$(wget localhost:$port/query --post-data "{}" -O - -nv -S 2>&1 | grep Error:)
+assert_cmd "echo $a" "Error: Bad range setting" 0
+
+# annotations
+a=$(wget localhost:$port/annotations --post-data "{}" -O - -nv -S 2>&1 | grep Error:)
+assert_cmd "echo $a" "Error: Bad range setting" 0
+
+
 # stop the server
 assert_cmd "./graphene_http --port $port --stop --pidfile pid.tmp" "" 0
 

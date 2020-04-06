@@ -70,64 +70,60 @@ static int request_answer(void * cls, struct MHD_Connection * connection, const 
   struct MHD_Response * response;
   static string in_data; // data recieved in POST requests
   int ret;
+  int code = MHD_HTTP_OK;
   spars_t *spars = (spars_t *) cls; /* server parameters */
 
   Log(2) << "> " << method << " " << url << "\n";
 
-  if (strcmp(method, "GET")==0 && strcmp(url, "/")==0){
-    response = MHD_create_response_from_buffer(0,0,MHD_RESPMEM_MUST_COPY);
-    MHD_add_response_header (response, "Access-Control-Allow-Origin",  "*");
-    ret = MHD_queue_response(connection, MHD_HTTP_OK, response);
-    MHD_destroy_response(response);
-    return ret;
-  }
 
-  if (strcmp(method, "OPTIONS")==0){
-    response = MHD_create_response_from_buffer(0,0,MHD_RESPMEM_MUST_COPY);
-    MHD_add_response_header (response, "Access-Control-Allow-Headers", "accept, content-type");
-    MHD_add_response_header (response, "Access-Control-Allow-Methods", "POST");
-    MHD_add_response_header (response, "Access-Control-Allow-Origin",  "*");
-    ret = MHD_queue_response(connection, MHD_HTTP_OK, response);
-    MHD_destroy_response(response);
-    return ret;
-  }
-
-  /* response only POST method */
-  if (0 != strcmp(method, "POST")) return MHD_NO;
-  if (*con_cls == NULL){ // first connection - reset input data
-    in_data = string();
-    *con_cls = &in_data;
-    return MHD_YES;
-  }
-  if (*upload_data_size){ // data came -- append to input data
-    in_data += string(upload_data, upload_data + *upload_data_size);
-    *upload_data_size = 0;
-    return MHD_YES;
-  }
-  else{ // Process the query by graphene_json() and answer
-    string out_data;
-    int code=MHD_HTTP_OK;
-    try{
-      out_data = graphene_json(spars->dbpath, spars->env_type, url, in_data);
+  try {
+    if (strcmp(method, "GET")==0 && strcmp(url, "/")==0){
+      response = MHD_create_response_from_buffer(0,0,MHD_RESPMEM_MUST_COPY);
+      MHD_add_response_header (response, "Access-Control-Allow-Origin",  "*");
     }
-    catch(Err e){
-      out_data = e.str();
-      Log(1) << "Error: " << e.str() << "\n";
-      MHD_add_response_header(response, "Error", e.str().c_str());
-      code=400;
+    else if (strcmp(method, "OPTIONS")==0){
+      response = MHD_create_response_from_buffer(0,0,MHD_RESPMEM_MUST_COPY);
+      MHD_add_response_header (response, "Access-Control-Allow-Headers", "accept, content-type");
+      MHD_add_response_header (response, "Access-Control-Allow-Methods", "POST");
+      MHD_add_response_header (response, "Access-Control-Allow-Origin",  "*");
     }
+    else if (strcmp(method, "POST")==0){
+      if (*con_cls == NULL){ // first connection - reset input data
+        in_data = string();
+        *con_cls = &in_data;
+        return MHD_YES;
+      }
+      if (*upload_data_size){ // data came -- append to input data
+        in_data += string(upload_data, upload_data + *upload_data_size);
+        *upload_data_size = 0;
+        return MHD_YES;
+      }
+      else{ // Process the query by graphene_json() and answer
+        string out_data;
+        out_data = graphene_json(spars->dbpath, spars->env_type, url, in_data);
 
-    Log(3) << ">>> " << in_data << "\n";
-    Log(4) << "<<< " << out_data << "\n";
+        Log(3) << ">>> " << in_data << "\n";
+        Log(4) << "<<< " << out_data << "\n";
 
+        response = MHD_create_response_from_buffer(
+          out_data.size(), (void *)out_data.data(), MHD_RESPMEM_MUST_COPY);
+        if (response==NULL) return MHD_NO;
+        MHD_add_response_header (response, "Access-Control-Allow-Origin",  "*");
+      }
+    }
+    else {
+      throw Err() << "unknown HTTP request";
+    }
+  }
+  catch (Err e) {
     response = MHD_create_response_from_buffer(
-      out_data.size(), (void *)out_data.data(), MHD_RESPMEM_MUST_COPY);
-    if (response==NULL) return MHD_NO;
-    ret = MHD_add_response_header (response, "Access-Control-Allow-Origin",  "*");
-    ret = MHD_queue_response(connection, code, response);
-    MHD_destroy_response(response);
-    return ret;
+        e.str().length(), (void*)e.str().data(), MHD_RESPMEM_MUST_COPY);
+    MHD_add_response_header(response, "Error", e.str().c_str());
+    code = 400;
   }
+  ret = MHD_queue_response(connection, code, response);
+  MHD_destroy_response(response);
+  return ret;
 }
 
 spars_t spars; /* server parameters*/
