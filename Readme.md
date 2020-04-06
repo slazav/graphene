@@ -295,9 +295,27 @@ Options:
                 3 - write input data
                 4 - write output data
  -l <file>  -- log file, use '-' for stdout
-               (default /var/log/graphene.log in daemon mode, '-' in)
+               (default /var/log/graphene.log in daemon mode, '-' in
+                normal mode)
+ -P <file>  -- Pid file (default: /var/run/graphene_http.pid)
  -f         -- do fork and run as a daemon
+ -S         -- stop running server
  -h         -- write this help message and exit
+```
+
+In addition to simple JSON interface `graphene_http` also implements
+a simple GET read-only interface to access data:
+- database name is specified as URL
+- `cmd` is graphene command, one of `get` (default), `get_prev`,
+  `get_next`, or `get_range`
+- `t1` parameter is timestamp for `get_*` commands
+- `t2` and `dt` parameters are second timestamp and time interval
+  for `get_range` command
+- `tfmt` parameter is time format `def`, or `rel`.
+
+Example:
+```
+wget localhost:8182/tmp_db'?cmd=get_range&t1=10&t2=12&tfmt=rel' -O - -o /dev/null
 ```
 
 ###  Matlab/octave interface
