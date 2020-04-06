@@ -16,7 +16,7 @@
 #include <iostream>
 #include <fstream>
 #include <string>
-
+#include <sys/wait.h> // wait
 #include <cstdlib>
 #include <stdint.h>
 #include <cstring>
@@ -27,72 +27,38 @@
 #include <microhttpd.h>
 #include "json.h"
 #include "err/err.h"
+#include "log/log.h"
+#include "getopt/getopt.h"
 
 using namespace std;
+
+/*************************************************/
+// print help message
+void usage(const GetOptSet & options, bool pod=false){
+  HelpPrinter pr(pod, options, "graphene_http");
+  pr.name("read-only HTTP interface to graphene databese");
+  pr.usage("<options>");
+
+  pr.head(1, "Options:");
+  pr.opts({"GR"});
+  throw Err();
+}
+
+/*************************************************/
+// signal handler
+static void StopFunc(int signum){ throw 0; }
+
 
 /**********************************************************/
 /* server parameters */
 struct spars_t{
-  int     port;    /* tcp port for connections */
   string  dbpath;  /* path to the databases (default /var/lib/graphene/) */
-  string  logfile; /* logfile */
-  string  pidfile; /* pidfile */
   string  env_type; /* environment type*/
-  int16_t verb;    /* print commands to stdout */
-  int16_t dofork;  /* print commands to stdout */
-  ostream *log;    /* log stream */
-  ofstream flog;
 
   /* set default values */
   spars_t(){
-    port   = 8081;
     dbpath = "/var/lib/graphene/";
-    logfile = ""; // to be set later
-    pidfile = "/var/run/graphene_http.pid";
     env_type = "lock";
-    verb   = 1;
-    dofork = 0;
-    log    = &cout;
-  }
-
-  /* parse cmdline options */
-  int parse_cmdline(int *argc, char ***argv){
-    while(1){
-      switch (getopt(*argc, *argv, "p:d:P:E:l:hv:f")){
-        case -1: return 0; /* end*/
-        case '?':
-        case ':': continue; /* error msg is printed by getopt*/
-        case 'p': port =  atoi(optarg); break;
-        case 'd': dbpath  = optarg; break;
-        case 'P': pidfile = optarg; break;
-        case 'E': env_type = optarg; break;
-        case 'v': verb    = atoi(optarg); break;
-        case 'l': logfile = optarg; break;
-        case 'f': dofork  = 1; break;
-        case 'h':
-          cout << "graphene_http -- http interface for graphene\n"
-                  "Usage: graphene_http [options]\n"
-                  "Options:\n"
-                  " -p <port>  -- tcp port for connections (default: " << port <<")\n"
-                  " -d <path>  -- database path (default: " << dbpath << ")\n"
-                  " -P <path>  -- pid-file (default: " << pidfile << ")\n"
-                  " -E <word>  -- environment type:\n"
-                  "               none, lock, txn (default: " << env_type << ")\n"
-                  " -v <level> -- be verbose\n"
-                  "                0 - write nothing\n" 
-                  "                1 - write some information on start\n" 
-                  "                2 - write info about connections\n" 
-                  "                3 - write input data\n" 
-                  "                4 - write output data\n" 
-                  " -l <file>  -- log file, use '-' for stdout\n"
-                  "               (default /var/log/graphene.log in daemon mode, '-' in)\n"
-                  " -f         -- do fork and run as a daemon\n"
-                  " -h         -- write this help message and exit\n"
-        ;
-        return 1;
-      }
-    }
-    return 0;
   }
 };
 
@@ -106,8 +72,7 @@ static int request_answer(void * cls, struct MHD_Connection * connection, const 
   int ret;
   spars_t *spars = (spars_t *) cls; /* server parameters */
 
-  if (spars->verb>1) *(spars->log) << "> " << method << " " << url << "\n";
-  spars->log->flush();
+  Log(2) << "> " << method << " " << url << "\n";
 
   if (strcmp(method, "GET")==0 && strcmp(url, "/")==0){
     response = MHD_create_response_from_buffer(0,0,MHD_RESPMEM_MUST_COPY);
@@ -147,14 +112,13 @@ static int request_answer(void * cls, struct MHD_Connection * connection, const 
     }
     catch(Err e){
       out_data = e.str();
-      if (spars->verb>0) *(spars->log) << "Error: " << e.str() << "\n";
+      Log(1) << "Error: " << e.str() << "\n";
       MHD_add_response_header(response, "Error", e.str().c_str());
       code=400;
     }
 
-    if (spars->verb>2) *(spars->log) << ">>> " << in_data << "\n";
-    if (spars->verb>3) *(spars->log) << "<<< " << out_data << "\n";
-    spars->log->flush();
+    Log(3) << ">>> " << in_data << "\n";
+    Log(4) << "<<< " << out_data << "\n";
 
     response = MHD_create_response_from_buffer(
       out_data.size(), (void *)out_data.data(), MHD_RESPMEM_MUST_COPY);
@@ -169,127 +133,191 @@ static int request_answer(void * cls, struct MHD_Connection * connection, const 
 spars_t spars; /* server parameters*/
 struct MHD_Daemon *d = NULL;
 
-static void srv_stop(int signum){
-  MHD_stop_daemon(d);
-  if (spars.verb >0)
-    *(spars.log) << "Stopping the server\n";
-  remove(spars.pidfile.c_str()); // try to remove pid-file
-  throw 0;
-}
 
 /**********************************************************/
 int main(int argc, char ** argv) {
 
-  /* parse server parameters, exit if server is not needed */
-  if (spars.parse_cmdline(&argc, &argv)) return 0;
+  std::string logfile; // log file name
+  std::string pidfile; // pidfile
 
-  /*******************/
-  /* open log file */
-  if (spars.logfile==""){
-    if (spars.dofork) spars.logfile="/var/log/graphene.log";
-    else spars.logfile="-";
-  }
-  if (spars.logfile!="-"){
-    spars.flog.open(spars.logfile.c_str(), ios::app);
-    if (spars.flog.fail()){
-      cerr << "Can't open log file: " << spars.logfile << "\n";
-      return 1;
+  int ret; // return code
+  bool mypid = false; // was the pidfile created by this process?
+
+  try {
+
+    // fill option structure
+    GetOptSet options;
+    options.add("dbpath",   1,'d', "GR", "database path (default: " + spars.dbpath + ")");
+    options.add("env_type", 1,'E', "GR", "environment type: none, lock, txn "
+       "(default: lock)");
+    options.add("port",    1,'p', "GR", "TCP port for connections (default: 8081).");
+    options.add("dofork",  0,'f', "GR", "Do fork and run as a daemon.");
+    options.add("stop",    0,'S', "GR", "Stop running daemon (found by pid-file).");
+    options.add("verbose", 1,'v', "GR", "Verbosity level: 0 - write nothing; "
+      "1 - write some information on start; 2 - write information about connections; "
+      "3 - write input data; 4 - write output data (default: 0).");
+    options.add("logfile", 1,'l', "GR", "Log file, '-' for stdout. "
+      "(default: /var/log/graphene_http.log in daemon mode, '-' in console mode.");
+    options.add("pidfile", 1,'P', "GR", "Pid file "
+      "(default: /var/run/graphene_http.pid)");
+    options.add("help",    0,'h', "GR", "Print help message.");
+    options.add("pod",     0,0,   "GR", "Print help message in POD format.");
+
+    // parse options
+    std::vector<std::string> nonopt;
+    Opt opts = parse_options_all(&argc, &argv, options, {}, nonopt);
+    if (nonopt.size()>0) throw Err()
+      << "unexpected argument: " << nonopt[0];
+
+    // print help message
+    if (opts.exists("help")) usage(options);
+    if (opts.exists("pod"))  usage(options,true);
+
+    // extract parameters
+    spars.dbpath   = opts.get("dbpath",   spars.dbpath);
+    spars.env_type = opts.get("env_type", spars.env_type);
+
+    int port    = opts.get("port",  8081);
+    int verb    = opts.get("verbose", 0);
+    logfile     = opts.get("logfile",  "");
+    pidfile     = opts.get("pidfile", "/var/run/graphene_http.pid");
+    bool stop   = opts.exists("stop");
+    bool dofork = opts.exists("dofork");
+
+    // default log file
+    if (logfile==""){
+      if (dofork) logfile="/var/log/dev_server.log";
+      else logfile="-";
     }
-    spars.log = &spars.flog;
-  }
+    Log::set_log_file(logfile);
+    Log::set_log_level(verb);
 
-  /*******************/
-  /* check pid file */
-  {
-    ifstream pf(spars.pidfile.c_str());
-    if (!pf.fail()){
+    // stop running daemon
+    if (stop) {
+      std::ifstream pf(pidfile);
+      if (pf.fail())
+        throw Err() << "can't open pid-file: " << pidfile;
       int pid;
       pf >> pid;
-      std::cerr << "Already runing (pid-file exists): " << pid << "\n";
-      return 1;
-    }
-  }
 
-  /*******************/
-  // daemon things
-  if (spars.dofork){
-    pid_t pid, sid;
-    /* Fork off the parent process */
-    pid = fork();
-    if (pid < 0) {
-      cerr << "Can't do fork\n";
-      return 1;
-    }
-    if (pid > 0) {
-      // write pid file
-      ofstream pf(spars.pidfile.c_str());
-      if (pf.fail()){
-        cerr << "Can't open pid-file: " << spars.pidfile << "\n";
-        return 1;
+      if (kill(pid, SIGTERM) == 0){
+        int st=0;
+        waitpid(pid, &st, 0);
       }
-      pf << pid;
+      else {
+        if (errno == ESRCH){ // no such process, we should remove the pid-file
+          remove(pidfile.c_str());
+        }
+        else {
+          throw Err() << "can't stop dev_server process " << pid << ": "
+                      << strerror(errno);
+        }
+      }
       return 0;
     }
-    /* Change the file mode mask */
-    umask(0);
 
-    /* Create a new SID for the child process */
-    sid = setsid();
-    if (sid < 0) {
-      cerr << "Can't get SID\n";
-      return 1;
+    // check pid file
+    { 
+      std::ifstream pf(pidfile);
+      if (!pf.fail()){
+        int pid;
+        pf >> pid;
+        throw Err() << "dev_server already runing (pid-file exists): " << pid;
+      }
     }
 
-    /* Change the current working directory */
-    if ((chdir("/")) < 0) {
-      std::cerr << "Can't do chdir\n";
-      return 1;
+    // set up daemon mode
+    if (dofork){
+
+      // Fork off the parent process
+      pid_t pid, sid;
+      pid = fork();
+      if (pid < 0)
+        throw Err() << "can't do fork";
+      if (pid > 0){
+        // write pidfile and exit
+        std::ofstream pf(pidfile);
+        if (pf.fail())
+          throw Err() << "can't open pid-file: " << pidfile;
+        pf << pid;
+        Log(1) << "Starting dev_server in daemon mode, pid=" << pid;
+        return 0;
+      }
+      mypid = true;
+
+      // Change the file mode mask
+      umask(0);
+
+      // Create a new SID for the child process
+      sid = setsid();
+      if (sid < 0)
+        throw Err() << "can't get SID";
+
+      // // Change the current working directory
+      // if ((chdir("/")) < 0)
+      //   throw Err() << "can't do chdir";
+
+      // Close out the standard file descriptors
+      close(STDIN_FILENO);
+      close(STDOUT_FILENO);
+      close(STDERR_FILENO);
     }
 
-    /* Close out the standard file descriptors */
-    close(STDIN_FILENO);
-    close(STDOUT_FILENO);
-    close(STDERR_FILENO);
+    // write pidfile
+    else {
+      pid_t pid = getpid();
+      std::ofstream pf(pidfile);
+      if (pf.fail())
+        throw Err() << "can't open pid-file: " << pidfile;
+      pf << pid;
+      Log(1) << "Starting dev_server in console mode";
+      mypid = true;
+    }
+
+
+    // start server
+    d = MHD_start_daemon(MHD_USE_SELECT_INTERNALLY,
+                         port, NULL, NULL,
+                         &request_answer, &spars,
+                         MHD_OPTION_END);
+    if (d == NULL)
+      throw Err() << "can't start the http server";
+
+    // set up signals
+    {
+      struct sigaction sa;
+      sa.sa_handler = StopFunc;
+      sigemptyset(&sa.sa_mask);
+      sa.sa_flags = SA_RESTART; // Restart functions if interrupted by handler
+      if (sigaction(SIGTERM, &sa, NULL) == -1 ||
+          sigaction(SIGQUIT, &sa, NULL) == -1 ||
+          sigaction(SIGINT,  &sa, NULL) == -1 ||
+          sigaction(SIGHUP,  &sa, NULL) == -1)
+        throw Err() << "can't set signal handler";
+    }
+
+    Log(1) << "Starting the server:\n"
+           << "  Port: " <<  port << "\n"
+           << "  Pid file: " <<  pidfile << "\n"
+           << "  Log file: " <<  logfile << "\n"
+           << "  DB environment type: " <<  spars.env_type << "\n"
+           << "  Path to databases: " << spars.dbpath << "\n";
+
+    // main loop (to be interrupted by StopFunc)
+    try{ while(1) sleep(10); }
+    catch(int ret){}
+
+    Log(1) << "Stopping HTTP server";
+    ret=0;
   }
 
-  /*******************/
-  d = MHD_start_daemon(MHD_USE_SELECT_INTERNALLY,
-                       spars.port, NULL, NULL,
-                       &request_answer, &spars,
-                       MHD_OPTION_END);
-  if (d == NULL){
-    *(spars.log) << "Error: can't start the http server\n";
-    return 1;
+  catch (Err e){
+    if (e.str()!="") Log(0) << "Error: " << e.str();
+    ret = e.code();
+    if (ret==-1) ret=1; // default code?!
   }
 
-  /*******************/
-  // set up signals
-  struct sigaction sa;
-  sa.sa_handler = srv_stop;
-  sigemptyset(&sa.sa_mask);
-  sa.sa_flags = SA_RESTART; /* Restart functions if
-                               interrupted by handler */
-  if (sigaction(SIGTERM, &sa, NULL) == -1 ||
-      sigaction(SIGQUIT, &sa, NULL) == -1 ||
-      sigaction(SIGINT,  &sa, NULL) == -1 ||
-      sigaction(SIGHUP,  &sa, NULL) == -1){
-    *(spars.log) << "Error: can't set signal handler\n";
-    srv_stop(0); return 1;}
-
-  if (spars.verb >0){
-    *(spars.log) << "Starting the server:\n"
-                 << "  Port: " <<  spars.port << "\n"
-                 << "  DB environment type: " <<  spars.env_type << "\n"
-                 << "  Path to databases: " << spars.dbpath << "\n";
-     spars.log->flush();
-  }
-
-  // main loop
-  try{
-    while(1) sleep(10);
-  }
-  catch(int ret){
-    return ret;
-  }
-  return 0;
+  if (d) MHD_stop_daemon(d);
+  if (mypid && pidfile!= "") remove(pidfile.c_str()); // try to remove pid-file
+  return ret;
 }

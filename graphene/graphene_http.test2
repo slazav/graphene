@@ -1,0 +1,31 @@
+#!/bin/sh -efu
+
+. ../modules/test_lib.sh
+
+# use non-standard port to avoid collisions with running server
+port=8182
+
+# try to stop the server
+./graphene_http --stop --port $port --pidfile pid.tmp &>/dev/null ||:
+
+assert_cmd "wget localhost:$port -nv -S"\
+  "failed: Connection refused." 4
+
+rm -f log.txt
+
+# run the server
+assert_cmd "./graphene_http --port $port --pidfile pid.tmp --dbpath . --logfile log.txt --dofork" "" 0
+
+
+# get with empty url -- simple-json
+a=$(wget localhost:$port -O - -nv -S 2>&1 | grep HTTP)
+assert_cmd "echo $a" "HTTP/1.1 200 OK" 0
+
+# options with empty url -- simple-json
+a=$(wget localhost:$port --method OPTIONS -O - -nv -S 2>&1 | grep HTTP)
+assert_cmd "echo $a" "HTTP/1.1 200 OK" 0
+
+# stop the server
+assert_cmd "./graphene_http --port $port --stop --pidfile pid.tmp" "" 0
+
+rm -f log.txt

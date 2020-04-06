@@ -3,7 +3,8 @@ MOD_SOURCES := dbgr.cpp dbout.cpp dbpool.cpp json.cpp data.cpp
 
 SIMPLE_TESTS := dbout dbpool json0 data
 SCRIPT_TESTS := json1
-OTHER_TESTS := test_cli.sh test_v1.sh
+OTHER_TESTS := test_cli.sh test_v1.sh\
+   graphene_http.test1 graphene_http.test2
 
 PROGRAMS := graphene graphene_http
 

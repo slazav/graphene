@@ -1,0 +1,60 @@
+#!/bin/sh -efu
+
+. ../modules/test_lib.sh
+
+# use non-standard port to avoid collisions with running server
+port=8182
+
+assert_cmd "./graphene_http -x"\
+  "Error: unknown option: -x" 1
+
+assert_cmd "./graphene_http x"\
+  "Error: unexpected argument: x" 1
+
+assert_cmd "./graphene_http -P /a -p $port"\
+  "Error: can't open pid-file: /a" 1
+
+assert_cmd "./graphene_http -p a"\
+  "Error: can't parse value: \"a\"" 1
+
+#####################
+# try to stop the server
+./graphene_http --stop -p $port --pidfile pid.tmp &>/dev/null ||:
+
+#####################
+# run server in normal mode (background)
+./graphene_http --pidfile pid.tmp -p $port --dbpath . &
+
+pid=$!
+# wait until server write its pid-file and check it
+sleep 0.2
+if [ "$pid" != "$(cat pid.tmp)" ]; then
+  kill $pid
+  printf "wrong pid: $pid vs. $(cat pid.tmp)"
+  exit 1
+fi
+kill $pid
+sleep 0.1
+
+if [ -f pid.tmp ]; then
+  printf "pid file have not been removed"
+  exit 1
+fi
+
+#####################
+# same in daemon mode
+assert_cmd "./graphene_http -p $port --pidfile pid.tmp --dbpath . --logfile log.txt --dofork"\
+    "" 0
+# pid file should exist when graphene_http exits. No waiting is needed
+assert_cmd "./graphene_http --stop -p $port --pidfile pid.tmp" "" 0
+
+sleep 0.1
+if [ -f pid.tmp ]; then
+  printf "pid file have not been removed"
+  exit 1
+fi
+
+assert_cmd "./graphene_http --stop -p $port --pidfile pid.tmp"\
+   "Error: can't open pid-file: pid.tmp" 1
+
+rm -f log.txt
