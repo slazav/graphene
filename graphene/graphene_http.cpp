@@ -137,7 +137,7 @@ static int request_answer(void * cls, struct MHD_Connection * connection, const 
          db.time0   = t1 ? t1 : "0";
          db.get_range(t1? t1:"0", t2? t2:"inf", dt? dt:"0", dbo); }
       else if (strcasecmp(cmd.c_str(), "list")==0){
-         for (auto const & n: pool->dblist()) dbo.print_point(n); }
+         for (auto const & n: pool->dblist()) dbo.print_point(n + "\n"); }
       else throw Err() << "bad command: " << cmd.c_str();
 
       string out_data = dbo.get_str();
