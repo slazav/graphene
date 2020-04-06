@@ -8,12 +8,13 @@
 #include "jsonxx/jsonxx.h"
 #include "dbgr.h"
 
+#include "dbpool.h"
+
 /* Process a JSON request to the database. */
 /* Returns allocated buffer with the data, set dsize to its size */
 /* Returns NULL on errors, dsize in unspecified then.*/
 
-std::string graphene_json(const std::string & dbpath,   /* path to databases */
-                          const std::string & env_type, /* BerkleyDB environment type */
+std::string graphene_json(DBpool * pool,
                           const std::string & url,      /* /query, /annotations, etc. */
                           const std::string & data      /* input data */
                          );

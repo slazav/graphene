@@ -50,20 +50,6 @@ void usage(const GetOptSet & options, bool pod=false){
 // signal handler
 static void StopFunc(int signum){ throw 0; }
 
-
-/**********************************************************/
-/* server parameters */
-struct spars_t{
-  string  dbpath;  /* path to the databases (default /var/lib/graphene/) */
-  string  env_type; /* environment type*/
-
-  /* set default values */
-  spars_t(){
-    dbpath = "/var/lib/graphene/";
-    env_type = "lock";
-  }
-};
-
 /**********************************************************/
 /* libmicrohttpd callback for processing a requent. */
 static int request_answer(void * cls, struct MHD_Connection * connection, const char * url,
@@ -73,7 +59,7 @@ static int request_answer(void * cls, struct MHD_Connection * connection, const 
   static string in_data; // data recieved in POST requests
   int ret;
   int code = MHD_HTTP_OK;
-  spars_t *spars = (spars_t *) cls; /* server parameters */
+  DBpool *pool = (DBpool *) cls; /* server parameters */
 
   Log(2) << "> " << method << " " << url << "\n";
 
@@ -104,7 +90,7 @@ static int request_answer(void * cls, struct MHD_Connection * connection, const 
       }
       else{ // Process the query by graphene_json() and answer
         string out_data;
-        out_data = graphene_json(spars->dbpath, spars->env_type, url, in_data);
+        out_data = graphene_json(pool, url, in_data);
 
         Log(3) << ">>> " << in_data << "\n";
         Log(4) << "<<< " << out_data << "\n";
@@ -127,32 +113,31 @@ static int request_answer(void * cls, struct MHD_Connection * connection, const 
       std::string cmd  = string(url).substr(1);
       std::string name = parse_ext_name(n? n:"", col);
 
-      DBpool pool(spars->dbpath, true, spars->env_type);
       DBoutS dbo;
       dbo.col    = col;
 
       if (strcasecmp(cmd.c_str(),"get")==0){
-         DBgr & db = pool.get(name, DB_RDONLY);
+         DBgr & db = pool->get(name, DB_RDONLY);
          db.timefmt = graphene_tfmt_parse(tfmt? tfmt : "def");
          db.time0   = t1 ? t1 : "0";
          db.get(t1? t1:"inf", dbo); }
       else if (strcasecmp(cmd.c_str(),"get_next")==0) {
-         DBgr & db = pool.get(name, DB_RDONLY);
+         DBgr & db = pool->get(name, DB_RDONLY);
          db.timefmt = graphene_tfmt_parse(tfmt? tfmt : "def");
          db.time0   = t1 ? t1 : "0";
          db.get_next(t1? t1:"0", dbo); }
       else if (strcasecmp(cmd.c_str(),"get_prev")==0) {
-         DBgr & db = pool.get(name, DB_RDONLY);
+         DBgr & db = pool->get(name, DB_RDONLY);
          db.timefmt = graphene_tfmt_parse(tfmt? tfmt : "def");
          db.time0   = t1 ? t1 : "0";
          db.get_prev(t1? t1:"inf", dbo); }
       else if (strcasecmp(cmd.c_str(),"get_range")==0){
-         DBgr & db = pool.get(name, DB_RDONLY);
+         DBgr & db = pool->get(name, DB_RDONLY);
          db.timefmt = graphene_tfmt_parse(tfmt? tfmt : "def");
          db.time0   = t1 ? t1 : "0";
          db.get_range(t1? t1:"0", t2? t2:"inf", dt? dt:"0", dbo); }
       else if (strcasecmp(cmd.c_str(), "list")==0){
-         for (auto const & n: pool.dblist()) dbo.print_point(n); }
+         for (auto const & n: pool->dblist()) dbo.print_point(n); }
       else throw Err() << "bad command: " << cmd.c_str();
 
       string out_data = dbo.get_str();
@@ -178,9 +163,7 @@ static int request_answer(void * cls, struct MHD_Connection * connection, const 
   return ret;
 }
 
-spars_t spars; /* server parameters*/
 struct MHD_Daemon *d = NULL;
-
 
 /**********************************************************/
 int main(int argc, char ** argv) {
@@ -195,7 +178,7 @@ int main(int argc, char ** argv) {
 
     // fill option structure
     GetOptSet options;
-    options.add("dbpath",   1,'d', "GR", "database path (default: " + spars.dbpath + ")");
+    options.add("dbpath",   1,'d', "GR", "database path (default: /var/lib/graphene/)");
     options.add("env_type", 1,'E', "GR", "environment type: none, lock, txn "
        "(default: lock)");
     options.add("port",    1,'p', "GR", "TCP port for connections (default: 8081).");
@@ -221,9 +204,9 @@ int main(int argc, char ** argv) {
     if (opts.exists("help")) usage(options);
     if (opts.exists("pod"))  usage(options,true);
 
-    // extract parameters
-    spars.dbpath   = opts.get("dbpath",   spars.dbpath);
-    spars.env_type = opts.get("env_type", spars.env_type);
+    string dbpath   = opts.get("dbpath",   "/var/lib/graphene/");
+    string env_type = opts.get("env_type", "lock");
+    DBpool pool(dbpath, true, env_type);
 
     int port    = opts.get("port",  8081);
     int verb    = opts.get("verbose", 0);
@@ -326,7 +309,7 @@ int main(int argc, char ** argv) {
     // start server
     d = MHD_start_daemon(MHD_USE_SELECT_INTERNALLY,
                          port, NULL, NULL,
-                         &request_answer, &spars,
+                         &request_answer, &pool,
                          MHD_OPTION_END);
     if (d == NULL)
       throw Err() << "can't start the http server";
@@ -348,8 +331,8 @@ int main(int argc, char ** argv) {
            << "  Port: " <<  port << "\n"
            << "  Pid file: " <<  pidfile << "\n"
            << "  Log file: " <<  logfile << "\n"
-           << "  DB environment type: " <<  spars.env_type << "\n"
-           << "  Path to databases: " << spars.dbpath << "\n";
+           << "  DB environment type: " <<  env_type << "\n"
+           << "  Path to databases: " << dbpath << "\n";
 
     // main loop (to be interrupted by StopFunc)
     try{ while(1) sleep(10); }

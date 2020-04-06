@@ -105,7 +105,7 @@ class DBoutJSON: public DBout{
   Json json_buffer;
   bool isnum; // numerical or text data
 
-  DBoutJSON(const std::string & dbpath, const bool isnum_):
+  DBoutJSON(const bool isnum_):
     DBout(std::cout), json_buffer(Json::array()), isnum(isnum_){
     col=0; // default
   };
@@ -137,7 +137,7 @@ class DBoutJSON: public DBout{
 
 /***************************************************************************/
 // process /query
-Json json_query(const string & dbpath, const std::string & env_type, const Json & ji){
+Json json_query(DBpool * pool, const Json & ji){
 
   /*
   /query input:
@@ -172,16 +172,15 @@ Json json_query(const string & dbpath, const std::string & env_type, const Json 
 
   /* parse targets and run command */
   Json out = Json::array();
-  DBpool pool(dbpath, true, env_type);
   for (int i=0; i<ji["targets"].size(); i++){
 
     // Get a database
     int col;
     std::string name = parse_ext_name(ji["targets"][i]["target"].as_string(), col);
-    DBgr db = pool.get(name, DB_RDONLY);
+    DBgr db = pool->get(name, DB_RDONLY);
 
     // output formatter
-    DBoutJSON dbo(dbpath, true);
+    DBoutJSON dbo(true);
     dbo.col = col<0 ? 0:col;
 
     // check DB format
@@ -195,7 +194,6 @@ Json json_query(const string & dbpath, const std::string & env_type, const Json 
     jt.set("target", ji["targets"][i]["target"]);
     jt.set("datapoints", dbo.json_buffer);
     out.append(jt);
-    pool.close(name);
   }
 
   return out;
@@ -203,7 +201,7 @@ Json json_query(const string & dbpath, const std::string & env_type, const Json 
 
 /***************************************************************************/
 // process /annotations
-Json json_annotations(const string & dbpath, const std::string & env_type, const Json & ji){
+Json json_annotations(DBpool * pool, const Json & ji){
 
   /*
   /annotations input:
@@ -227,13 +225,12 @@ Json json_annotations(const string & dbpath, const std::string & env_type, const
 
 
   // Get a database
-  DBpool pool(dbpath, true, env_type);
   int col;
   std::string name = parse_ext_name(ji["annotation"]["name"].as_string(), col);
-  DBgr db = pool.get(name, DB_RDONLY);
+  DBgr db = pool->get(name, DB_RDONLY);
 
   // output formatter
-  DBoutJSON dbo(dbpath, false);
+  DBoutJSON dbo(false);
   dbo.col = col<0 ? 0:col;
 
   // check DB format
@@ -246,16 +243,14 @@ Json json_annotations(const string & dbpath, const std::string & env_type, const
   for (size_t i=0; i<dbo.json_buffer.size(); i++){
     dbo.json_buffer[i].set("annotation", ji["annotation"]);
   }
-  pool.close(name);
   return dbo.json_buffer;
 }
 
 /***************************************************************************/
 // process /search
-Json json_search(const string & dbpath, const std::string & env_type, const Json & ji){
+Json json_search(DBpool * pool, const Json & ji){
   Json out = Json::array();
-  DBpool pool(dbpath, true, env_type);
-  auto names = pool.dblist();
+  auto names = pool->dblist();
   for (auto const & n:names)
     out.append(Json(n));
   return out;
@@ -263,8 +258,7 @@ Json json_search(const string & dbpath, const std::string & env_type, const Json
 
 /***************************************************************************/
 /* Process a JSON request to the database. */
-string graphene_json(const string & dbpath,  /* path to databases */
-                     const std::string & env_type,
+string graphene_json(DBpool * pool,
                      const string & url,     /* /query, /annotations, etc. */
                      const string & data){    /* input data */
 
@@ -274,13 +268,13 @@ string graphene_json(const string & dbpath,  /* path to databases */
   int out_fl = JSON_PRESERVE_ORDER;
 
   if (url == "/query")
-    return json_query(dbpath, env_type, ji).save_string(out_fl);
+    return json_query(pool, ji).save_string(out_fl);
 
   if (url == "/search")
-    return json_search(dbpath, env_type, ji).save_string(out_fl);
+    return json_search(pool, ji).save_string(out_fl);
 
   if (url == "/annotations")
-    return json_annotations(dbpath, env_type, ji).save_string(out_fl);
+    return json_annotations(pool, ji).save_string(out_fl);
 
   throw Err() << "Unknown query";
 }
