@@ -118,6 +118,17 @@ class DBgr{
   /****************************/
   // Backup system:
 
+  // get main/temporary timer from the database:
+  // key: KEY_BACKUP_TMP | KEY_BACKUP_MAIN
+  // ret: packed string
+  // if database record does not exist, return zero time
+  std::string backup_get_timer(DB_TXN *txn, uint8_t key);
+
+  // write main/temporary timer to the database
+  // key: KEY_BACKUP_TMP | KEY_BACKUP_MAI
+  // timer: packed string
+  void backup_set_timer(DB_TXN *txn, uint8_t key, const std::string & timer);
+
   // backup start: notify that we are going to start backup.
   // - reset temporary backup timer to inf
   // - return value of the main backup timer
@@ -129,7 +140,7 @@ class DBgr{
   // args: backup_end <name> [<timestamp>]
   void backup_end(const std::string & t2);
 
-  // reset main backup timer to 0
+  // reset backup timers to 0
   void backup_reset();
 
   // print main backup timer
@@ -137,7 +148,7 @@ class DBgr{
 
   // Internal function, should be calld after each
   // database modification.
-  void backup_upd(const std::string &t);
+  void backup_upd(DB_TXN *txn, const std::string &t);
 
   /****************************/
   // Put data to the database

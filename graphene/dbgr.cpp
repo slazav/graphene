@@ -262,74 +262,62 @@ DBgr::read_info(){
 }
 
 /************************************/
+
+std::string
+DBgr::backup_get_timer(DB_TXN *txn, uint8_t key){
+  // Read temporary backup timer
+  DBT k = mk_dbt(&key);
+  DBT v = mk_dbt();
+  int ret = dbp->get(dbp.get(), txn, &k, &v, 0);
+  if (ret != 0 && ret != DB_NOTFOUND)
+    throw Err() << name << ".db: " << db_strerror(ret);
+
+  return (ret == DB_NOTFOUND)?
+    graphene_time_parse("0",ttype):
+    string((char *)v.data, (char *)v.data+v.size);
+}
+
+void
+DBgr::backup_set_timer(DB_TXN *txn, uint8_t key, const std::string & timer){
+  DBT k = mk_dbt(&key);
+  DBT v = mk_dbt(timer);
+  int ret = dbp->put(dbp.get(), txn, &k, &v, 0);
+  if (ret != 0)
+    throw Err() << name << ".db: " << db_strerror(ret);
+}
+
 std::string
 DBgr::backup_start(){
-  std::string timer;
-
+  std::string ret;
   DB_TXN *txn = txn_begin();
-  DBC *curs = NULL;
   try {
-    int ret;
-    // Reset temporary backup timer:
-    uint8_t x=KEY_BACKUP_TMP;
-    DBT k = mk_dbt(&x);
-    ret = dbp->del(dbp.get(), txn, &k, 0);
-    if (ret != 0 && ret != DB_NOTFOUND)
-      throw Err() << name << ".db: " << db_strerror(ret);
-
-    // Return main backup timer value:
-    x=KEY_BACKUP_MAIN;
-    k = mk_dbt(&x);
-    DBT v = mk_dbt();
-    ret = dbp->get(dbp.get(), txn, &k, &v, 0);
-    if (ret != 0 && ret != DB_NOTFOUND)
-     throw Err() << name << ".db: " << db_strerror(ret);
-
-    timer = (ret == DB_NOTFOUND)?
-      graphene_time_parse("0", ttype):
-      string((char *)v.data, (char *)v.data+v.size);
+    // reset temporary timer to inf
+    backup_set_timer(txn, KEY_BACKUP_TMP, graphene_time_parse("inf", ttype));
+    // return main backup timer value:
+    ret = graphene_time_print(backup_get_timer(txn, KEY_BACKUP_MAIN), ttype);
   }
   catch (Err e){
     txn_abort(txn);
     throw e;
   }
   txn_commit(txn);
-  return graphene_time_print(timer, ttype);
+  return ret;
 }
 
 void
 DBgr::backup_end(const std::string & t2){
-
-  // do everything in a single transaction
+  std::string ret;
   DB_TXN *txn = txn_begin();
   try {
-    int ret;
+    // read temporary timer
+    std::string timer = backup_get_timer(txn, KEY_BACKUP_TMP);
 
-    // Read temporary backup timer
-    uint8_t x = KEY_BACKUP_TMP;
-    DBT k = mk_dbt(&x);
-    DBT v = mk_dbt();
-    ret = dbp->get(dbp.get(), txn, &k, &v, 0);
-    if (ret != 0 && ret != DB_NOTFOUND)
-     throw Err() << name << ".db: " << db_strerror(ret);
+    // If t2 is smaller then timer, use t2 instead
+    std::string t2s = graphene_time_parse(t2, ttype);
+    if (graphene_time_cmp(timer,t2s, ttype)>0) timer = t2s;
 
     // Commit the temporary timer to the main one
-    x=KEY_BACKUP_MAIN;
-    k = mk_dbt(&x);
-    std::string timer;
-    if (ret == DB_NOTFOUND)
-      timer = graphene_time_parse("inf",ttype); // no changes to the database, backup is finished
-    else if (ret==0) {
-      std::string t2s = graphene_time_parse(t2, ttype);
-      timer = string((char *)v.data, (char *)v.data+v.size);
-      if (graphene_time_cmp(timer,t2s, ttype)>0)
-        timer = t2s;
-    }
-    else
-      throw Err() << name << ".db: " << db_strerror(ret);
-
-    v = mk_dbt(timer);
-    ret = dbp->put(dbp.get(), txn, &k, &v, 0);
+    backup_set_timer(txn, KEY_BACKUP_MAIN, timer);
   }
   catch (Err e){
     txn_abort(txn);
@@ -338,28 +326,13 @@ DBgr::backup_end(const std::string & t2){
   txn_commit(txn);
 }
 
-// reset main backup timer to 0
+// reset backup timers to 0
 void
 DBgr::backup_reset(){
-  // do everything in a single transaction
   DB_TXN *txn = txn_begin();
   try {
-    int ret;
-    {// Reset main backup timer:
-      uint8_t x=KEY_BACKUP_MAIN;
-      DBT k = mk_dbt(&x);
-      ret = dbp->del(dbp.get(), txn, &k, 0);
-      if (ret != 0 && ret != DB_NOTFOUND)
-        throw Err() << name << ".db: " << db_strerror(ret);
-    }
-
-    {// Reset temporary backup timer:
-      uint8_t x=KEY_BACKUP_TMP;
-      DBT k = mk_dbt(&x);
-      ret = dbp->del(dbp.get(), txn, &k, 0);
-      if (ret != 0 && ret != DB_NOTFOUND)
-        throw Err() << name << ".db: " << db_strerror(ret);
-    }
+    backup_set_timer(txn, KEY_BACKUP_TMP,  graphene_time_parse("0", ttype));
+    backup_set_timer(txn, KEY_BACKUP_MAIN, graphene_time_parse("0", ttype));
   }
   catch (Err e){
     txn_abort(txn);
@@ -371,67 +344,27 @@ DBgr::backup_reset(){
 // print main backup timer
 std::string
 DBgr::backup_print(){
-  std::string timer;
   DB_TXN *txn = txn_begin();
   try {
-    int ret;
-    // Read main backup timer
-    uint8_t x = KEY_BACKUP_MAIN;
-    DBT k = mk_dbt(&x);
-    DBT v = mk_dbt();
-    ret = dbp->get(dbp.get(), txn, &k, &v, 0);
-    if (ret != 0 && ret != DB_NOTFOUND)
-     throw Err() << name << ".db: " << db_strerror(ret);
-
-    timer = (ret == DB_NOTFOUND)?
-      graphene_time_parse("0", ttype):
-      string((char *)v.data, (char *)v.data+v.size);
+    return graphene_time_print(backup_get_timer(txn, KEY_BACKUP_MAIN), ttype);
   }
   catch (Err e){
     txn_abort(txn);
     throw e;
   }
   txn_commit(txn);
-  return graphene_time_print(timer, ttype);
 }
 
 // function to be called after each database modification
 void
-DBgr::backup_upd(const std::string &t){
-
-  DB_TXN *txn = txn_begin();
-  try {
-    // Read and update both main and temporary timers
-    for (int i = 0; i<2; i++) {
-      int ret=0;
-      uint8_t x = (i==0)? KEY_BACKUP_TMP : KEY_BACKUP_MAIN;
-      DBT k = mk_dbt(&x);
-      DBT v = mk_dbt();
-      ret = dbp->get(dbp.get(), txn, &k, &v, 0);
-      if (ret != 0 && ret != DB_NOTFOUND)
-        throw Err() << name << ".db: " << db_strerror(ret);
-
-      if (ret == DB_NOTFOUND) {
-        v = mk_dbt(t);
-        ret = dbp->put(dbp.get(), txn, &k, &v, 0);
-      }
-      else {
-        std::string timer = string((char *)v.data, (char *)v.data+v.size);
-        if (graphene_time_cmp(timer,t, ttype)>0){
-          v = mk_dbt(t);
-          ret = dbp->put(dbp.get(), txn, &k, &v, 0);
-        }
-      }
-      if (ret != 0)
-        throw Err() << name << ".db: " << db_strerror(ret);
-    }
-
+DBgr::backup_upd(DB_TXN *txn, const std::string &t){
+  // Read and update both main and temporary timers
+  for (int i = 0; i<2; i++) {
+    uint8_t key = (i==0)? KEY_BACKUP_TMP : KEY_BACKUP_MAIN;
+    std::string timer = backup_get_timer(txn, key);
+    if (graphene_time_cmp(timer,t, ttype)>0)
+      backup_set_timer(txn, key, t);
   }
-  catch (Err e){
-    txn_abort(txn);
-    throw e;
-  }
-  txn_commit(txn);
 }
 
 /************************************/
@@ -468,13 +401,13 @@ DBgr::put(const string &t, const vector<string> & dat, const string &dpolicy){
       else if (res != 0)
         throw Err() << name << ".db: " << db_strerror(res);
     }
+    backup_upd(txn, ks);
   }
   catch (Err e){
     txn_abort(txn);
     throw e;
   }
   txn_commit(txn);
-  backup_upd(ks);
 }
 
 /************************************/
@@ -703,17 +636,19 @@ DBgr::del(const string &t1){
   DBT k = mk_dbt(t1p);
 
   DB_TXN *txn = txn_begin();
-  // delete data
-  ret = dbp->del(dbp.get(), txn, &k, 0);
-  if (ret!=0){
-    txn_abort(txn);
+  try{
+    ret = dbp->del(dbp.get(), txn, &k, 0);
     if (ret == DB_NOTFOUND)
       throw Err() << name << ".db: No such record: " << t1;
-    else
+    if (ret != 0)
       throw Err() << name << ".db: " << db_strerror(ret);
+    backup_upd(txn, t1p);
+  }
+  catch (Err e){
+    txn_abort(txn);
+    throw e;
   }
   txn_commit(txn);
-  backup_upd(t1p);
 }
 
 /************************************/
@@ -763,6 +698,7 @@ DBgr::del_range(const string &t1, const string &t2){
     }
 
     curs->close(curs);
+    if (first_del!="") backup_upd(txn, first_del);
   }
   catch (Err e){
     if (curs) curs->close(curs);
@@ -770,7 +706,6 @@ DBgr::del_range(const string &t1, const string &t2){
     throw e;
   }
   txn_commit(txn);
-  if (first_del!="") backup_upd(first_del);
 }
 
 /************************************/

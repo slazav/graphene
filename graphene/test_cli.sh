@@ -1,4 +1,4 @@
-#!/bin/bash -x
+#!/bin/bash
 
 # test command line interface program ./graphene
 
@@ -475,7 +475,7 @@ assert "$(./graphene -d . backup_start test_1)" "0.000000000"
 
 # on put operations timer shifts to lower times
 assert "$(./graphene -d . put test_1 1234 1)" ""
-assert "$(./graphene -d . backup_start test_1)" "1234.000000000"
+assert "$(./graphene -d . backup_start test_1)" "0.000000000"
 assert "$(./graphene -d . backup_end test_1)" "" # commit tmp timer
 
 assert "$(./graphene -d . backup_start test_1)" "4294967295.999999999"
@@ -516,11 +516,11 @@ assert "$(./graphene -d . backup_print test_1)" "0.000000000"
 assert "$(./graphene -d . backup_start test_1)" "0.000000000"
 assert "$(./graphene -d . put test_1 1234 1)" ""
 assert "$(./graphene -d . backup_print test_1)" "0.000000000"
-assert "$(./graphene -d . backup_end 1000)" ""
+assert "$(./graphene -d . backup_end test_1 1000)" ""
 assert "$(./graphene -d . backup_print test_1)" "1000.000000000"
 assert "$(./graphene -d . backup_start test_1)" "1000.000000000"
 assert "$(./graphene -d . put test_1 1234 1)" ""
-assert "$(./graphene -d . backup_end 2000)" ""
+assert "$(./graphene -d . backup_end test_1 2000)" ""
 assert "$(./graphene -d . backup_print test_1)" "1234.000000000"
 
 

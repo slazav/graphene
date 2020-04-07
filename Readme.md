@@ -240,7 +240,7 @@ up to timestamp `<t>` (`inf` by default).
 
 Internally there are two timers which contain earliest time of database
 modification: main and temporary one. Each database modification command
-(`put`, `del`, or `del_range`) decreases temporary timer values to the
+(`put`, `del`, or `del_range`) decreases both timers to the
 smallest time of modified record: (`timer = min(timer,
 modification_time)`).
 
