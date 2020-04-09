@@ -521,17 +521,23 @@ int main() {
     assert_err(check_name("a\t"), msg + "a\t");
     assert_err(check_name("//"), msg + "//");
 
-    int c;
-    assert_eq(parse_ext_name("abc:1", c), "abc"); assert_eq(c, 1);
-    assert_eq(parse_ext_name("abc:0", c), "abc"); assert_eq(c, 0);
-    assert_eq(parse_ext_name("abc", c), "abc");   assert_eq(c, -1);
+    int c,f;
+    assert_eq(parse_ext_name("abc:1", c,f), "abc"); assert_eq(c, 1); assert_eq(f, -1);
+    assert_eq(parse_ext_name("abc:0", c,f), "abc"); assert_eq(c, 0); assert_eq(f, -1);
+    assert_eq(parse_ext_name("abc:f1", c,f), "abc"); assert_eq(c, -1); assert_eq(f, 1);
+    assert_eq(parse_ext_name("abc:f5", c,f), "abc"); assert_eq(c, -1); assert_eq(f, 5);
+    assert_eq(parse_ext_name("abc", c,f), "abc");   assert_eq(c, -1); assert_eq(f, -1);
 
-    assert_err(parse_ext_name("abc :1", c), msg + "abc ");
-    assert_err(parse_ext_name("abc:", c), msg + "abc:");
-    assert_err(parse_ext_name("abc:a", c), "bad column name: a");
+    assert_err(parse_ext_name("abc:f0", c,f), "bad column name: f0");
+    assert_err(parse_ext_name("abc:fp", c,f), "bad column name: fp");
+    assert_err(parse_ext_name("abc:f-1", c,f), "bad column name: f-1");
 
-    assert_err(parse_ext_name("abc:-2", c), "bad column name: -2");
-    assert_err(parse_ext_name("abc:1.2", c), "bad column name: 1.2");
+    assert_err(parse_ext_name("abc :1", c,f), msg + "abc ");
+    assert_err(parse_ext_name("abc:", c,f), msg + "abc:");
+    assert_err(parse_ext_name("abc:a", c,f), "bad column name: a");
+
+    assert_err(parse_ext_name("abc:-2", c,f), "bad column name: -2");
+    assert_err(parse_ext_name("abc:1.2", c,f), "bad column name: 1.2");
 
   } catch (Err E){
     std::cerr << E.str() << "\n";

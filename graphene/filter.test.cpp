@@ -4,14 +4,14 @@
 
 #include "err/assert_err.h"
 
-#include "ifilter.h"
+#include "filter.h"
 
 using namespace std;
 int main() {
   try{
   /***************/
 
-  iFilter f1;
+  Filter f1;
   assert_eq(f1.get_code(), "");
 
   f1.set_code("abc");
@@ -23,7 +23,7 @@ int main() {
   vs.push_back("0.2");
 
   assert_err(f1.run(t, vs),
-    "ifilter: can't run TCL script: invalid command name \"abc\"\n"
+    "filter: can't run TCL script: invalid command name \"abc\"\n"
     "    while executing\n\"abc\"");
 
   f1.set_code("return 1");

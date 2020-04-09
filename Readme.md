@@ -263,17 +263,20 @@ correctly.
 There is a script `graphene_sync` for implementing incremental synchronization
 of databases.
 
-#### Input filter
+#### Filters
 
-Incoming data can be filtered through a used-defined filter which is
-attached to a database. It can be used to skip some data or implement
-averaging.
+Each database can have up to sixteen data filters.
+Filter 0 is input filter, incoming data can be filtered
+through it to remove repeated points or do averaging.
+Filters 1..15 are output filters.
 
-- `set_ifilter <name> <tcl code>` -- set input filter
+- `set_filter <name> <N> <tcl code>` -- set code of filter N
 
-- `print_ifilter <name>` -- print code of the input filter
+- `print_filter <name> <N>` -- print code of filter N
 
-- `put_flt <name> <timestamp> <data> ...` -- put data to the database through the input filter
+- `print_f0data <name>` -- print data of filter 0
+
+- `put_flt <name> <timestamp> <data> ...` -- put data to the database through the filter 0
 
 Filter is a piece of TCL code executed in a safe TCL interpreter.
 Three variables are defined:
@@ -286,10 +289,11 @@ want to keep precision.
 - `data` -- list of data to be written to the database. Filter can
 modify this list.
 
-- `storage` -- a filter-specific data which is kept in the database
-and can be used to save filter state. It can be TCL list, but not an array.
+- `storage` -- For filter 0 it is a filter-specific data which is kept
+in the database and can be used to save filter state. It can be TCL
+list, but not an array. For filters 1..15 this data is not stored.
 
-If filter returns false value (`0`, `off`, `false`) data will not
+If filter 0 returns false value (`0`, `off`, `false`) data will not
 be written to the database.
 
 Simple example:
@@ -305,7 +309,7 @@ code='
   # put every third element, skip others
   return [expr $storage%3==1]
 '
-graphene set_ifilter mydb "$code"
+graphene set_filter mydb 0 "$code"
 graphene put_flt mydb 123.456 10 20 30
 ```
 

@@ -175,13 +175,14 @@ Json json_query(DBpool * pool, const Json & ji){
   for (int i=0; i<ji["targets"].size(); i++){
 
     // Get a database
-    int col;
-    std::string name = parse_ext_name(ji["targets"][i]["target"].as_string(), col);
+    int col,flt;
+    std::string name = parse_ext_name(ji["targets"][i]["target"].as_string(), col, flt);
     DBgr db = pool->get(name, DB_RDONLY);
 
     // output formatter
     DBoutJSON dbo(true);
     dbo.col = col<0 ? 0:col;
+    dbo.flt = flt;
 
     // check DB format
     if (db.dtype == DATA_TEXT)
@@ -225,13 +226,14 @@ Json json_annotations(DBpool * pool, const Json & ji){
 
 
   // Get a database
-  int col;
-  std::string name = parse_ext_name(ji["annotation"]["name"].as_string(), col);
+  int col,flt;
+  std::string name = parse_ext_name(ji["annotation"]["name"].as_string(), col,flt);
   DBgr db = pool->get(name, DB_RDONLY);
 
   // output formatter
   DBoutJSON dbo(false);
   dbo.col = col<0 ? 0:col;
+  dbo.flt = flt;
 
   // check DB format
   if (db.dtype != DATA_TEXT)

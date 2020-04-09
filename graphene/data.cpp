@@ -6,6 +6,7 @@
 #include <cmath>
 #include <sys/time.h>
 
+#include "opt/opt.h"
 #include "err/err.h"
 #include "data.h"
 
@@ -209,9 +210,14 @@ graphene_data_parse(const std::vector<std::string> & strs, const DataType dtype)
   }
 }
 
-std::string
+std::vector<std::string>
 graphene_data_print(const std::string & s, const int col, const DataType dtype){
-  if (dtype == DATA_TEXT) return s;
+  std::vector<std::string> ret;
+
+  if (dtype == DATA_TEXT) {
+    ret.push_back(s);
+    return ret;
+  }
 
   size_t dsize = graphene_dtype_size(dtype);
 
@@ -223,10 +229,9 @@ graphene_data_print(const std::string & s, const int col, const DataType dtype){
   size_t c1=0, c2=cn;
   if (col!=-1) { c1=col; c2=col+1; }
 
-  std::ostringstream ostr;
   for (size_t i=c1; i<c2; i++){
-    if (i>c1) ostr << ' ';
-    if (i>=cn) { return "NaN"; }
+    if (i>=cn) { ret.push_back("NaN"); continue;}
+    std::ostringstream ostr;
     switch (dtype){
       case DATA_INT8:   ostr << ((int8_t   *)s.data())[i]; break;
       case DATA_UINT8:  ostr << ((uint8_t  *)s.data())[i]; break;
@@ -243,8 +248,9 @@ graphene_data_print(const std::string & s, const int col, const DataType dtype){
       case DATA_DOUBLE: ostr << std::setprecision(16) << ((double *)s.data())[i]; break;
       default: throw Err() << "Unexpected data format";
     }
+    ret.push_back(ostr.str());
   }
-  return ostr.str();
+  return ret;
 }
 
 
@@ -679,17 +685,30 @@ check_name(const std::string & name){
 }
 
 std::string
-parse_ext_name(const std::string & name, int & col){
-  // extract column
+parse_ext_name(const std::string & name, int & col, int & flt){
+  // extract column and filter
   col = -1;
+  flt = -1;
   std::string dbname = name;
   size_t cp = name.rfind(':');
   if (cp!=std::string::npos && cp!=name.size()-1){
-    char *e;
-    col = strtol(name.substr(cp+1,-1).c_str(), &e, 10);
-    if (e!=NULL && *e=='\0' && col>=0) dbname = name.substr(0,cp);
-    else throw Err() << "bad column name: " << name.substr(cp+1,-1);
+    try {
+      auto suff = name.substr(cp+1,-1);
+      if (suff.size()>1 && suff[0]=='f') {
+        suff = suff.substr(1,-1);
+        flt = str_to_type<int>(suff);
+        if (flt<1) throw Err();
+      }
+      else {
+       col = str_to_type<int>(suff);
+       if (col<0) throw Err();
+      }
+    } catch (Err e){
+      throw Err() << "bad column name: " << name.substr(cp+1,-1);
+    }
+    dbname = name.substr(0,cp);
   }
+
   check_name(dbname);
   return dbname;
 }

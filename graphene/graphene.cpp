@@ -83,10 +83,12 @@ class Pars{
             "      -- rename a database\n"
             "  set_descr <name> <description>\n"
             "      -- set/change database description\n"
-            "  set_ifilter <name> <tcl code>\n"
-            "      -- set/change database input filter\n"
-            "  print_ifilter <name>\n"
-            "      -- print database input filter\n"
+            "  set_filter <name> <N> <tcl code>\n"
+            "      -- set/change filter N\n"
+            "  print_filter <name> <N>\n"
+            "      -- print code of the filter N\n"
+            "  print_f0data <name>\n"
+            "      -- print data of the filter N\n"
             "  info <name>\n"
             "      -- print database information, tab-separated time format,\n"
             "         data format and description (if it is not empty)\n"
@@ -95,7 +97,7 @@ class Pars{
             "  put <name> <time> <value1> ... <valueN>\n"
             "      -- write a data point\n"
             "  put_flt <name> <time> <value1> ... <valueN>\n"
-            "      -- write a data point using input filter\n"
+            "      -- write a data point using input filter (number 0)\n"
             "  get <name>[:N] <time>\n"
             "      -- get previous or interpolated point\n"
             "  get_next <name>[:N] [<time1>]\n"
@@ -388,11 +390,12 @@ class Pars{
       if (pars.size()<2) throw Err() << "database name expected";
       if (pars.size()>3) throw Err() << "too many parameters";
       string t1 = pars.size()>2? pars[2]: "0";
-      int col = -1;
-      std::string name = parse_ext_name(pars[1], col);
+      int col = -1, flt = -1;
+      std::string name = parse_ext_name(pars[1], col, flt);
       DBgr & db = pool->get(name, DB_RDONLY);
       DBout dbo(out);
       dbo.col    = col;
+      dbo.flt    = flt;
       db.timefmt = graphene_tfmt_parse(timefmt);
       db.time0   = t1;
       dbo.spp    = interactive;
@@ -406,11 +409,12 @@ class Pars{
       if (pars.size()<2) throw Err() << "database name expected";
       if (pars.size()>3) throw Err() << "too many parameters";
       string t2 = pars.size()>2? pars[2]: "inf";
-      int col = -1;
-      std::string name = parse_ext_name(pars[1], col);
+      int col = -1, flt = -1;
+      std::string name = parse_ext_name(pars[1], col, flt);
       DBgr & db = pool->get(name, DB_RDONLY);
       DBout dbo(out);
       dbo.col    = col;
+      dbo.flt    = flt;
       db.timefmt = graphene_tfmt_parse(timefmt);
       db.time0   = t2;
       dbo.spp    = interactive;
@@ -424,11 +428,12 @@ class Pars{
       if (pars.size()<2) throw Err() << "database name expected";
       if (pars.size()>3) throw Err() << "too many parameters";
       string t2 = pars.size()>2? pars[2]: "inf";
-      int col = -1;
-      std::string name = parse_ext_name(pars[1], col);
+      int col = -1, flt = -1;
+      std::string name = parse_ext_name(pars[1], col,flt);
       DBgr & db = pool->get(name, DB_RDONLY);
       DBout dbo(out);
       dbo.col    = col;
+      dbo.flt    = flt;
       db.timefmt = graphene_tfmt_parse(timefmt);
       db.time0   = t2;
       dbo.spp    = interactive;
@@ -444,11 +449,12 @@ class Pars{
       string t1 = pars.size()>2? pars[2]: "0";
       string t2 = pars.size()>3? pars[3]: "inf";
       string dt = pars.size()>4? pars[4]: "0";
-      int col = -1;
-      std::string name = parse_ext_name(pars[1], col);
+      int col = -1, flt = -1;
+      std::string name = parse_ext_name(pars[1], col, flt);
       DBgr & db = pool->get(name, DB_RDONLY);
       DBout dbo(out);
       dbo.col    = col;
+      dbo.flt    = flt;
       db.timefmt = graphene_tfmt_parse(timefmt);
       db.time0   = t1;
       dbo.spp    = interactive;
@@ -515,20 +521,31 @@ class Pars{
       return;
     }
 
-    // set input filter
-    // args: set_ifilter <name> <tcl script>
-    if (strcasecmp(cmd.c_str(), "set_ifilter")==0){
-      if (pars.size()<3) throw Err() << "database name and filter code expected";
-      pool->get(pars[1]).write_ifilter(pars[2]);
+    // set filter
+    // args: set_filter <name> <N> <tcl script>
+    if (strcasecmp(cmd.c_str(), "set_filter")==0){
+      if (pars.size()!=4) throw Err() << "database name, filter number, filter code expected";
+      int N = str_to_type<int>(pars[2]);
+      if (N<0 || N>MAX_FILTERS) throw Err() << "filter number out of range: " << N;
+      pool->get(pars[1]).write_filter(N, pars[3]);
       return;
     }
 
-    // print input filter
-    // args: print_ifilter <name>
-    if (strcasecmp(cmd.c_str(), "print_ifilter")==0){
-      if (pars.size()<2) throw Err() << "database name expected";
-      if (pars.size()>2) throw Err() << "too many parameters";
-      out << pool->get(pars[1]).iflt.get_code() << "\n";
+    // print filter
+    // args: print_filter <name> <N>
+    if (strcasecmp(cmd.c_str(), "print_filter")==0){
+      if (pars.size()!=3) throw Err() << "database name and filter number expected";
+      int N = str_to_type<int>(pars[2]);
+      if (N<0 || N>MAX_FILTERS) throw Err() << "filter number out of range: " << N;
+      out << pool->get(pars[1]).filters[N].get_code() << "\n";
+      return;
+    }
+
+    // print input filter data
+    // args: print_f0data <name>
+    if (strcasecmp(cmd.c_str(), "print_f0data")==0){
+      if (pars.size()!=2) throw Err() << "database name expected";
+      out << pool->get(pars[1]).filters[0].get_storage() << "\n";
       return;
     }
 

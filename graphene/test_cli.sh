@@ -526,7 +526,7 @@ assert "$(./graphene -d . backup_print test_1)" "1234.000000000"
 assert "$(./graphene -d . delete test_1)" ""
 
 ###########################################################################
-## input filters
+## input filter
 assert "$(./graphene -d . create test_1 DOUBLE)" ""
 
 # put every third record; round time to int; add 1 to first data element,
@@ -537,8 +537,8 @@ code='
   set data [list [expr [lindex $data 0] + 1] $storage]
   return [expr $storage%3==1]
 '
-assert "$(./graphene -d . set_ifilter test_1 "$code")" ""
-assert "$(./graphene -d . print_ifilter test_1)" "$(echo "$code")"
+assert "$(./graphene -d . set_filter test_1 0 "$code")" ""
+assert "$(./graphene -d . print_filter test_1 0)" "$(echo "$code")"
 assert "$(./graphene -d . put_flt test_1 123.456 10 20 30)" ""
 assert "$(./graphene -d . put_flt test_1 200.1  15)" ""
 assert "$(./graphene -d . put_flt test_1 201.1  16)" ""
@@ -549,13 +549,36 @@ assert "$(./graphene -d . get_range test_1)" \
 "123.000000000 11 1
 202.000000000 18 4"
 
+assert "$(./graphene -d . print_f0data test_1)" "5"
+
 # setting of the filter resets also storage information
-assert "$(./graphene -d . set_ifilter test_1 "$code")" ""
+assert "$(./graphene -d . set_filter test_1 0 "$code")" ""
 assert "$(./graphene -d . put_flt test_1 523.456 10 20 30)" ""
 assert "$(./graphene -d . get test_1)" "523.000000000 11 1"
 
-assert "$(./graphene -d . delete test_1)" ""
+###########################################################################
+## output filter
+code='
+  set time [expr int($time)+2]
+  set data [list [expr [lindex $data 0]*2]]
+'
+assert "$(./graphene -d . set_filter test_1 -1 "$code")" "Error: filter number out of range: -1"
+assert "$(./graphene -d . set_filter test_1 1000 "$code")" "Error: filter number out of range: 1000"
+assert "$(./graphene -d . set_filter test_1 5 "$code")" ""
+assert "$(./graphene -d . print_filter test_1 5)" "$(echo "$code")"
 
+# f1 is not set
+assert "$(./graphene -d . get_range test_1:f1)" \
+"123.000000000 11 1
+202.000000000 18 4
+523.000000000 11 1"
+
+assert "$(./graphene -d . get_range test_1:f5)" \
+"125 22
+204 36
+525 22"
+
+assert "$(./graphene -d . delete test_1)" ""
 
 ###########################################################################
 # remove all test databases

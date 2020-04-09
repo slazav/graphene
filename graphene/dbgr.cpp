@@ -67,7 +67,8 @@ DBgr::DBgr(DB_ENV *env_,
      const string & name_,
      const int flags):
        env(env_), name(name_), timefmt(TFMT_DEF),
-       ttype(DEF_TIMETYPE), dtype(DEF_DATATYPE), version(DEF_DBVERSION) {
+       ttype(DEF_TIMETYPE), dtype(DEF_DATATYPE), version(DEF_DBVERSION),
+       filters(MAX_FILTERS, Filter()) {
 
   check_name(name); // check the name
 
@@ -219,7 +220,7 @@ DBgr::write_info(){
 }
 
 /************************************/
-// Get database information (version, ttype, dtype, ifilter)
+// Get database information (version, ttype, dtype, filters)
 //
 void
 DBgr::read_info(){
@@ -248,8 +249,11 @@ DBgr::read_info(){
       default: throw Err() << "unsupported database version: " << (int)version;
     }
 
-    // Read ifilter
-    iflt.set_code( get_key(txn, KEY_IFLT_CODE) );
+    // Read filters
+    filters[0].set_storage( get_key(txn, KEY_FLT0DATA) );
+    for (int n=0; n<MAX_FILTERS; n++)
+      filters[n].set_code( get_key(txn, KEY_FLT+n) );
+
   }
   catch (Err e){
     txn_abort(txn);
@@ -260,17 +264,17 @@ DBgr::read_info(){
 
 /************************************/
 void
-DBgr::write_ifilter(const std::string & luacode){
-  iflt.set_code(luacode);
+DBgr::write_filter(const int n, const std::string & code){
+  if (n<0 || n>filters.size())
+    throw Err() << "filter number out of range: " << n;
+
+  filters[n].set_code(code);
   int ret;
-  // do everything in a single transaction
   DB_TXN *txn = txn_begin();
   try {
-    // Remove filter storage if it exists:
-    del_key(txn, KEY_IFLT_DATA);
-    del_key(txn, KEY_IFLT_CODE);
-    if (iflt.code != "")
-      set_key(txn, KEY_IFLT_CODE, mk_dbt(iflt.code));
+    // Remove filter 0 storage if it exists:
+    if (n==0) del_key(txn, KEY_FLT0DATA);
+    set_key(txn, KEY_FLT+n, mk_dbt(filters[n].code));
   }
   catch (Err e){
     txn_abort(txn);
@@ -418,12 +422,11 @@ DBgr::put(const string &t, const vector<string> & dat, const string &dpolicy){
 // Put data to the database using input filter
 void
 DBgr::put_flt(string &t, vector<string> & dat, const string &dpolicy){
+
   // read filter data
   DB_TXN *txn = txn_begin(DB_TXN_SNAPSHOT);
   std::string fdata;
-  try {
-    iflt.set_storage( get_key(txn, KEY_IFLT_DATA) );
-  }
+  try { filters[0].set_storage( get_key(txn, KEY_FLT0DATA) ); }
   catch (Err e){
     txn_abort(txn);
     throw e;
@@ -432,13 +435,13 @@ DBgr::put_flt(string &t, vector<string> & dat, const string &dpolicy){
 
   // run input filter
   auto t1 = graphene_time_print(graphene_time_parse(t, ttype),ttype);
-  if (iflt.run(t1, dat)) put(t1,dat,dpolicy);
+  if (filters[0].run(t1, dat)) put(t1,dat,dpolicy);
 
   // write fdata
   txn = txn_begin(DB_TXN_SNAPSHOT);
   try {
-    auto s = iflt.get_storage();
-    set_key(txn, KEY_IFLT_DATA, mk_dbt(s));
+    auto s = filters[0].get_storage();
+    set_key(txn, KEY_FLT0DATA, mk_dbt(s));
   }
   catch (Err e){
     txn_abort(txn);

@@ -31,9 +31,11 @@ class DBout {
   std::ostream & out;  // stream for output
   int col; // column number, for the main database
 
+  int flt; // filter number 1..MAX_FILTERS; <1 for no filtering
+
   // constructor -- parse the dataset string, create iostream
   DBout(std::ostream & out_ = std::cout):
-          col(-1), out(out_), spp(false) {}
+          col(-1), flt(-1), out(out_), spp(false) {}
 
   // print_point  -- by default it just prints the line to out,
   // but this function can be overriden.

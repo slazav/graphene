@@ -1,5 +1,5 @@
-#ifndef IFILTER_H
-#define IFILTER_H
+#ifndef FILTER_H
+#define FILTER_H
 
 #include <cstring>
 #include <string>
@@ -13,7 +13,7 @@
 /***************************************************/
 
 // filter for the graphene database
-class iFilter {
+class Filter {
   public:
 
   // TCL script.

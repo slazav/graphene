@@ -16,7 +16,7 @@
 
 #include "err/err.h"
 #include "dbout.h"
-#include "ifilter.h"
+#include "filter.h"
 
 #include <iomanip>
 
@@ -28,10 +28,14 @@
 
 #define KEY_DESCR   0
 #define KEY_VERSION 1
-#define KEY_IFLT_CODE  2
-#define KEY_IFLT_DATA  3
 #define KEY_BACKUP_MAIN  0x10
 #define KEY_BACKUP_TMP   0x11
+
+// Filters occupy MAX_FILTERS keys starting
+// from KEY_FLT. Filter 0 data uses KEY_FLT0DATA key
+#define MAX_FILTERS 16
+#define KEY_FLT  0x20
+#define KEY_FLT0DATA  0x19
 
 #define DEF_DBVERSION  2
 #define DEF_TIMETYPE   TIME_V2
@@ -80,7 +84,7 @@ class DBgr{
     TimeFMT timefmt;     // output time format
     std::string time0;   // zero time for relative time output (not parsed)
 
-    iFilter iflt;  // input filter (see ifilter.h)
+    std::vector<Filter> filters; // filters (see filter.h)
 
   // database deleter
   struct D {
@@ -128,7 +132,7 @@ class DBgr{
     void write_info();
     void read_info();
 
-    void write_ifilter(const std::string & luacode);
+    void write_filter(const int slot, const std::string & code);
 
   /****************************/
   // Backup system:
@@ -208,14 +212,19 @@ class DBgr{
     // convert DBT to strings
     std::string ks((char *)k->data, (char *)k->data+k->size);
     std::string vs((char *)v->data, (char *)v->data+v->size);
+    auto t = graphene_time_print(ks, ttype, timefmt, time0);
+    auto d = graphene_data_print(vs, dbo.col, dtype);
+
+    if (dbo.flt>=MAX_FILTERS) throw Err() << "filter number out of range: " << dbo.flt;
+    if (dbo.flt>0) filters[dbo.flt].run(t,d);
+
+
     // print values into a string (always \n in the end!)
-    std::ostringstream str;
+    std::string s =  t;
+    for (auto const & v:d) s += " " + v;
+    s += "\n";
 
-    std::string s =
-      graphene_time_print(ks, ttype, timefmt, time0) + " " +
-      graphene_data_print(vs, dbo.col, dtype) + "\n";
-
-    // keep only first line (s always ends with \n - see above)
+    // in list mode keep only first line (s always ends with \n - see above)
     if (list && dtype==DATA_TEXT)
       s.resize(s.find('\n')+1);
 

@@ -103,7 +103,7 @@ static int request_answer(void * cls, struct MHD_Connection * connection, const 
     }
     // GET with database name as an URL
     else if (strcmp(method, "GET")==0){
-      int col = -1;
+      int col=-1, flt=-1;
  
       const char * n   = MHD_lookup_connection_value(connection, MHD_GET_ARGUMENT_KIND, "name");
       const char * t1  = MHD_lookup_connection_value(connection, MHD_GET_ARGUMENT_KIND, "t1");
@@ -112,10 +112,11 @@ static int request_answer(void * cls, struct MHD_Connection * connection, const 
       const char *tfmt = MHD_lookup_connection_value(connection, MHD_GET_ARGUMENT_KIND, "tfmt");
 
       std::string cmd  = string(url).substr(1);
-      std::string name = parse_ext_name(n? n:"", col);
+      std::string name = parse_ext_name(n? n:"", col, flt);
 
       DBoutS dbo;
       dbo.col    = col;
+      dbo.flt    = flt;
 
       if (strcasecmp(cmd.c_str(),"get")==0){
          DBgr & db = pool->get(name, DB_RDONLY);

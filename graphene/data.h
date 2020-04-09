@@ -34,7 +34,7 @@ std::string graphene_data_parse(
 );
 
 // Print packed data for output
-std::string graphene_data_print(
+std::vector<std::string> graphene_data_print(
   const std::string & s,
   const int col,
   const DataType dtype
@@ -131,7 +131,7 @@ std::string graphene_spp_text(const std::string & data);
 void check_name(const std::string & name);
 
 // Parse extended dataset name (<dbname>:<column>) fill
-// column variable, return dbname
-std::string parse_ext_name(const std::string & name, int & col);
+// column and filter variables, return dbname
+std::string parse_ext_name(const std::string & name, int & col, int & flt);
 
 #endif
