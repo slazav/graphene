@@ -171,17 +171,35 @@ socket.
   for any ratio of dt and interpoint distance. For text data only first
   lines are shown.
 
-You can use words "now", "now_s" and "inf" as a timestamp. You can also
-add "+" or "-" symbol after numerical value to add of subtract 1 ns. This
+
+Supported timestamp forms:
+
+- `<seconds>.<fraction>` -- Base format, nanosecond precision.
+
+- `<seconds>.<fraction>[+|-]` -- add or subtract 1 ns to the value.This
 is convenient if you know a timestamp of some value and want to read next
-or previous one. Default value for time1 is 0, for time2 is "inf".
+or previous one.
+
+- `yyyy-mm-dd`, `yyyy-mm-dd HH`, `yyyy-mm-dd HH:MM`, `yyyy-mm-dd
+HH:MM:SS`, `yyyy-mm-dd HH:MM:SS.<fraction>` -- Timestamp in a human-readable form.
+
+- `inf` -- The largest timestamp.
+
+- `now` -- Current time with microsecond precision
+
+- `now_s` -- Current time with second precision
+
+Default value for `<time1>` is 0, for `<time2>` is "inf".
 
 The "extended name" used in get_* commands have the following format:
-`<name>[:<column>]`
+`<name>[:<column>]` or `<name>[:f<filter>]`
 
 `<column>` is a column number (0,1,..), if it exists, then only this
 column is shown. If a certain column is requested but data array is not
 long enough, a "NaN" value is returned. Columns are ignored for text data.
+
+`<filter>` is a filter number (1..15), if it exists data will be processed
+by the filter (see below).
 
 #### Commands for deleting data:
 
