@@ -1,5 +1,5 @@
 Name:         graphene
-Version:      2.8
+Version:      2.9
 Release:      alt1
 
 Summary:      Simple time series database.
@@ -40,6 +40,27 @@ mkdir -p %buildroot%_sharedstatedir/graphene
 %config %_initdir/graphene_http
 
 %changelog
+* Thu Apr 09 2020 Vladislav Zavjalov <slazav@altlinux.org> 2.9-alt1
+- v2.9
+ - Allow human-readable timestamps on input (YYYY-mm-dd HH:MM:SS).
+ - Input and output filters (embedded TCL scripts stored in the database).
+   set_filter, print_filter, put_flt commands, <dbname>:f<n> notation.
+ - Rewrite backup methods, add backup_reset and backup_print commands.
+ - graphene_http server:
+    - HTTP GET interface with text output,
+    - do not reopen databases on each request,
+    - add server tests.
+ - graphene_sync script: faster operation (read all points,
+   then write all points).
+ - Use read_words module to parse commands in interactive mode.
+   Quoted strings, newlines, comments, etc are allowed now.
+ - Remove old-style filters.
+ - Fix env_type in read-only mode.
+ - Fix build on systems without bash.
+ - Rewrite a large part of code.
+ - Add GPL3 license.
+ - Use mapsoft2-libs as git-submodule.
+
 * Mon Dec 30 2019 Vladislav Zavjalov <slazav@altlinux.org> 2.8-alt1
 - v2.8
  - Rename -E lock parameter according to help message.
