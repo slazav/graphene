@@ -32,6 +32,7 @@ int main() {
     assert_eq(s.size(), 8);
     assert_eq(*((uint64_t *)s.data()), 1000999);
 
+
     s = graphene_time_parse("now", tt);
     assert_eq(s.size(), 8);
     assert_eq(*((uint64_t *)s.data())>1578046981l*1000, true);
@@ -114,6 +115,29 @@ int main() {
     s = graphene_time_parse("4294967295.99999999999", tt); // sub-ns fraction is truncated
     assert_eq(s.size(), 8);
     assert_eq(*((uint64_t *)s.data()), (max<<32) + 999999999);
+
+    s = graphene_time_parse("2020-02-02 01", tt);
+    s = graphene_time_parse("2020-02-02", tt);
+    assert_eq(s.size(), 4);
+    auto val = *((uint32_t *)s.data());
+    assert_feq((double)val, 1580598000.0, 24*3600.0);
+
+    s = graphene_time_parse("2020-02-02 01", tt);
+    assert_eq(s.size(), 4);
+    assert_eq(*((uint32_t *)s.data()), val+3600);
+
+    s = graphene_time_parse("2020-02-02 01:02", tt);
+    assert_eq(s.size(), 4);
+    assert_eq(*((uint32_t *)s.data()), val+3600+2*60);
+
+    s = graphene_time_parse("2020-02-02 01:02:10", tt);
+    assert_eq(s.size(), 4);
+    assert_eq(*((uint32_t *)s.data()), val+3600+2*60+10);
+
+    s = graphene_time_parse("2020-02-02 01:02:10.3542", tt);
+    assert_eq(s.size(), 8);
+    assert_eq(*((uint64_t *)s.data()), (((uint64_t)val+3600+2*60+10)<<32) + int(0.3542*1e9));
+
 
     s = graphene_time_parse("inf", tt);
     assert_eq(s.size(), 8);
