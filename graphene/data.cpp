@@ -363,6 +363,76 @@ graphene_time_pack_v2(const uint64_t & t){
 }
 
 /********************************************************************/
+bool
+graphene_time_parse_s(const std::string & str, uint64_t * t, const TimeType ttype){
+
+  int digits = (ttype == TIME_V2)? 9:3;
+  uint64_t maxval = (ttype == TIME_V2)? (uint32_t)-1 : (uint64_t)-1;
+
+  // +/- suffixes
+  int add=0;
+  std::istringstream s;
+  if (str.size()>0 && (str[str.size()-1] == '+' ||
+                           str[str.size()-1] == '-')){
+    add = str[str.size()-1]=='+'? +1:-1;
+    s.str(std::string(str.begin(), str.end()-1));
+  }
+  else s.str(str);
+
+  // read numerical value
+  uint64_t t1=0, t2=0;
+  if (s.peek()=='-') throw Err()
+    << "Bad timestamp: positive value expected: " << str;
+  s >> t1; // read seconds
+  if (s.bad() || s.fail())
+    throw Err() << "Bad timestamp: can't read seconds: " << str;
+
+  if (!s.eof()){
+    char c;
+    s >> c; // read decimal dot
+    if (s.bad() || s.fail() || c!='.')
+      throw Err() << "Bad timestamp: can't read decimal dot: " << str;
+    s >> c;
+    int n=digits-1;
+    while (!s.eof()){
+      if (c<'0'||c>'9')
+        throw Err() << "Bad timestamp: can't read fractional part: " << str;
+      if (n>=0) t2 += (c-'0') * pow(10,n);
+      s >> c;
+      n--;
+    }
+  }
+  // add +/-
+  if (add==+1){
+    if (t2<pow(10,digits)-1) t2++;
+    else {
+      t2=0;
+      t1 = t1<maxval? t1+1: 0;
+    }
+  }
+  if (add==-1){
+    if (t2>0) t2--;
+    else {
+      t2=pow(10,digits)-1;
+      t1 = t1>0? t1-1: maxval;
+    }
+  }
+
+  // check overfull and assemble time
+  if (ttype == TIME_V2){
+    if (t1 > maxval) throw Err()
+      << "Bad timestamp: too large value: " << str;
+    *t = ((uint64_t)t1<<32) + t2;
+  }
+  else {
+      if (t1 > maxval/1000 || 1000*t1 > maxval-t2)
+        throw Err() << "Bad timestamp: too large value: " << str;
+    *t = t1*1000+t2;
+  }
+  return true;
+}
+
+
 
 std::string
 graphene_time_parse(const std::string & str, const TimeType ttype){
@@ -391,55 +461,7 @@ graphene_time_parse(const std::string & str, const TimeType ttype){
       t += (uint64_t)999999999;
     }
     else {
-      // +/- suffixes
-      int add=0;
-      std::istringstream s;
-      if (str.size()>0 && (str[str.size()-1] == '+' ||
-                               str[str.size()-1] == '-')){
-        add = str[str.size()-1]=='+'? +1:-1;
-        s.str(std::string(str.begin(), str.end()-1));
-      }
-      else s.str(str);
-
-      // read numerical value
-      uint32_t t1=0, t2=0;
-      if (s.peek()=='-') throw Err()
-        << "Bad timestamp: positive value expected: " << str;
-      s >> t1; // read seconds
-      if (s.bad() || s.fail())
-        throw Err() << "Bad timestamp: can't read seconds: " << str;
-      if (!s.eof()){
-        char c;
-        s >> c; // read decimal dot
-        if (s.bad() || s.fail() || c!='.')
-          throw Err() << "Bad timestamp: can't read decimal dot: " << str;
-        s >> c;
-        int n=8;
-        while (!s.eof()){
-          if (c<'0'||c>'9')
-            throw Err() << "Bad timestamp: can't read nanoseconds: " << str;
-          if (n>=0) t2 += (c-'0') * pow(10,n);
-          s >> c;
-          n--;
-        }
-      }
-      // add +/-
-      if (add==+1){
-        if (t2<999999999) t2++;
-        else {
-          t2=0;
-          t1++;
-        }
-      }
-      if (add==-1){
-        if (t2>0) t2--;
-        else {
-          t2=999999999;
-          t1--;
-        }
-      }
-      // assemble time
-      t = ((uint64_t)t1<<32) + t2;
+      graphene_time_parse_s(str, &t, ttype);
     }
     return graphene_time_pack_v2(t);
   }
@@ -463,32 +485,7 @@ graphene_time_parse(const std::string & str, const TimeType ttype){
       t = (uint64_t)-1;
     }
     else {
-      std::istringstream s(str);
-      uint64_t t1=0, t2=0;
-      if (s.peek()=='-') throw Err()
-        << "Bad V1 timestamp: positive value expected: " << str;
-      s >> t1; // read seconds
-      if (s.bad() || s.fail())
-        throw Err() << "Bad V1 timestamp: can't read seconds: " << str;
-      if (!s.eof()){
-        char c;
-        s >> c; // read decimal dot
-        if (s.bad() || s.fail() || c!='.')
-          throw Err() << "Bad V1 timestamp: can't read decimal dot: " << str;
-        s >> c;
-        int n=2;
-        while (!s.eof()){
-          if (c<'0'||c>'9')
-            throw Err() << "Bad V1 timestamp: can't read milliseconds: " << str;
-          if (n>=0) t2 += (c-'0') * pow(10,n);
-          s >> c;
-          n--;
-        }
-      }
-      uint64_t m = (uint64_t)-1;
-      if (t1 > m/1000 || 1000*t1 > m-t2)
-        throw Err() << "Bad V1 timestamp: too large value: " << str;
-      t = t1*1000+t2;
+      graphene_time_parse_s(str, &t, ttype);
     }
     std::string ret = std::string(sizeof(uint64_t), '\0');
     *(uint64_t *)ret.data() = t;

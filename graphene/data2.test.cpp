@@ -52,25 +52,25 @@ int main() {
     assert_eq(*((uint64_t *)s.data()), (uint64_t)-1);
 
     assert_err(graphene_time_parse("18446744073709551.616", tt),
-      "Bad V1 timestamp: too large value: 18446744073709551.616");
+      "Bad timestamp: too large value: 18446744073709551.616");
 
     assert_err(graphene_time_parse("18446744073709552.000", tt),
-      "Bad V1 timestamp: too large value: 18446744073709552.000");
+      "Bad timestamp: too large value: 18446744073709552.000");
 
     assert_err(graphene_time_parse("184467440737095520000", tt),
-      "Bad V1 timestamp: can't read seconds: 184467440737095520000");
+      "Bad timestamp: can't read seconds: 184467440737095520000");
 
     assert_err(graphene_time_parse("-2", tt),
-      "Bad V1 timestamp: positive value expected: -2");
+      "Bad timestamp: positive value expected: -2");
 
     assert_err(graphene_time_parse("a", tt),
-      "Bad V1 timestamp: can't read seconds: a");
+      "Bad timestamp: can't read seconds: a");
 
     assert_err(graphene_time_parse("1a", tt),
-      "Bad V1 timestamp: can't read decimal dot: 1a");
+      "Bad timestamp: can't read decimal dot: 1a");
 
     assert_err(graphene_time_parse("1.a", tt),
-      "Bad V1 timestamp: can't read milliseconds: 1.a");
+      "Bad timestamp: can't read fractional part: 1.a");
 
     assert_err(graphene_time_parse("", tt),
       "Empty timestamp");
@@ -179,7 +179,7 @@ int main() {
     assert_eq(*((uint32_t *)s.data()), 0);
 
     assert_err(graphene_time_parse("4294967296.0", tt),
-      "Bad timestamp: can't read seconds: 4294967296.0");
+      "Bad timestamp: too large value: 4294967296.0");
 
     assert_err(graphene_time_parse("-2", tt),
       "Bad timestamp: positive value expected: -2");
@@ -191,7 +191,7 @@ int main() {
       "Bad timestamp: can't read decimal dot: 1a");
 
     assert_err(graphene_time_parse("1.a", tt),
-      "Bad timestamp: can't read nanoseconds: 1.a");
+      "Bad timestamp: can't read fractional part: 1.a");
 
     assert_err(graphene_time_parse("", tt),
       "Empty timestamp");
