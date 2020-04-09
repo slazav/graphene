@@ -1,7 +1,7 @@
 /*  Command-line interface for the Graphene time series database.
 */
 
-#define VERSION "2.8"
+#define VERSION "2.9"
 #define GRAPHENE_DEF_ENV "lock"
 #define GRAPHENE_DEF_DPOLICY "replace"
 #define GRAPHENE_DEF_DBPATH  "."
@@ -20,7 +20,9 @@
 #include "dbgr.h"
 #include "dbpool.h"
 #include "dbout.h"
-#include "err.h"
+
+#include "err/err.h"
+#include "read_words/read_words.h"
 
 #include <ext/stdio_filebuf.h>
 #include <sys/types.h>
@@ -40,7 +42,7 @@ class Pars{
   string sockname;     /* socket name*/
   bool interactive;    /* use interactive mode */
   vector<string> pars; /* non-option parameters */
-  bool relative;       /* output relative times */
+  std::string timefmt; /* output time format */
   bool readonly;       /* open databases in read-only mode */
 
   // get options and parameters from argc/argv
@@ -49,7 +51,7 @@ class Pars{
     dpolicy = GRAPHENE_DEF_DPOLICY;
     env_type = GRAPHENE_DEF_ENV;
     interactive = false;
-    relative  = false;
+    timefmt = "def";
     readonly  = false;
     if (argc<1) return; // needed for print_help()
     /* parse  options */
@@ -64,7 +66,7 @@ class Pars{
         case 'h': print_help();
         case 'i': interactive = true; break;
         case 's': sockname = optarg; break;
-        case 'r': relative = true; break;
+        case 'r': timefmt  = "rel"; break;
         case 'R': readonly = true; break;
       }
     }
@@ -80,7 +82,13 @@ class Pars{
             "  rename <old_name> <new_name>\n"
             "      -- rename a database\n"
             "  set_descr <name> <description>\n"
-            "      -- change database description\n"
+            "      -- set/change database description\n"
+            "  set_filter <name> <N> <tcl code>\n"
+            "      -- set/change filter N\n"
+            "  print_filter <name> <N>\n"
+            "      -- print code of the filter N\n"
+            "  print_f0data <name>\n"
+            "      -- print data of the filter N\n"
             "  info <name>\n"
             "      -- print database information, tab-separated time format,\n"
             "         data format and description (if it is not empty)\n"
@@ -88,6 +96,8 @@ class Pars{
             "      -- list all databases in the data folder\n"
             "  put <name> <time> <value1> ... <valueN>\n"
             "      -- write a data point\n"
+            "  put_flt <name> <time> <value1> ... <valueN>\n"
+            "      -- write a data point using input filter (number 0)\n"
             "  get <name>[:N] <time>\n"
             "      -- get previous or interpolated point\n"
             "  get_next <name>[:N] [<time1>]\n"
@@ -113,7 +123,9 @@ class Pars{
             "  get_time -- print current time (unix seconds with microsecond precision)\n"
             "  libdb_version -- print libdb version\n"
             "  backup start <name> -- notify that we are going to start backup, return backup timestamp.\n"
-            "  backup_end <name> -- notify that backup is successfully finished\n"
+            "  backup_end <name> [<timestamp>] -- notify that backup is successfully finished\n"
+            "  backup_reset <name> -- reset backup timer\n"
+            "  backup_print <name> -- print backup timer\n"
             "\n"
             "For more information see https://github.com/slazav/graphene/\n"
     ;
@@ -142,19 +154,6 @@ class Pars{
   }
 
 
-  // get parameters from a string (for interactive mode)
-  void parse_command_string(const string & str){
-    istringstream in(str);
-    pars.clear();
-    while (1) {
-      string a;
-      in >> a;
-      if (!in) break;
-      pars.push_back(a);
-    }
-  }
-
-
   // Interactive mode.
   void run_interactive(std::istream & in, std::ostream & out){
     if (pars.size() !=0) throw Err() << "too many arguments for the interactive mode";
@@ -162,22 +161,32 @@ class Pars{
     out << "#SPP001\n"; // command-line protocol, version 001.
     out << "Graphene database. Type cmdlist to see list of commands\n";
     out.flush();
-    DBpool pool(dbpath, readonly, env_type);
-    out << "#OK\n";
-    out.flush();
 
-    while (getline(in, line)){
-      try {
-        if (line=="") continue;
-        parse_command_string(line);
-        run_command(&pool, out);
-        out << "#OK\n";
-        out.flush();
+    // Outer try -- exit on errors with #Error message
+    // For SPP2 it should be #Fatal
+    try {
+      DBpool pool(dbpath, readonly, env_type);
+      out << "#OK\n";
+      out.flush();
+
+      while (1){
+        // inner try -- continue to a new command with #Error message
+        try {
+          pars = read_words(in);
+          if (pars.size()==0) break;
+          run_command(&pool, out);
+          out << "#OK\n";
+          out.flush();
+        }
+        catch(Err e){
+          if (e.str()!="") out << "#Error: " << e.str() << "\n";
+          out.flush();
+        }
       }
-      catch(Err e){
-        if (e.str()!="") out << "#Error: " << e.str() << "\n";
-        out.flush();
-      }
+    }
+    catch(Err e){
+      if (e.str()!="") out << "#Error: " << e.str() << "\n";
+      return;
     }
     return;
   }
@@ -257,12 +266,12 @@ class Pars{
     // args: create <name> [<data_fmt>] [<description>]
     if (strcasecmp(cmd.c_str(), "create")==0){
       if (pars.size()<2) throw Err() << "database name expected";
-      DBinfo info(
-        pars.size()<3 ? DEFAULT_DATAFMT : DBinfo::str2datafmt(pars[2]),
-        pars.size()<4 ? "": pars[3]);
-      for (int i=4; i<pars.size(); i++) info.descr+=" "+pars[i];
-      // todo: create folders if needed
-      pool->get(pars[1], DB_CREATE | DB_EXCL).write_info(info);
+      DataType dtype = pars.size()<3 ? DATA_DOUBLE : graphene_dtype_parse(pars[2]);
+      DBgr & db = pool->get(pars[1], DB_CREATE | DB_EXCL);
+      db.dtype = dtype;
+      db.descr = pars.size()<4 ? "": pars[3];
+      for (int i=4; i<pars.size(); i++) db.descr+=" "+pars[i];
+      db.write_info();
       return;
     }
 
@@ -288,11 +297,10 @@ class Pars{
     // args: set_descr <name> <description>
     if (strcasecmp(cmd.c_str(), "set_descr")==0){
       if (pars.size()<3) throw Err() << "database name and new description text expected";
-      DBgr db = pool->get(pars[1]);
-      DBinfo info = db.read_info();
-      info.descr = pars[2];
-      for (int i=3; i<pars.size(); i++) info.descr+=" "+pars[i];
-      db.write_info(info);
+      DBgr & db = pool->get(pars[1]);
+      db.descr = pars[2];
+      for (int i=3; i<pars.size(); i++) db.descr+=" "+pars[i];
+      db.write_info();
       return;
     }
 
@@ -301,9 +309,9 @@ class Pars{
     if (strcasecmp(cmd.c_str(), "info")==0){
       if (pars.size()<2) throw Err() << "database name expected";
       if (pars.size()>2) throw Err() << "too many parameters";
-      DBinfo info = pool->get(pars[1], DB_RDONLY).read_info();
-      cout << DBinfo::datafmt2str(info.val);
-      if (info.descr!="") out << '\t' << info.descr;
+      DBgr & db = pool->get(pars[1], DB_RDONLY);
+      cout << graphene_dtype_name(db.dtype);
+      if (db.descr!="") out << '\t' << db.descr;
       out << "\n";
       return;
     }
@@ -329,14 +337,30 @@ class Pars{
 
     // backup end: notify that backup is successfully done
     // - commit temporary backup timer into main one
-    // args: backup_end <name>
+    // args: backup_end <name> [<timestamp>]
     if (strcasecmp(cmd.c_str(), "backup_end")==0){
-      if (pars.size()!=2) throw Err() << "database name expected";
-      pool->get(pars[1]).backup_end();
+      if (pars.size()<2) throw Err() << "database name expected";
+      if (pars.size()>3) throw Err() << "too many parameters";
+      string t2 = pars.size()>2? pars[2]: "inf";
+      pool->get(pars[1]).backup_end(t2);
       return;
     }
 
+    // reset backup timer
+    // args: backup_start <name>
+    if (strcasecmp(cmd.c_str(), "backup_reset")==0){
+      if (pars.size()!=2) throw Err() << "database name expected";
+      pool->get(pars[1]).backup_reset();
+      return;
+    }
 
+    // print backup timer
+    // args: backup_print <name>
+    if (strcasecmp(cmd.c_str(), "backup_print")==0){
+      if (pars.size()!=2) throw Err() << "database name expected";
+      out << pool->get(pars[1]).backup_print() << "\n";
+      return;
+    }
 
     // write data
     // args: put <name> <time> <value1> ...
@@ -349,16 +373,33 @@ class Pars{
       return;
     }
 
+    // write data using input filter
+    // args: put_flt <name> <time> <value1> ...
+    if (strcasecmp(cmd.c_str(), "put_flt")==0){
+      if (pars.size()<4) throw Err() << "database name, timestamp and some values expected";
+      vector<string> dat;
+      for (int i=3; i<pars.size(); i++) dat.push_back(string(pars[i]));
+      // open database and write data
+      pool->get(pars[1]).put_flt(pars[2], dat, dpolicy);
+      return;
+    }
+
     // get next point after time1
     // args: get_next <name>[:N] [<time1>]
     if (strcasecmp(cmd.c_str(), "get_next")==0){
       if (pars.size()<2) throw Err() << "database name expected";
       if (pars.size()>3) throw Err() << "too many parameters";
       string t1 = pars.size()>2? pars[2]: "0";
-      DBout dbo(dbpath, pars[1], out);
-      if (relative) dbo.set_relative(t1);
-      if (interactive) dbo.set_interactive();
-      pool->get(dbo.name, DB_RDONLY).get_next(t1, dbo);
+      int col = -1, flt = -1;
+      std::string name = parse_ext_name(pars[1], col, flt);
+      DBgr & db = pool->get(name, DB_RDONLY);
+      DBout dbo(out);
+      dbo.col    = col;
+      dbo.flt    = flt;
+      db.timefmt = graphene_tfmt_parse(timefmt);
+      db.time0   = t1;
+      dbo.spp    = interactive;
+      db.get_next(t1, dbo);
       return;
     }
 
@@ -368,10 +409,16 @@ class Pars{
       if (pars.size()<2) throw Err() << "database name expected";
       if (pars.size()>3) throw Err() << "too many parameters";
       string t2 = pars.size()>2? pars[2]: "inf";
-      DBout dbo(dbpath, pars[1], out);
-      if (relative) dbo.set_relative(t2);
-      if (interactive) dbo.set_interactive();
-      pool->get(dbo.name, DB_RDONLY).get_prev(t2, dbo);
+      int col = -1, flt = -1;
+      std::string name = parse_ext_name(pars[1], col, flt);
+      DBgr & db = pool->get(name, DB_RDONLY);
+      DBout dbo(out);
+      dbo.col    = col;
+      dbo.flt    = flt;
+      db.timefmt = graphene_tfmt_parse(timefmt);
+      db.time0   = t2;
+      dbo.spp    = interactive;
+      db.get_prev(t2, dbo);
       return;
     }
 
@@ -381,10 +428,16 @@ class Pars{
       if (pars.size()<2) throw Err() << "database name expected";
       if (pars.size()>3) throw Err() << "too many parameters";
       string t2 = pars.size()>2? pars[2]: "inf";
-      DBout dbo(dbpath, pars[1], out);
-      if (relative) dbo.set_relative(t2);
-      if (interactive) dbo.set_interactive();
-      pool->get(dbo.name, DB_RDONLY).get(t2, dbo);
+      int col = -1, flt = -1;
+      std::string name = parse_ext_name(pars[1], col,flt);
+      DBgr & db = pool->get(name, DB_RDONLY);
+      DBout dbo(out);
+      dbo.col    = col;
+      dbo.flt    = flt;
+      db.timefmt = graphene_tfmt_parse(timefmt);
+      db.time0   = t2;
+      dbo.spp    = interactive;
+      db.get(t2, dbo);
       return;
     }
 
@@ -396,10 +449,16 @@ class Pars{
       string t1 = pars.size()>2? pars[2]: "0";
       string t2 = pars.size()>3? pars[3]: "inf";
       string dt = pars.size()>4? pars[4]: "0";
-      DBout dbo(dbpath, pars[1], out);
-      if (relative) dbo.set_relative(t1);
-      if (interactive) dbo.set_interactive();
-      pool->get(dbo.name, DB_RDONLY).get_range(t1,t2,dt, dbo);
+      int col = -1, flt = -1;
+      std::string name = parse_ext_name(pars[1], col, flt);
+      DBgr & db = pool->get(name, DB_RDONLY);
+      DBout dbo(out);
+      dbo.col    = col;
+      dbo.flt    = flt;
+      db.timefmt = graphene_tfmt_parse(timefmt);
+      db.time0   = t1;
+      dbo.spp    = interactive;
+      db.get_range(t1,t2,dt, dbo);
       return;
     }
 
@@ -446,7 +505,7 @@ class Pars{
       if (pars.size()<3) throw Err() << "database name and dump file expected";
       if (pars.size()>3) throw Err() << "too many parameters";
       DBpool simple_pool(dbpath, false, "none");
-      DBgr db = simple_pool.get(pars[1], DB_CREATE | DB_EXCL);
+      DBgr & db = simple_pool.get(pars[1], DB_CREATE | DB_EXCL);
       db.load(pars[2]);
       return;
     }
@@ -457,8 +516,36 @@ class Pars{
       if (pars.size()<3) throw Err() << "database name and dump file expected";
       if (pars.size()>3) throw Err() << "too many parameters";
       DBpool simple_pool(dbpath, false, "none");
-      DBgr db = simple_pool.get(pars[1], DB_RDONLY);
+      DBgr & db = simple_pool.get(pars[1], DB_RDONLY);
       db.dump(pars[2]);
+      return;
+    }
+
+    // set filter
+    // args: set_filter <name> <N> <tcl script>
+    if (strcasecmp(cmd.c_str(), "set_filter")==0){
+      if (pars.size()!=4) throw Err() << "database name, filter number, filter code expected";
+      int N = str_to_type<int>(pars[2]);
+      if (N<0 || N>MAX_FILTERS) throw Err() << "filter number out of range: " << N;
+      pool->get(pars[1]).write_filter(N, pars[3]);
+      return;
+    }
+
+    // print filter
+    // args: print_filter <name> <N>
+    if (strcasecmp(cmd.c_str(), "print_filter")==0){
+      if (pars.size()!=3) throw Err() << "database name and filter number expected";
+      int N = str_to_type<int>(pars[2]);
+      if (N<0 || N>MAX_FILTERS) throw Err() << "filter number out of range: " << N;
+      out << pool->get(pars[1]).filters[N].get_code() << "\n";
+      return;
+    }
+
+    // print input filter data
+    // args: print_f0data <name>
+    if (strcasecmp(cmd.c_str(), "print_f0data")==0){
+      if (pars.size()!=2) throw Err() << "database name expected";
+      out << pool->get(pars[1]).filters[0].get_storage() << "\n";
       return;
     }
 
@@ -508,13 +595,14 @@ int
 main(int argc, char **argv) {
 
   try {
+
     Pars p(argc, argv);
     if (p.interactive) p.run_interactive(cin, cout);
     else if (p.sockname!="") p.run_socket(p.sockname);
     else p.run_cmdline();
 
   } catch(Err e){
-    if (e.str()!="") cout << "#Error: " << e.str() << "\n";
+    if (e.str()!="") cout << "Error: " << e.str() << "\n";
     return 1;
   }
 }

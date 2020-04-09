@@ -7,8 +7,9 @@
 #include <iostream>
 #include <cstring> /* memset */
 
+#include "data.h"
 #include "dbgr.h"
-#include "err.h"
+#include "err/err.h"
 
 using namespace std;
 
@@ -54,6 +55,7 @@ int cmpfunc(DB *dbp, const DBT *a, const DBT *b){
   return 0;
 }
 
+
 /***********************************************************/
 // DBgr class
 
@@ -63,9 +65,10 @@ int cmpfunc(DB *dbp, const DBT *a, const DBT *b){
 DBgr::DBgr(DB_ENV *env_,
      const string & path_,
      const string & name_,
-     const int flags): env(env_), name(name_){
-
-  info_is_actual = false;
+     const int flags):
+       env(env_), name(name_), timefmt(TFMT_DEF),
+       ttype(DEF_TIMETYPE), dtype(DEF_DATATYPE), version(DEF_DBVERSION),
+       filters(MAX_FILTERS, Filter()) {
 
   check_name(name); // check the name
 
@@ -109,6 +112,8 @@ DBgr::DBgr(DB_ENV *env_,
   if (ret != 0){
     throw Err() << name << ".db: " << db_strerror(ret);
   }
+  if ((flags & DB_CREATE) == 0) read_info();
+
 }
 
 /************************************/
@@ -158,6 +163,33 @@ DBgr::c_get(DBC *curs, DBT *k, DBT *v, int flags) {
   return res==0;
 }
 
+/************************************/
+// Simple del/put/set operations for database information
+void
+DBgr::del_key(DB_TXN *txn, uint8_t key){
+  DBT k = mk_dbt(&key);
+  int ret = dbp->del(dbp.get(), txn, &k, 0);
+  if (ret != 0 && ret != DB_NOTFOUND)
+    throw Err() << name << ".db: " << db_strerror(ret);
+}
+
+void
+DBgr::set_key(DB_TXN *txn, uint8_t key, DBT v){
+  DBT k = mk_dbt(&key);
+  int ret = dbp->put(dbp.get(), txn, &k, &v, 0);
+  if (ret != 0)
+    throw Err() << name << ".db: " << db_strerror(ret);
+}
+
+std::string
+DBgr::get_key(DB_TXN *txn, uint8_t key, const std::string & def){
+  DBT k = mk_dbt(&key);
+  DBT v = mk_dbt();
+  int ret = dbp->get(dbp.get(), txn, &k, &v, 0);
+  if (ret == 0) return string((char*)v.data, (char*)v.data+v.size);
+  if (ret == DB_NOTFOUND) return def;
+  throw Err() << name << ".db: " << db_strerror(ret);
+}
 
 
 /************************************/
@@ -166,7 +198,7 @@ DBgr::c_get(DBC *curs, DBT *k, DBT *v, int flags) {
 // key = (uint8_t)1 (1byte), value = version  (1byte)
 //
 void
-DBgr::write_info(const DBinfo &info){
+DBgr::write_info(){
   int ret;
 
   // do everything in a single transaction
@@ -174,152 +206,122 @@ DBgr::write_info(const DBinfo &info){
   try {
 
     // Write format + description.
-    // Remove the entry if it exists:
-    uint8_t x=KEY_DESCR;
-    DBT k = mk_dbt(&x);
-    ret = dbp->del(dbp.get(), txn, &k, 0);
-    if (ret != 0 && ret != DB_NOTFOUND)
-      throw Err() << name << ".db: " << db_strerror(ret);
-
-    // Write new data:
-    string vs = string(1, (char)info.val)
-                   + info.descr;
-    DBT v = mk_dbt(vs);
-    ret = dbp->put(dbp.get(), txn, &k, &v, 0);
-    if (ret != 0)
-      throw Err() << name << ".db: " << db_strerror(ret);
+    set_key(txn, KEY_DESCR, mk_dbt(string(1, (char)dtype) + descr));
 
     // Write version.
-    // Remove the entry if it exists.
-    x=KEY_VERSION;
-    k = mk_dbt(&x);
-    ret = dbp->del(dbp.get(), txn, &k, 0);
-    if (ret != 0 && ret != DB_NOTFOUND)
-      throw Err() << name << ".db: " << db_strerror(ret);
-
-    // write new data
-    v = mk_dbt(&info.version);
-    ret = dbp->put(dbp.get(), txn, &k, &v, 0);
-    if (ret != 0)
-      throw Err() << name << ".db: " << db_strerror(ret);
+    set_key(txn, KEY_VERSION, mk_dbt(&version));
   }
   catch (Err e){
     txn_abort(txn);
     throw e;
   }
-
+  sync();
   txn_commit(txn);
-  db_info = info;
-  info_is_actual = true;
 }
 
 /************************************/
-// Get database information
+// Get database information (version, ttype, dtype, filters)
 //
-DBinfo
+void
 DBgr::read_info(){
-  if (info_is_actual) return db_info;
 
   // do everything in a single transaction (with snapshot isolation)
   DB_TXN *txn = txn_begin(DB_TXN_SNAPSHOT);
   try {
     // Read format + description.
-    uint8_t x=KEY_DESCR;
-    DBT k = mk_dbt(&x);
-    DBT v = mk_dbt();
-    int ret = dbp->get(dbp.get(), txn, &k, &v, 0);
-    if (ret != 0)
-     throw Err() << name << ".db: " << db_strerror(ret);
-    uint8_t dfmt = *((uint8_t*)v.data);
-    if (dfmt<0 || dfmt > LAST_DATAFMT)
-      throw Err() << name << ".db: broken database, bad data format in the header";
-    db_info.val = static_cast<DataFMT>(dfmt);
-    db_info.descr = string((char*)v.data+1, (char*)v.data+v.size);
+    auto str = get_key(txn, KEY_DESCR);
+    if (str.size() < 1)
+     throw Err() << name << ".db: broken database, data type is missing";
+
+    dtype = static_cast<DataType>(*((uint8_t*)str.data()));
+    graphene_dtype_name(dtype); // throw error if not valid
+
+    descr = string(str.data()+1, str.data()+str.size());
 
     // Read version
-    x=KEY_VERSION;
-    k = mk_dbt(&x);
-    v = mk_dbt();
-    ret = dbp->get(dbp.get(), txn, &k, &v, 0);
-    if (ret == DB_NOTFOUND)
-      db_info.version = 1; // first version can be without key=1
-    else if (ret != 0)
-      throw Err() << name << ".db: " << db_strerror(ret);
-    else
-      db_info.version = *((uint8_t*)v.data);
+    str = get_key(txn, KEY_VERSION);
+    // first version can be without key=1
+    version = (str.size()<1)? 1 : *((uint8_t*)str.data());
+
+    switch (version){
+      case 1: ttype=TIME_V1; break;
+      case 2: ttype=TIME_V2; break;
+      default: throw Err() << "unsupported database version: " << (int)version;
+    }
+
+    // Read filters
+    filters[0].set_storage( get_key(txn, KEY_FLT0DATA) );
+    for (int n=0; n<MAX_FILTERS; n++)
+      filters[n].set_code( get_key(txn, KEY_FLT+n) );
+
   }
   catch (Err e){
     txn_abort(txn);
     throw e;
   }
   txn_commit(txn);
-  info_is_actual = true;
-  return db_info;
 }
 
 /************************************/
+void
+DBgr::write_filter(const int n, const std::string & code){
+  if (n<0 || n>filters.size())
+    throw Err() << "filter number out of range: " << n;
+
+  filters[n].set_code(code);
+  int ret;
+  DB_TXN *txn = txn_begin();
+  try {
+    // Remove filter 0 storage if it exists:
+    if (n==0) del_key(txn, KEY_FLT0DATA);
+    set_key(txn, KEY_FLT+n, mk_dbt(filters[n].code));
+  }
+  catch (Err e){
+    txn_abort(txn);
+    throw e;
+  }
+  sync();
+  txn_commit(txn);
+}
+
+/************************************/
+
 std::string
 DBgr::backup_start(){
-  std::string timer;
-  DBinfo info = read_info();
-
+  std::string ret;
   DB_TXN *txn = txn_begin();
-  DBC *curs = NULL;
   try {
-    int ret;
-    // Reset temporary backup timer:
-    uint8_t x=KEY_BACKUP_TMP;
-    DBT k = mk_dbt(&x);
-    ret = dbp->del(dbp.get(), txn, &k, 0);
-    if (ret != 0 && ret != DB_NOTFOUND)
-      throw Err() << name << ".db: " << db_strerror(ret);
-
-    // Return main backup timer value:
-    x=KEY_BACKUP_MAIN;
-    k = mk_dbt(&x);
-    DBT v = mk_dbt();
-    ret = dbp->get(dbp.get(), txn, &k, &v, 0);
-    if (ret != 0 && ret != DB_NOTFOUND)
-     throw Err() << name << ".db: " << db_strerror(ret);
-
-    timer = (ret == DB_NOTFOUND)?
-      info.parse_time("inf"):
-      string((char *)v.data, (char *)v.data+v.size);
+    // reset temporary timer to inf
+    auto t = graphene_time_parse("inf", ttype);
+    set_key(txn, KEY_BACKUP_TMP, mk_dbt(t));
+    // return main backup timer value:
+    t = graphene_time_parse("0",ttype); // default
+    t = get_key(txn, KEY_BACKUP_MAIN, t);
+    ret = graphene_time_print(t, ttype);
   }
   catch (Err e){
     txn_abort(txn);
     throw e;
   }
   txn_commit(txn);
-  return info.print_time(timer);;
+  return ret;
 }
 
 void
-DBgr::backup_end(){
-
-  // do everything in a single transaction
+DBgr::backup_end(const std::string & t2){
+  std::string ret;
   DB_TXN *txn = txn_begin();
   try {
-    int ret;
+    // read temporary timer
+    auto timer = graphene_time_parse("0",ttype); // default
+    timer = get_key(txn, KEY_BACKUP_TMP, timer);
 
-    // Read temporary backup timer
-    uint8_t x = KEY_BACKUP_TMP;
-    DBT k = mk_dbt(&x);
-    DBT v = mk_dbt();
-    ret = dbp->get(dbp.get(), txn, &k, &v, 0);
-    if (ret != 0 && ret != DB_NOTFOUND)
-     throw Err() << name << ".db: " << db_strerror(ret);
+    // If t2 is smaller then timer, use t2 instead
+    std::string t2s = graphene_time_parse(t2, ttype);
+    if (graphene_time_cmp(timer,t2s, ttype)>0) timer = t2s;
 
     // Commit the temporary timer to the main one
-    x=KEY_BACKUP_MAIN;
-    k = mk_dbt(&x);
-    if (ret == DB_NOTFOUND)
-      ret = dbp->del(dbp.get(), txn, &k, 0);
-    else
-      ret = dbp->put(dbp.get(), txn, &k, &v, 0);
-
-    if (ret != 0 && ret != DB_NOTFOUND)
-      throw Err() << name << ".db: " << db_strerror(ret);
+    set_key(txn, KEY_BACKUP_MAIN, mk_dbt(timer));
   }
   catch (Err e){
     txn_abort(txn);
@@ -328,43 +330,49 @@ DBgr::backup_end(){
   txn_commit(txn);
 }
 
+// reset backup timers to 0
 void
-DBgr::backup_upd(const std::string &t){
-  DBinfo info = read_info();
-
+DBgr::backup_reset(){
   DB_TXN *txn = txn_begin();
   try {
-    // Read and update both main and temporary timers
-    for (int i = 0; i<2; i++) {
-      int ret=0;
-      uint8_t x = (i==0)? KEY_BACKUP_TMP : KEY_BACKUP_MAIN;
-      DBT k = mk_dbt(&x);
-      DBT v = mk_dbt();
-      ret = dbp->get(dbp.get(), txn, &k, &v, 0);
-      if (ret != 0 && ret != DB_NOTFOUND)
-        throw Err() << name << ".db: " << db_strerror(ret);
-
-      if (ret == DB_NOTFOUND) {
-        v = mk_dbt(t);
-        ret = dbp->put(dbp.get(), txn, &k, &v, 0);
-      }
-      else {
-        std::string timer = string((char *)v.data, (char *)v.data+v.size);
-        if (info.cmp_time(timer,t)>0){
-          v = mk_dbt(t);
-          ret = dbp->put(dbp.get(), txn, &k, &v, 0);
-        }
-      }
-      if (ret != 0)
-        throw Err() << name << ".db: " << db_strerror(ret);
-    }
-
+    auto t = graphene_time_parse("0", ttype);
+    set_key(txn, KEY_BACKUP_TMP,  mk_dbt(t));
+    set_key(txn, KEY_BACKUP_MAIN, mk_dbt(t));
   }
   catch (Err e){
     txn_abort(txn);
     throw e;
   }
   txn_commit(txn);
+}
+
+// print main backup timer
+std::string
+DBgr::backup_print(){
+  DB_TXN *txn = txn_begin();
+  try {
+    auto timer = graphene_time_parse("0",ttype); // default
+    timer = get_key(txn, KEY_BACKUP_MAIN, timer);
+    return graphene_time_print(timer, ttype);
+  }
+  catch (Err e){
+    txn_abort(txn);
+    throw e;
+  }
+  txn_commit(txn);
+}
+
+// function to be called after each database modification
+void
+DBgr::backup_upd(DB_TXN *txn, const std::string &t){
+  // Read and update both main and temporary timers
+  for (int i = 0; i<2; i++) {
+    uint8_t key = (i==0)? KEY_BACKUP_TMP : KEY_BACKUP_MAIN;
+    auto timer = graphene_time_parse("0",ttype); // default
+    timer = get_key(txn, key, timer);
+    if (graphene_time_cmp(timer,t, ttype)>0)
+      set_key(txn, key, mk_dbt(t));
+  }
 }
 
 /************************************/
@@ -376,9 +384,8 @@ DBgr::backup_upd(const std::string &t){
 void
 DBgr::put(const string &t, const vector<string> & dat, const string &dpolicy){
   int ret;
-  DBinfo info = read_info();
-  string ks = info.parse_time(t);
-  string vs = info.parse_data(dat);
+  string ks = graphene_time_parse(t, ttype);
+  string vs = graphene_data_parse(dat, dtype);
 
   // do everything in a single transaction
   DB_TXN *txn = txn_begin();
@@ -392,21 +399,56 @@ DBgr::put(const string &t, const vector<string> & dat, const string &dpolicy){
       res = dbp->put(dbp.get(), txn, &k, &v, flags);
       if (res == DB_KEYEXIST){
         if (dpolicy =="error") throw Err() << name << ".db: " << "Timestamp exists";
-        else if (dpolicy =="sshift")  ks = info.add_time(ks, info.parse_time("1"));
-        else if (dpolicy =="nsshift") ks = info.add_time(ks, info.parse_time("0.000000001"));
+        else if (dpolicy =="sshift")
+          ks = graphene_time_add(ks, graphene_time_parse("1", ttype), ttype);
+        else if (dpolicy =="nsshift")
+          ks = graphene_time_add(ks, graphene_time_parse("0.000000001", ttype), ttype);
         else if (dpolicy =="skip") break;
         else throw Err() << "Unknown dpolicy setting: " << dpolicy;
       }
       else if (res != 0)
         throw Err() << name << ".db: " << db_strerror(res);
     }
+    backup_upd(txn, ks);
   }
   catch (Err e){
     txn_abort(txn);
     throw e;
   }
   txn_commit(txn);
-  backup_upd(ks);
+}
+
+/************************************/
+// Put data to the database using input filter
+void
+DBgr::put_flt(string &t, vector<string> & dat, const string &dpolicy){
+
+  // read filter data
+  DB_TXN *txn = txn_begin(DB_TXN_SNAPSHOT);
+  std::string fdata;
+  try { filters[0].set_storage( get_key(txn, KEY_FLT0DATA) ); }
+  catch (Err e){
+    txn_abort(txn);
+    throw e;
+  }
+  txn_commit(txn);
+
+  // run input filter
+  auto t1 = graphene_time_print(graphene_time_parse(t, ttype),ttype);
+  if (filters[0].run(t1, dat)) put(t1,dat,dpolicy);
+
+  // write fdata
+  txn = txn_begin(DB_TXN_SNAPSHOT);
+  try {
+    auto s = filters[0].get_storage();
+    set_key(txn, KEY_FLT0DATA, mk_dbt(s));
+  }
+  catch (Err e){
+    txn_abort(txn);
+    throw e;
+  }
+  txn_commit(txn);
+
 }
 
 /************************************/
@@ -414,8 +456,7 @@ DBgr::put(const string &t, const vector<string> & dat, const string &dpolicy){
 //
 void
 DBgr::get_next(const string &t1, DBout & dbo){
-  DBinfo info = read_info();
-  string t1p = info.parse_time(t1);
+  string t1p = graphene_time_parse(t1, ttype);
   DBT k = mk_dbt(t1p);
   DBT v = mk_dbt();
 
@@ -427,7 +468,7 @@ DBgr::get_next(const string &t1, DBout & dbo){
     get_cursor(dbp.get(), txn, &curs, 0);
 
     if (c_get(curs, &k, &v, DB_SET_RANGE))
-      dbo.proc_point(&k, &v, info);
+      proc_point(&k, &v, dbo);
 
     curs->close(curs);
   }
@@ -446,9 +487,8 @@ DBgr::get_next(const string &t1, DBout & dbo){
 //
 void
 DBgr::get_prev(const string &t2, DBout & dbo){
-  DBinfo info = read_info();
 
-  string t2p = info.parse_time(t2);
+  string t2p = graphene_time_parse(t2, ttype);
   DBT k = mk_dbt(t2p);
   DBT v = mk_dbt();
 
@@ -465,10 +505,10 @@ DBgr::get_prev(const string &t2, DBout & dbo){
     string tp((char *)k.data, (char *)k.data+k.size);
 
     // if needed, get previous record:
-    if (info.cmp_time(tp,t2p)>0 || !found)
+    if (graphene_time_cmp(tp,t2p, ttype)>0 || !found)
       found=c_get(curs, &k, &v, DB_PREV);
 
-    if (found) dbo.proc_point(&k, &v, info);
+    if (found) proc_point(&k, &v, dbo);
 
     curs->close(curs);
   }
@@ -485,13 +525,12 @@ DBgr::get_prev(const string &t2, DBout & dbo){
 //
 void
 DBgr::get(const string &t, DBout & dbo){
-  DBinfo info = read_info();
 
   /* for non-float databases use get_prev */
-  if (info.val!=DATA_FLOAT && info.val!=DATA_DOUBLE)
+  if (dtype!=DATA_FLOAT && dtype!=DATA_DOUBLE)
     return get_prev(t, dbo);
 
-  string tp = info.parse_time(t);
+  string tp = graphene_time_parse(t, ttype);
   DBT k = mk_dbt(tp);
   DBT v = mk_dbt();
   string t1p, v1p, t2p, v2p, vp;
@@ -510,30 +549,30 @@ DBgr::get(const string &t, DBout & dbo){
     // if there is no next value - give the last value if any
     if (!found) {
       if (c_get(curs, &k, &v, DB_PREV))
-        dbo.proc_point(&k, &v, info);
+        proc_point(&k, &v, dbo);
       goto finish;
     }
 
     // if "next" record is exactly at t - return it
     t1p = string((char *)k.data, (char *)k.data+k.size);
     v1p = string((char *)v.data, (char *)v.data+v.size);
-    if (info.cmp_time(t1p,tp) == 0){
-      dbo.proc_point(&k, &v, info);
+    if (graphene_time_cmp(t1p,tp, ttype) == 0){
+      proc_point(&k, &v, dbo);
       goto finish;
     }
 
     // get the previous value and do interpolation
     // find prev value
     found = c_get(curs, &k, &v, DB_PREV);
-    if (!found) goto finish;
+    if (!found || k.size < 4) goto finish; // not found or not a timestamp
 
     t2p = string((char *)k.data, (char *)k.data+k.size);
     v2p = string((char *)v.data, (char *)v.data+v.size);
-    vp = info.interpolate(tp, t1p, t2p, v1p, v2p);
+    vp = graphene_interpolate(tp, t1p, t2p, v1p, v2p, ttype, dtype);
     if (vp!=""){
       DBT k0 = mk_dbt(tp);
       DBT v0 = mk_dbt(vp);
-      dbo.proc_point(&k0, &v0, info);
+      proc_point(&k0, &v0, dbo);
     }
 
     finish:
@@ -562,11 +601,9 @@ void
 DBgr::get_range(const string &t1, const string &t2,
                 const string &dt, DBout & dbo){
 
-  DBinfo info = read_info();
-
-  string t1p = info.parse_time(t1);
-  string t2p = info.parse_time(t2);
-  string dtp = info.parse_time(dt);
+  string t1p = graphene_time_parse(t1, ttype);
+  string t2p = graphene_time_parse(t2, ttype);
+  string dtp = graphene_time_parse(dt, ttype);
   DBT k = mk_dbt(t1p);
   DBT v = mk_dbt();
   string tlp; // last printed value
@@ -588,35 +625,35 @@ DBgr::get_range(const string &t1, const string &t2,
 
       // unpack new time value and check the range
       string tnp((char *)k.data, (char *)k.data+k.size);
-      if (info.cmp_time(tnp,t2p)>0) break;
+      if (graphene_time_cmp(tnp,t2p,ttype)>0) break;
 
       // I have a broken database where DB_SET_RANGE/DB_NEXT can
       // get non-increasing values. Let's check this to prevent the
       // program from infinite loops..
-      if (info.cmp_time(tnp,pre)<0)
+      if (graphene_time_cmp(tnp,pre,ttype)<0)
         throw Err() << "Broken database (DB_SET_RANGE/DB_NEXT get smaller timestamp)";
 
       // if we want every point, switch to DB_NEXT and repeat
-      if (info.is_zero_time(dtp)){
-        dbo.proc_point(&k, &v, info, 1);
+      if (graphene_time_zero(dtp, ttype)){
+        proc_point(&k, &v, dbo, true);
         fl=DB_NEXT;
         continue;
       }
 
       // If dt >0 we continue using fl=DB_SET_RANGE.
       // If new value the same as old
-      if (tlp.size()>0 && info.cmp_time(tlp,tnp)==0){
+      if (tlp.size()>0 && graphene_time_cmp(tlp,tnp,ttype)==0){
         // get next value
         if (!c_get(curs, &k, &v, DB_NEXT)) break;
         // unpack new time value and check the range
         tnp = string((char *)k.data, (char *)k.data+k.size);
-        if (info.cmp_time(tnp,t2p) > 0 ) break;
+        if (graphene_time_cmp(tnp,t2p,ttype) > 0 ) break;
       }
-      dbo.proc_point(&k, &v, info, 1);
+      proc_point(&k, &v, dbo, true);
       tlp=tnp; // update last printed value
 
       // add dt to the key for the next loop:
-      string sp = info.add_time(tlp, dtp);
+      string sp = graphene_time_add(tlp, dtp, ttype);
       memcpy(k.data,sp.data(),k.size);
       k = mk_dbt(sp);
     }
@@ -636,22 +673,23 @@ DBgr::get_range(const string &t1, const string &t2,
 void
 DBgr::del(const string &t1){
   int ret;
-  DBinfo info = read_info();
-  string t1p = info.parse_time(t1);
+  string t1p = graphene_time_parse(t1, ttype);
   DBT k = mk_dbt(t1p);
 
   DB_TXN *txn = txn_begin();
-  // delete data
-  ret = dbp->del(dbp.get(), txn, &k, 0);
-  if (ret!=0){
-    txn_abort(txn);
+  try{
+    ret = dbp->del(dbp.get(), txn, &k, 0);
     if (ret == DB_NOTFOUND)
       throw Err() << name << ".db: No such record: " << t1;
-    else
+    if (ret != 0)
       throw Err() << name << ".db: " << db_strerror(ret);
+    backup_upd(txn, t1p);
+  }
+  catch (Err e){
+    txn_abort(txn);
+    throw e;
   }
   txn_commit(txn);
-  backup_upd(t1p);
 }
 
 /************************************/
@@ -659,11 +697,10 @@ DBgr::del(const string &t1){
 void
 DBgr::del_range(const string &t1, const string &t2){
   int ret;
-  DBinfo info = read_info();
   std::string first_del; // for lastmod timestamp
 
-  string t1p = info.parse_time(t1);
-  string t2p = info.parse_time(t2);
+  string t1p = graphene_time_parse(t1, ttype);
+  string t2p = graphene_time_parse(t2, ttype);
   DBT k = mk_dbt(t1p);
   DBT v = mk_dbt();
 
@@ -683,12 +720,12 @@ DBgr::del_range(const string &t1, const string &t2){
 
       // get packed time value and check the range
       string tp((char *)k.data, (char *)k.data+k.size);
-      if (info.cmp_time(tp,t2p)>0) break;
+      if (graphene_time_cmp(tp,t2p,ttype)>0) break;
 
       // I have a broken database where DB_SET_RANGE/DB_NEXT can
       // get non-increasing values. Let's check this to prevent the
       // program from infinite loops..
-      if (info.cmp_time(tp,pre)<0)
+      if (graphene_time_cmp(tp,pre,ttype)<0)
         throw Err() << "Broken database (DB_SET_RANGE/DB_NEXT get smaller timestamp)";
 
       // delete the point
@@ -702,6 +739,7 @@ DBgr::del_range(const string &t1, const string &t2){
     }
 
     curs->close(curs);
+    if (first_del!="") backup_upd(txn, first_del);
   }
   catch (Err e){
     if (curs) curs->close(curs);
@@ -709,7 +747,6 @@ DBgr::del_range(const string &t1, const string &t2){
     throw e;
   }
   txn_commit(txn);
-  if (first_del!="") backup_upd(first_del);
 }
 
 /************************************/
@@ -829,3 +866,5 @@ DBgr::dump(const std::string &file){
     throw e;
   }
 }
+
+

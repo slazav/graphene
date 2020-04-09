@@ -40,8 +40,8 @@ creation. Possible variants are: TEXT, INT8, UINT8, INT16, UINT16,
 INT32, UINT32, INT64, UINT64, FLOAT, DOUBLE.
 
 Records with 8-bit keys are reserved for database information: data
-format, database version, description. Records with 16-bit keys are
-reserved for arbitrary user data. These records are not affected by
+format, database version, description, filters. Records with 16-bit keys
+are reserved for arbitrary user data. These records are not affected by
 regular get/put commands.
 
 
@@ -72,8 +72,7 @@ command-line option).
 only one program can access database at a time. This setting can be
 useful if you want to do massive and fast operations with a database and
 no other programs use this database. For example, importing large amount
-of data to a database can be done faster without using environment. This
-mode is also used in readonly mode (`-R` command-line option).
+of data to a database can be done faster without using environment.
 
 - `lock` -- Default mode. Environment (a few additional files) provides
 database locking to allow multiple programs work with the database
@@ -95,6 +94,15 @@ Use -i option to enter the interactive mode. Then commands are read from
 stdin, answers are written to stdout. This allows making many requests
 without reopening databases. Opening and closing of databases are long,
 it can be useful to open the connection once and do many operations.
+
+In interactive mode input lines are splitted to argument lists similarly
+to shell splitting.
+ - Comments (everything from # symbol to end of the line) are skipped.
+ - Empty lines are skipped.
+ - Words are splitted by ' ' or '\t' symbols, or by '\' + '\n' sequence.
+ - Words can be quoted by " or '. Quoting can be used to enter multi-line text.
+ - Any symbol (including newline) can be escaped by '\'. Protected newline
+   symbol works as word separator, not as literal \n.
 
 The program implements a Simple Pipe Protocol (see somewhere in my
 `tcl_device` package): When it is started successfully  a prompt message is
@@ -145,6 +153,9 @@ socket.
   For TEXT values all arguments are joined with a single spaces between
   then. If you do not want this, use quoted argument.
 
+- `put_flt <name> <time> <value1> ... <valueN>` -- Write a data point
+  using database input filter (see below).
+
 - `get_next <extended name> [<time1>]` -- Get first point with t>=time1.
 
 - `get_prev <extended name> [<time2>]` -- Get last point with t<=time2.
@@ -160,22 +171,35 @@ socket.
   for any ratio of dt and interpoint distance. For text data only first
   lines are shown.
 
-You can use words "now", "now_s" and "inf" as a timestamp. You can also
-add "+" or "-" symbol after numerical value to add of subtract 1 ns. This
+
+Supported timestamp forms:
+
+- `<seconds>.<fraction>` -- Base format, nanosecond precision.
+
+- `<seconds>.<fraction>[+|-]` -- add or subtract 1 ns to the value.This
 is convenient if you know a timestamp of some value and want to read next
-or  previous one. Default value for time1 is 0, for time2 is "inf".
+or previous one.
+
+- `yyyy-mm-dd`, `yyyy-mm-dd HH`, `yyyy-mm-dd HH:MM`, `yyyy-mm-dd
+HH:MM:SS`, `yyyy-mm-dd HH:MM:SS.<fraction>` -- Timestamp in a human-readable form.
+
+- `inf` -- The largest timestamp.
+
+- `now` -- Current time with microsecond precision
+
+- `now_s` -- Current time with second precision
+
+Default value for `<time1>` is 0, for `<time2>` is "inf".
 
 The "extended name" used in get_* commands have the following format:
-`<name>[:<column>][|<filter>]`
+`<name>[:<column>]` or `<name>[:f<filter>]`
 
 `<column>` is a column number (0,1,..), if it exists, then only this
 column is shown. If a certain column is requested but data array is not
 long enough, a "NaN" value is returned. Columns are ignored for text data.
 
-`<filter>` is a name of filter program, if it exists, the program is run and
-data is filtered through it. The program should be located in the
-database directory, program name can not contain '.:|+ \t\n/' symbols.
-`TODO: remove this feature?`
+`<filter>` is a filter number (1..15), if it exists data will be processed
+by the filter (see below).
 
 #### Commands for deleting data:
 
@@ -211,54 +235,104 @@ used if you want to close unused databases and sync data.
 
 #### Backup  system:
 
-Graphene database supportes incremental backups. This can be done using
-`backup_*` commands: database.
+Graphene database supports incremental backups. This can be done using
+`backup_*` commands.
 
-It is assumed that thre is one backup process for a database. It notifies
+It is assumed that there is one backup process for a database. It notifies
 the database before and after data transfer. Database answers which time
-range was modified since the last transfer.
+range was modified since the last successful transfer.
 
-- `backup_start <name>` -- notify that we want to backup the database `name`,
-get time value of he earliest change since last backup.
+- `backup_start <name>` -- Notify that we want to backup the database `name`,
+get time value of the earliest change since last backup or zero if
+no backup was done or backup timer was reset.
 
-- `backup_end <name>` -- notify that backup finished successfully.
+- `backup_end <name> [<t>]` -- Notify that backup finished successfully
+up to timestamp `<t>` (`inf` by default).
 
-Internally there are two timers with contains earliest time of database
+- `backup_print <name>` -- Print backup timer value.
+
+- `backup_reset <name>` -- Reset backup timer value.
+
+Internally there are two timers which contain earliest time of database
 modification: main and temporary one. Each database modification command
-(`put`, `del`, or `del_range`) decreases both timer values to the
+(`put`, `del`, or `del_range`) decreases both timers to the
 smallest time of modified record: (`timer = min(timer,
-modification_time)`). In new databases (and in databases created before
-graphene-2.8 where backup timers appear) both timers are at at the
-largest possible time.
+modification_time)`).
 
 The temporary timer is reset before backup starts (`backup_start`
-command) and commited to the main timer after backup process is
+command) and committed to the main timer after backup process is
 successfully finished (`backup_end` command). Main timer value is
-returned by `backup_start` command.
+returned by `backup_start` and `backup_print` commands.
 
 For incremental backup the following procedure can be done:
-- first time:
-  - create secondary database
-  - `backup_start` in the master database, ignore timer value
-  - `get_range` in the master database, put all values to the secondary one.
-  - `backup_end` in the master database
-
-- incremental syncronization
-  - `backup_start` in the master database, save timer value
-  - `del_range <timer>` in the secondary database
-  - `get_range <timer>` in the master database, put all values to the secondary one.
-  - `backup_end` in the master database
+- `backup_start` in the master database, save timer value
+- `del_range <timer>` in the secondary database
+- `get_range <timer>` in the master database, put all values to the secondary one.
+- `backup_end` in the master database
 
 Such backup should be efficient in normal operation, when records with
-contineously-increasing timestamps are added to the master database and
+continuously-increasing timestamps are added to the master database and
 modifications of old values happens rarely.
 
 If backup process fails and `backup_end` command is not executed then the
 main backup timer will not be reset and the next backup will work
 correctly.
 
-There is a script `graphene_sync` for implementing incremental syncronization
-of databases using backup timer mechanism.
+There is a script `graphene_sync` for implementing incremental synchronization
+of databases.
+
+#### Filters
+
+Each database can have up to sixteen data filters.
+Filter 0 is input filter, incoming data can be filtered
+through it to remove repeated points or do averaging.
+Filters 1..15 are output filters.
+
+- `set_filter <name> <N> <tcl code>` -- set code of filter N
+
+- `print_filter <name> <N>` -- print code of filter N
+
+- `print_f0data <name>` -- print data of filter 0
+
+- `put_flt <name> <timestamp> <data> ...` -- put data to the database through the filter 0
+
+Filter is a piece of TCL code executed in a safe TCL interpreter.
+Three variables are defined:
+
+- `time` -- timestamp in `<seconds>.<nanoseconds>` format. Filter
+can modify this variable to change the timestamp. Note that the timestamp
+format is wider then `double` value. Do not convert it to number if you
+want to keep precision.
+
+- `data` -- list of data to be written to the database. Filter can
+modify this list.
+
+- `storage` -- For filter 0 it is a filter-specific data which is kept
+in the database and can be used to save filter state. It can be TCL
+list, but not an array. For filters 1..15 this data is not stored.
+
+If filter 0 returns false value (`0`, `off`, `false`) data will not
+be written to the database.
+
+Simple example:
+```
+code='
+  # use storage variable as a counter: 1,2,3,4:
+  incr storage
+  # round time to integer value (this will save some space):
+  set time [expr int($time)]
+  # change data: add one to the first element,
+  # replace others by the counter value
+  set data [list [expr [lindex $data 0] + 1] $storage]
+  # put every third element, skip others
+  return [expr $storage%3==1]
+'
+graphene set_filter mydb 0 "$code"
+graphene put_flt mydb 123.456 10 20 30
+```
+
+Here `11 1` will be written with timestamp `123`.
+
 
 ### Examples
 
@@ -286,9 +360,27 @@ Options:
                 3 - write input data
                 4 - write output data
  -l <file>  -- log file, use '-' for stdout
-               (default /var/log/graphene.log in daemon mode, '-' in)
+               (default /var/log/graphene.log in daemon mode, '-' in
+                normal mode)
+ -P <file>  -- Pid file (default: /var/run/graphene_http.pid)
  -f         -- do fork and run as a daemon
+ -S         -- stop running server
  -h         -- write this help message and exit
+```
+
+In addition to simple JSON interface `graphene_http` also implements
+a simple GET read-only interface to access data:
+- URL is graphene command, one of `get`, `get_prev`,
+  `get_next`, `get_range`, or `list`
+- `name` parameter is a database name
+- `t1` parameter is timestamp for all `get_*` commands
+- `t2` and `dt` parameters are second timestamp and time interval
+  for `get_range` command
+- `tfmt` parameter is time format `def`, or `rel`.
+
+Example:
+```
+wget localhost:8182/tmp_db'?cmd=get_range&t1=10&t2=12&tfmt=rel' -O - -o /dev/null
 ```
 
 ###  Matlab/octave interface
@@ -296,9 +388,10 @@ Options:
 Nothing is ready yet. You can use something like this to get data using the
 graphene program:
 
+```
   [r, out] = system('graphene get_range my_dataset 1464260400 now 60000');
   [t val1 val2] = strread(out, '%f %f %f');
-
+```
 
 ### `graphene_tab` script
 
@@ -314,10 +407,4 @@ Usage: `graphene_tab -D <db_prog> -t <t1> -u <t2> db1 db2 db3 ...`
 Values from db2, db3, etc. are interpolated to points of db1 and printed in a single
 text table. For floating-point databases linear interpolation is used, for integer
 ones nearest values with smaller timestamps are printed.
-
-### Known problems
-
-- Line breaks in text databases. You can put line breaks in text database using
-the command line interface. In interactive mode it is not possible, because
-line breaks always mean starting of a new command.
 

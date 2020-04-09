@@ -1,4 +1,4 @@
-#!/bin/bash -u
+#!/bin/bash
 
 # test command line interface program ./graphene
 
@@ -16,18 +16,18 @@ function assert(){
 help_msg="$(./graphene -h)"
 
 # no commands - help message
-assert "$(./graphene)" "#Error: command is expected"
-assert "$(./graphene -d .)" "#Error: command is expected"
+assert "$(./graphene)" "Error: command is expected"
+assert "$(./graphene -d .)" "Error: command is expected"
 
 # invalid option (error printed by getopt)
 assert "$(./graphene -X . 2>&1)" "./graphene: invalid option -- 'X'"
 
 # unknown command
-assert "$(./graphene -d . a)" "#Error: Unknown command: a"
+assert "$(./graphene -d . a)" "Error: Unknown command: a"
 
 assert "$(./graphene -d . *idn?)" "Graphene database 2.8"
 
-assert "$(./graphene -d . get_time a)" "#Error: too many parameters"
+assert "$(./graphene -d . get_time a)" "Error: too many parameters"
 
 assert "$(./graphene -d . get_time | tr [0-9] x)" "xxxxxxxxxx.xxxxxx"
 
@@ -54,19 +54,19 @@ done
 rm -f -- __db.* log.*
 
 # create
-assert "$(./graphene -d . create)" "#Error: database name expected"
-assert "$(./graphene -d . create a dfmt)" "#Error: Unknown data format: dfmt"
+assert "$(./graphene -d . create)" "Error: database name expected"
+assert "$(./graphene -d . create a dfmt)" "Error: Unknown data type: dfmt"
 
 assert "$(./graphene -d . create test_1)" ""
 assert "$(./graphene -d . create test_2 UINT16)" ""
 assert "$(./graphene -d . create test_3 uint32 "Uint 32 database")" ""
 assert "$(./graphene -d . create test_4 uint32 Uint 32 database)" ""
-assert "$(./graphene -d . create test_1)" "#Error: test_1.db: File exists"
+assert "$(./graphene -d . create test_1)" "Error: test_1.db: File exists"
 
 # info
-assert "$(./graphene -d . info)" "#Error: database name expected"
-assert "$(./graphene -d . info a b)" "#Error: too many parameters"
-assert "$(./graphene -d . info test_x)" "#Error: test_x.db: No such file or directory"
+assert "$(./graphene -d . info)" "Error: database name expected"
+assert "$(./graphene -d . info a b)" "Error: too many parameters"
+assert "$(./graphene -d . info test_x)" "Error: test_x.db: No such file or directory"
 
 assert "$(./graphene -d . info test_1)" "DOUBLE"
 assert "$(./graphene -d . info test_2)" "UINT16"
@@ -74,40 +74,40 @@ assert "$(./graphene -d . info test_3)" "UINT32	Uint 32 database"
 assert "$(./graphene -d . info test_4)" "UINT32	Uint 32 database"
 
 # list
-assert "$(./graphene -d . list a)" "#Error: too many parameters"
+assert "$(./graphene -d . list a)" "Error: too many parameters"
 assert "$(./graphene -d . list | sort)" "$(printf "test_1\ntest_2\ntest_3\ntest_4")"
 
 # list_dbs
-assert "$(./graphene -d . list_dbs a)" "#Error: too many parameters"
-assert "$(./graphene -E lock -d . list_dbs)" "#Error: list_dbs can not by run in this environment type: lock"
-assert "$(./graphene -R -d . list_dbs)" "#Error: list_dbs can not by run in this environment type: lock"
+assert "$(./graphene -d . list_dbs a)" "Error: too many parameters"
+assert "$(./graphene -E lock -d . list_dbs)" "Error: list_dbs can not by run in this environment type: lock"
+assert "$(./graphene -R -d . list_dbs)" "Error: list_dbs can not by run in this environment type: lock"
 
 # list_logs
-assert "$(./graphene -d . list_logs a)" "#Error: too many parameters"
-assert "$(./graphene -E lock -d . list_logs)" "#Error: list_logs can not by run in this environment type: lock"
-assert "$(./graphene -R -d . list_logs)" "#Error: list_logs can not by run in this environment type: lock"
+assert "$(./graphene -d . list_logs a)" "Error: too many parameters"
+assert "$(./graphene -E lock -d . list_logs)" "Error: list_logs can not by run in this environment type: lock"
+assert "$(./graphene -R -d . list_logs)" "Error: list_logs can not by run in this environment type: lock"
 
 # delete
-assert "$(./graphene -d . delete)" "#Error: database name expected"
-assert "$(./graphene -d . delete a b)" "#Error: too many parameters"
-assert "$(./graphene -d . delete test_x)" "#Error: test_x.db: No such file or directory"
+assert "$(./graphene -d . delete)" "Error: database name expected"
+assert "$(./graphene -d . delete a b)" "Error: too many parameters"
+assert "$(./graphene -d . delete test_x)" "Error: test_x.db: No such file or directory"
 assert "$(./graphene -d . delete test_2)" ""
-assert "$(./graphene -d . delete test_2)" "#Error: test_2.db: No such file or directory"
+assert "$(./graphene -d . delete test_2)" "Error: test_2.db: No such file or directory"
 
 # rename
-assert "$(./graphene -d . rename)" "#Error: database old and new names expected"
-assert "$(./graphene -d . rename a)" "#Error: database old and new names expected"
-assert "$(./graphene -d . rename a b c)" "#Error: too many parameters"
-assert "$(./graphene -d . rename test_x test_y)" "#Error: renaming test_x.db -> test_y.db: No such file or directory"
-assert "$(./graphene -d . rename test_3 test_1)" "#Error: renaming test_3.db -> test_1.db: Destination exists"
+assert "$(./graphene -d . rename)" "Error: database old and new names expected"
+assert "$(./graphene -d . rename a)" "Error: database old and new names expected"
+assert "$(./graphene -d . rename a b c)" "Error: too many parameters"
+assert "$(./graphene -d . rename test_x test_y)" "Error: renaming test_x.db -> test_y.db: No such file or directory"
+assert "$(./graphene -d . rename test_3 test_1)" "Error: renaming test_3.db -> test_1.db: Destination exists"
 assert "$(./graphene -d . rename test_3 test_2)" ""
-assert "$(./graphene -d . info test_3)" "#Error: test_3.db: No such file or directory"
+assert "$(./graphene -d . info test_3)" "Error: test_3.db: No such file or directory"
 assert "$(./graphene -d . info test_2)" "UINT32	Uint 32 database"
 
 # set_descr
-assert "$(./graphene -d . set_descr)" "#Error: database name and new description text expected"
-assert "$(./graphene -d . set_descr a)" "#Error: database name and new description text expected"
-assert "$(./graphene -d . set_descr test_x a)" "#Error: test_x.db: No such file or directory"
+assert "$(./graphene -d . set_descr)" "Error: database name and new description text expected"
+assert "$(./graphene -d . set_descr a)" "Error: database name and new description text expected"
+assert "$(./graphene -d . set_descr test_x a)" "Error: test_x.db: No such file or directory"
 assert "$(./graphene -d . set_descr test_1 "Test DB number 1")" ""
 assert "$(./graphene -d . info test_1)" "DOUBLE	Test DB number 1"
 assert "$(./graphene -d . set_descr test_1 Test DB number 1)" ""
@@ -246,7 +246,7 @@ assert "$(./graphene -d . put test_2 2000 1.2345678901234567890123456789e88)" ""
 assert "$(./graphene -d . put test_3 1000 1.2345678901234567890123456789)" ""
 assert "$(./graphene -d . put test_3 2000 1.2345678901234567890123456789e38)" ""
 
-assert "$(./graphene -d . put test_3 2000 1e88)" "#Error: Can't put value into FLOAT database: 1e88"
+assert "$(./graphene -d . put test_3 2000 1e88)" "Error: Bad FLOAT value: 1e88"
 
 assert "$(./graphene -d . get_range test_2)" "1000.000000000 1.234567890123457
 2000.000000000 1.234567890123457e+88"
@@ -276,32 +276,6 @@ assert "$(./graphene -d . get_range test_3)" "10.000000000 1
 15.000000000 6"
 
 assert "$(./graphene -d . delete test_3)" ""
-
-###########################################################################
-# filters
-
-echo "#!/bin/sh" > test_flt
-echo "while read t v; do echo \$t \$((\$v*\$v)); done" >> test_flt
-chmod 755 test_flt
-
-assert "$(./graphene -d . create test_3)" ""
-assert "$(./graphene -d . create test_4 uint32 Uint 32 database)" ""
-assert "$(./graphene -d . put test_3 10 1 4)" ""
-assert "$(./graphene -d . put test_3 11 2 3)" ""
-assert "$(./graphene -d . put test_3 12 3 2)" ""
-assert "$(./graphene -d . put test_3 13 4 1)" ""
-assert "$(./graphene -d . get_range test_3:0)" "10.000000000 1
-11.000000000 2
-12.000000000 3
-13.000000000 4"
-assert "$(./graphene -d . get_range 'test_3:0|test_flt')" "10.000000000 1
-11.000000000 4
-12.000000000 9
-13.000000000 16"
-
-rm -f test_flt
-assert "$(./graphene -d . delete test_3)" ""
-assert "$(./graphene -d . delete test_4)" ""
 
 ###########################################################################
 # TEXT database
@@ -370,7 +344,7 @@ assert "$(./graphene -d . delete test_4)" ""
 # interactive mode
 
 #prompt
-assert "$(./graphene -d . -i 1)" "#Error: too many arguments for the interactive mode"
+assert "$(./graphene -d . -i 1)" "Error: too many arguments for the interactive mode"
 prompt="$(printf "" | ./graphene  -d . -i)"
 assert "$prompt" "#SPP001
 Graphene database. Type cmdlist to see list of commands
@@ -412,6 +386,9 @@ assert "$(./graphene -d . get text_3)" "30.000000000 #BBB
 assert "$(printf 'get text_3' | ./graphene -i -d .)"\
   "$(printf "$prompt\n30.000000000 #BBB\n##CCC\n##DDD #EEE\n#OK")"
 
+# quoting in interactive mode:
+assert "$(cat test_data/commands1 | ./graphene -i -d .)"\
+  "$(cat test_data/answer1)"
 
 ###########################################################################
 # duplicated keys (replace by default)
@@ -442,9 +419,9 @@ assert "$(./graphene -d . get_range test_1)" "\
 2.000000000 5
 3.000000000 6"
 
-assert "$(./graphene -d . -D aaa put test_1 1 8)" "#Error: Unknown dpolicy setting: aaa"
+assert "$(./graphene -d . -D aaa put test_1 1 8)" "Error: Unknown dpolicy setting: aaa"
 
-assert "$(./graphene -d . -D error put test_1 1 8)" "#Error: test_1.db: Timestamp exists"
+assert "$(./graphene -d . -D error put test_1 1 8)" "Error: test_1.db: Timestamp exists"
 assert "$(./graphene -d . delete test_1)" ""
 
 ###########################################################################
@@ -469,6 +446,7 @@ assert "$(diff test_2.tmp test_3.tmp)" ""
 assert "$(./graphene -d . delete test_1)" ""
 assert "$(./graphene -d . delete test_2)" ""
 
+rm -f test_*.tmp
 
 ###########################################################################
 # readonly mode
@@ -477,26 +455,27 @@ assert "$(./graphene -d . create test_1 UINT32)" ""
 assert "$(./graphene -d . put test_1 1    1)" ""
 assert "$(./graphene -d . put test_1 1.5  2)" ""
 assert "$(./graphene -d . put test_1 2    3)" ""
-assert "$(./graphene -d . -R put test_1 3    4)" "#Error: can't write to database in readonly mode"
+assert "$(./graphene -d . -R put test_1 3    4)" "Error: can't write to database in readonly mode"
 assert "$(./graphene -d . -R  get_range test_1)" "\
 1.000000000 1
 1.500000000 2
 2.000000000 3"
 
-assert "$(./graphene -d . -R delete test_1)" "#Error: can't remove database in readonly mode"
-assert "$(./graphene -d . -R rename test_1 test_2)" "#Error: can't rename database in readonly mode"
+assert "$(./graphene -d . -R delete test_1)" "Error: can't remove database in readonly mode"
+assert "$(./graphene -d . -R rename test_1 test_2)" "Error: can't rename database in readonly mode"
 assert "$(./graphene -d . delete test_1)" ""
 
 ###########################################################################
-# lastmod system
+# backup system
 
-# in the new database backup timer is set to the largest time
+# in the new database backup timer is set to 0
 assert "$(./graphene -d . create test_1 UINT32)" ""
-assert "$(./graphene -d . backup_start test_1)" "4294967295.999999999"
+assert "$(./graphene -d . backup_print test_1)" "0.000000000"
+assert "$(./graphene -d . backup_start test_1)" "0.000000000"
 
 # on put operations timer shifts to lower times
 assert "$(./graphene -d . put test_1 1234 1)" ""
-assert "$(./graphene -d . backup_start test_1)" "1234.000000000"
+assert "$(./graphene -d . backup_start test_1)" "0.000000000"
 assert "$(./graphene -d . backup_end test_1)" "" # commit tmp timer
 
 assert "$(./graphene -d . backup_start test_1)" "4294967295.999999999"
@@ -517,7 +496,7 @@ assert "$(./graphene -d . del test_1 1235)" ""
 assert "$(./graphene -d . backup_start test_1)" "1235.000000000"
 
 # if delete fails, lastmod does not change
-assert "$(./graphene -d . del test_1 10)" "#Error: test_1.db: No such record: 10"
+assert "$(./graphene -d . del test_1 10)" "Error: test_1.db: No such record: 10"
 assert "$(./graphene -d . backup_start test_1)" "1235.000000000"
 assert "$(./graphene -d . backup_end test_1)" ""
 
@@ -531,6 +510,73 @@ assert "$(./graphene -d . backup_start test_1)" "1235.000000000"
 assert "$(./graphene -d . del_range test_1 100 1234)" ""
 assert "$(./graphene -d . backup_start test_1)" "1233.000000000"
 
+# reset, end with timestamp
+assert "$(./graphene -d . backup_reset test_1)" ""
+assert "$(./graphene -d . backup_print test_1)" "0.000000000"
+assert "$(./graphene -d . backup_start test_1)" "0.000000000"
+assert "$(./graphene -d . put test_1 1234 1)" ""
+assert "$(./graphene -d . backup_print test_1)" "0.000000000"
+assert "$(./graphene -d . backup_end test_1 1000)" ""
+assert "$(./graphene -d . backup_print test_1)" "1000.000000000"
+assert "$(./graphene -d . backup_start test_1)" "1000.000000000"
+assert "$(./graphene -d . put test_1 1234 1)" ""
+assert "$(./graphene -d . backup_end test_1 2000)" ""
+assert "$(./graphene -d . backup_print test_1)" "1234.000000000"
+
+assert "$(./graphene -d . delete test_1)" ""
+
+###########################################################################
+## input filter
+assert "$(./graphene -d . create test_1 DOUBLE)" ""
+
+# put every third record; round time to int; add 1 to first data element,
+# replace others with counter value
+code='
+  incr storage
+  set time [expr int($time)]
+  set data [list [expr [lindex $data 0] + 1] $storage]
+  return [expr $storage%3==1]
+'
+assert "$(./graphene -d . set_filter test_1 0 "$code")" ""
+assert "$(./graphene -d . print_filter test_1 0)" "$(echo "$code")"
+assert "$(./graphene -d . put_flt test_1 123.456 10 20 30)" ""
+assert "$(./graphene -d . put_flt test_1 200.1  15)" ""
+assert "$(./graphene -d . put_flt test_1 201.1  16)" ""
+assert "$(./graphene -d . put_flt test_1 202.1  17)" ""
+assert "$(./graphene -d . put_flt test_1 203.1  18)" ""
+
+assert "$(./graphene -d . get_range test_1)" \
+"123.000000000 11 1
+202.000000000 18 4"
+
+assert "$(./graphene -d . print_f0data test_1)" "5"
+
+# setting of the filter resets also storage information
+assert "$(./graphene -d . set_filter test_1 0 "$code")" ""
+assert "$(./graphene -d . put_flt test_1 523.456 10 20 30)" ""
+assert "$(./graphene -d . get test_1)" "523.000000000 11 1"
+
+###########################################################################
+## output filter
+code='
+  set time [expr int($time)+2]
+  set data [list [expr [lindex $data 0]*2]]
+'
+assert "$(./graphene -d . set_filter test_1 -1 "$code")" "Error: filter number out of range: -1"
+assert "$(./graphene -d . set_filter test_1 1000 "$code")" "Error: filter number out of range: 1000"
+assert "$(./graphene -d . set_filter test_1 5 "$code")" ""
+assert "$(./graphene -d . print_filter test_1 5)" "$(echo "$code")"
+
+# f1 is not set
+assert "$(./graphene -d . get_range test_1:f1)" \
+"123.000000000 11 1
+202.000000000 18 4
+523.000000000 11 1"
+
+assert "$(./graphene -d . get_range test_1:f5)" \
+"125 22
+204 36
+525 22"
 
 assert "$(./graphene -d . delete test_1)" ""
 

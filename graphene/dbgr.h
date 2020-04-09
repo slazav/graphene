@@ -13,8 +13,12 @@
 #include <sstream>
 #include <cstring> /* memset */
 #include <db.h>
-#include "dbinfo.h"
+
+#include "err/err.h"
 #include "dbout.h"
+#include "filter.h"
+
+#include <iomanip>
 
 // bercleydb:
 //  http://docs.oracle.com/cd/E17076_02/html/gsg/C/index.html
@@ -27,9 +31,15 @@
 #define KEY_BACKUP_MAIN  0x10
 #define KEY_BACKUP_TMP   0x11
 
-/***********************************************************/
-// type for data processing function.
-typedef void(process_data_func)(DBT*,DBT*,const DBinfo&, void *usr_data);
+// Filters occupy MAX_FILTERS keys starting
+// from KEY_FLT. Filter 0 data uses KEY_FLT0DATA key
+#define MAX_FILTERS 16
+#define KEY_FLT  0x20
+#define KEY_FLT0DATA  0x19
+
+#define DEF_DBVERSION  2
+#define DEF_TIMETYPE   TIME_V2
+#define DEF_DATATYPE   DATA_DOUBLE
 
 
 /***********************************************************/
@@ -65,15 +75,21 @@ class DBgr{
     std::string name;    // database name
     uint32_t open_flags; // database open flags
     uint32_t env_flags;  // environment flags
-    DBinfo db_info;      // database information
-    bool info_is_actual; // is the info the same as in the file?
+
+    uint8_t  version;  // database version
+    DataType dtype;    // data type
+    TimeType ttype;    // timestamp type
+    std::string descr; // database description
+
+    TimeFMT timefmt;     // output time format
+    std::string time0;   // zero time for relative time output (not parsed)
+
+    std::vector<Filter> filters; // filters (see filter.h)
 
   // database deleter
   struct D {
     void operator()(DB* dbp) { dbp->close(dbp, 0); }
   };
-
-
 
   /************************************/
   public:
@@ -101,30 +117,46 @@ class DBgr{
     bool c_get(DBC *curs, DBT *k, DBT *v, int flags);
 
   /****************************/
+  // Simple del/put/set operations for database information
+  private:
+    void del_key(DB_TXN *txn, uint8_t key);
+    void set_key(DB_TXN *txn, uint8_t key, DBT v);
+    std::string get_key(DB_TXN *txn, uint8_t key,
+                        const std::string & def = std::string());
+
+  /****************************/
   // Read/Write database information.
   // key = (uint8_t)0 (1byte),  value = data_fmt (1byte) + description
   // key = (uint8_t)1 (1byte),  value = version  (1byte)
   public:
-    void write_info(const DBinfo &info);
-    DBinfo read_info();
+    void write_info();
+    void read_info();
+
+    void write_filter(const int slot, const std::string & code);
 
   /****************************/
   // Backup system:
 
   // backup start: notify that we are going to start backup.
-  // - reset temporary backup timer
+  // - reset temporary backup timer to inf
   // - return value of the main backup timer
   // args: backup_start <name>
   std::string backup_start();
 
   // backup end: notify that backup is successfully done
-  // - commit temporary backup timer into main one
-  // args: backup_end <name>
-  void backup_end();
+  // - commit min(temporary backup timer and timestamp) into main one
+  // args: backup_end <name> [<timestamp>]
+  void backup_end(const std::string & t2);
+
+  // reset backup timers to 0
+  void backup_reset();
+
+  // print main backup timer
+  std::string backup_print();
 
   // Internal function, should be calld after each
   // database modification.
-  void backup_upd(const std::string &t);
+  void backup_upd(DB_TXN *txn, const std::string &t);
 
   /****************************/
   // Put data to the database
@@ -136,8 +168,12 @@ class DBgr{
   void put(const std::string &t, const std::vector<std::string> & dat,
            const std::string &dpolicy);
 
+  // put data using input filter
+  void put_flt(std::string &t, std::vector<std::string> & dat,
+           const std::string &dpolicy);
+
   // All get* functions get some data from the database
-  // and call dbo.proc_point() for each key-value pair
+  // and call proc_point() for each key-value pair
 
   // get data from the database -- get_next
   void get_next(const std::string &t1, DBout & dbo);
@@ -168,6 +204,33 @@ class DBgr{
   // dump file in a db_dump format
   // (db_dump utility can be used instead)
   void dump(const std::string &file);
+
+
+  void proc_point(DBT *k, DBT *v, DBout & dbo, const bool list = false) {
+    // check for correct key size (do not parse DB info)
+    if (k->size!=sizeof(uint64_t) && k->size!=sizeof(uint32_t) ) return;
+    // convert DBT to strings
+    std::string ks((char *)k->data, (char *)k->data+k->size);
+    std::string vs((char *)v->data, (char *)v->data+v->size);
+    auto t = graphene_time_print(ks, ttype, timefmt, time0);
+    auto d = graphene_data_print(vs, dbo.col, dtype);
+
+    if (dbo.flt>=MAX_FILTERS) throw Err() << "filter number out of range: " << dbo.flt;
+    if (dbo.flt>0) filters[dbo.flt].run(t,d);
+
+
+    // print values into a string (always \n in the end!)
+    std::string s =  t;
+    for (auto const & v:d) s += " " + v;
+    s += "\n";
+
+    // in list mode keep only first line (s always ends with \n - see above)
+    if (list && dtype==DATA_TEXT)
+      s.resize(s.find('\n')+1);
+
+    dbo.print_point(s);
+  }
+
 
 };
 

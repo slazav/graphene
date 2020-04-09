@@ -1,0 +1,91 @@
+#!/bin/bash -eu
+
+. ../modules/test_lib.sh
+
+# use non-standard port to avoid collisions with running server
+port=8182
+
+# try to stop the server
+./graphene_http --stop --port $port --pidfile pid.tmp &>/dev/null ||:
+
+assert_cmd "wget localhost:$port -nv -S"\
+  "failed: Connection refused." 4
+
+rm -f log.txt
+
+# run the server
+assert_cmd "./graphene_http --port $port --pidfile pid.tmp --dbpath . --logfile log.txt --dofork" "" 0
+
+# remove all test databases
+for i in *.db; do
+  [ -f $i ] || continue
+  ./graphene -d . delete ${i%.db}
+done
+rm -f -- __db.* log.*
+
+# create a database
+./graphene -d . create tmp_db double
+./graphene -d . put tmp_db 10 123
+./graphene -d . put tmp_db 11 124
+./graphene -d . put tmp_db 12 125
+
+
+# get with empty url -- simple-json
+a=$(wget localhost:$port -O - -nv -S 2>&1 | grep HTTP)
+assert_cmd "echo $a" "HTTP/1.1 200 OK" 0
+
+# options with empty url -- simple-json
+a=$(wget localhost:$port --method OPTIONS -O - -nv -S 2>&1 | grep HTTP)
+assert_cmd "echo $a" "HTTP/1.1 200 OK" 0
+
+
+# POST with empty url -- unknown query
+a=$(wget localhost:$port --post-data "{}" -O - -nv -S 2>&1 | grep Error:)
+assert_cmd "echo $a" "Error: Unknown query" 0
+
+# search - tmp_db
+a=$(wget localhost:$port/search --post-data "{}" -O - -o /dev/null 2>&1)
+assert_cmd "echo $a" '["tmp_db"]' 0
+
+# query
+a=$(wget localhost:$port/query --post-data "{}" -O - -nv -S 2>&1 | grep Error:)
+assert_cmd "echo $a" "Error: Bad range setting" 0
+
+# annotations
+a=$(wget localhost:$port/annotations --post-data "{}" -O - -nv -S 2>&1 | grep Error:)
+assert_cmd "echo $a" "Error: Bad range setting" 0
+
+
+# GET with non-empty url -- access to a database (get by default)
+a=$(wget localhost:$port/get?name=tmp_db -O - -o /dev/null 2>&1)
+assert_cmd "echo $a" "12.000000000 125" 0
+
+# get_next
+a=$(wget "localhost:$port/get_next?name=tmp_db" -O - -o /dev/null 2>&1)
+assert_cmd "echo $a" "10.000000000 123" 0
+
+# get_range
+a=$(wget "localhost:$port/get_range?name=tmp_db&t1=10&t2=12&tfmt=rel" -O - -o /dev/null 2>&1)
+assert_cmd "echo $a" "0.000000000 123 1.000000000 124 2.000000000 125" 0
+
+# get_range
+a=$(wget "localhost:$port/get_range?name=tmp_db&t1=10&t2=12" -O - -o /dev/null 2>&1)
+assert_cmd "echo $a" "10.000000000 123 11.000000000 124 12.000000000 125" 0
+
+# list
+a=$(wget "localhost:$port/list" -O - -o /dev/null 2>&1)
+assert_cmd "echo $a" "tmp_db" 0
+
+
+
+# stop the server
+assert_cmd "./graphene_http --port $port --stop --pidfile pid.tmp" "" 0
+
+rm -f log.txt
+
+## remove all test databases
+#for i in *.db; do
+#  [ -f $i ] || continue
+#  ./graphene -d . delete ${i%.db}
+#done
+#rm -f -- __db.* log.*

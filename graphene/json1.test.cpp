@@ -16,7 +16,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include "json.h"
-#include "err.h"
+#include "err/err.h"
 
 using namespace std;
 
@@ -33,10 +33,11 @@ main(int argc, char *argv[]){
   while (!cin.eof()){ string s; getline(cin, s); in_data +=s+'\n'; }
 
   try {
-    cout << graphene_json(dbpath, "none", url, in_data);
+    DBpool pool(dbpath, true, "none");
+    cout << graphene_json(&pool, url, in_data);
   }
   catch (Err e){
-    cout << "Error:" << e.str();
+    cout << "Error: " << e.str();
     return 1;
   }
   return 0;

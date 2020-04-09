@@ -5,6 +5,8 @@
 #include <string>
 #include <iostream>
 
+#include "data.h"
+
 /***********************************************************/
 // Class for an extended dataset object.
 //
@@ -23,35 +25,36 @@
 //
 class DBout {
   public:
-  std::string name;    // primary database name
+
+  bool spp;    // SPP mode (protect # in the beginning of line)
+
   std::ostream & out;  // stream for output
-  std::string time0;   // zero time for relative time output or ""
-  bool interactive;    // interactive mode
   int col; // column number, for the main database
 
-  // filter name, pid, in/out descriptors
-  std::string filter;  // filter program
-  pid_t pid;
-  int fd1[2], fd2[2];
+  int flt; // filter number 1..MAX_FILTERS; <1 for no filtering
 
   // constructor -- parse the dataset string, create iostream
-  DBout(const std::string & filterpath,
-        const std::string & str,
-        std::ostream & out = std::cout);
-  ~DBout();
-
-  // Process a single point (select a column, make tables, filtering)
-  // and call print_point().
-  // <list> parameter changes output of TEXT records in a list mode
-  // (only first line is shown).
-  void proc_point(DBT *k, DBT *v, const DBinfo & info, int list=0);
+  DBout(std::ostream & out_ = std::cout):
+          col(-1), flt(-1), out(out_), spp(false) {}
 
   // print_point  -- by default it just prints the line to out,
   // but this function can be overriden.
-  virtual void print_point(const std::string & str);
+  virtual void print_point(const std::string & str){
+    if (spp) out << graphene_spp_text(str);
+    else out << str;
+  }
 
-  void set_interactive(const bool state=true) {interactive = state;}
-  void set_relative(const std::string & time0_="") {time0 = time0_;}
 };
+
+// version with string output (for HTTP get interface)
+class DBoutS: public DBout {
+  std::string mystr;
+  public:
+
+  void print_point(const std::string & str){ mystr += str; }
+  std::string & get_str() {return mystr;}
+
+};
+
 
 #endif
