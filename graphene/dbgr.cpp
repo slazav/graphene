@@ -205,11 +205,9 @@ DBgr::write_info(){
   try {
 
     // Write format + description.
-    del_key(txn, KEY_DESCR);
     set_key(txn, KEY_DESCR, mk_dbt(string(1, (char)dtype) + descr));
 
     // Write version.
-    del_key(txn, KEY_VERSION);
     set_key(txn, KEY_VERSION, mk_dbt(&version));
   }
   catch (Err e){
