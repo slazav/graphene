@@ -113,6 +113,14 @@ class DBgr{
     bool c_get(DBC *curs, DBT *k, DBT *v, int flags);
 
   /****************************/
+  // Simple del/put/set operations for database information
+  private:
+    void del_key(DB_TXN *txn, uint8_t key);
+    void set_key(DB_TXN *txn, uint8_t key, DBT v);
+    std::string get_key(DB_TXN *txn, uint8_t key,
+                        const std::string & def = std::string());
+
+  /****************************/
   // Read/Write database information.
   // key = (uint8_t)0 (1byte),  value = data_fmt (1byte) + description
   // key = (uint8_t)1 (1byte),  value = version  (1byte)
@@ -124,17 +132,6 @@ class DBgr{
 
   /****************************/
   // Backup system:
-
-  // get main/temporary timer from the database:
-  // key: KEY_BACKUP_TMP | KEY_BACKUP_MAIN
-  // ret: packed string
-  // if database record does not exist, return zero time
-  std::string backup_get_timer(DB_TXN *txn, uint8_t key);
-
-  // write main/temporary timer to the database
-  // key: KEY_BACKUP_TMP | KEY_BACKUP_MAI
-  // timer: packed string
-  void backup_set_timer(DB_TXN *txn, uint8_t key, const std::string & timer);
 
   // backup start: notify that we are going to start backup.
   // - reset temporary backup timer to inf
