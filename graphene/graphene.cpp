@@ -82,7 +82,11 @@ class Pars{
             "  rename <old_name> <new_name>\n"
             "      -- rename a database\n"
             "  set_descr <name> <description>\n"
-            "      -- change database description\n"
+            "      -- set/change database description\n"
+            "  set_ifilter <name> <tcl code>\n"
+            "      -- set/change database input filter\n"
+            "  print_ifilter <name>\n"
+            "      -- print database input filter\n"
             "  info <name>\n"
             "      -- print database information, tab-separated time format,\n"
             "         data format and description (if it is not empty)\n"
@@ -90,6 +94,8 @@ class Pars{
             "      -- list all databases in the data folder\n"
             "  put <name> <time> <value1> ... <valueN>\n"
             "      -- write a data point\n"
+            "  put_flt <name> <time> <value1> ... <valueN>\n"
+            "      -- write a data point using input filter\n"
             "  get <name>[:N] <time>\n"
             "      -- get previous or interpolated point\n"
             "  get_next <name>[:N] [<time1>]\n"
@@ -365,6 +371,17 @@ class Pars{
       return;
     }
 
+    // write data using input filter
+    // args: put_flt <name> <time> <value1> ...
+    if (strcasecmp(cmd.c_str(), "put_flt")==0){
+      if (pars.size()<4) throw Err() << "database name, timestamp and some values expected";
+      vector<string> dat;
+      for (int i=3; i<pars.size(); i++) dat.push_back(string(pars[i]));
+      // open database and write data
+      pool->get(pars[1]).put_flt(pars[2], dat, dpolicy);
+      return;
+    }
+
     // get next point after time1
     // args: get_next <name>[:N] [<time1>]
     if (strcasecmp(cmd.c_str(), "get_next")==0){
@@ -495,6 +512,23 @@ class Pars{
       DBpool simple_pool(dbpath, false, "none");
       DBgr & db = simple_pool.get(pars[1], DB_RDONLY);
       db.dump(pars[2]);
+      return;
+    }
+
+    // set input filter
+    // args: set_ifilter <name> <tcl script>
+    if (strcasecmp(cmd.c_str(), "set_ifilter")==0){
+      if (pars.size()<3) throw Err() << "database name and filter code expected";
+      pool->get(pars[1]).write_ifilter(pars[2]);
+      return;
+    }
+
+    // print input filter
+    // args: print_ifilter <name>
+    if (strcasecmp(cmd.c_str(), "print_ifilter")==0){
+      if (pars.size()<2) throw Err() << "database name expected";
+      if (pars.size()>2) throw Err() << "too many parameters";
+      out << pool->get(pars[1]).iflt.get_code() << "\n";
       return;
     }
 

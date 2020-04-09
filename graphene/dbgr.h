@@ -16,6 +16,7 @@
 
 #include "err/err.h"
 #include "dbout.h"
+#include "ifilter.h"
 
 #include <iomanip>
 
@@ -27,6 +28,8 @@
 
 #define KEY_DESCR   0
 #define KEY_VERSION 1
+#define KEY_IFLT_CODE  2
+#define KEY_IFLT_DATA  3
 #define KEY_BACKUP_MAIN  0x10
 #define KEY_BACKUP_TMP   0x11
 
@@ -77,6 +80,8 @@ class DBgr{
     TimeFMT timefmt;     // output time format
     std::string time0;   // zero time for relative time output (not parsed)
 
+    iFilter iflt;  // input filter (see ifilter.h)
+
   // database deleter
   struct D {
     void operator()(DB* dbp) { dbp->close(dbp, 0); }
@@ -114,6 +119,8 @@ class DBgr{
   public:
     void write_info();
     void read_info();
+
+    void write_ifilter(const std::string & luacode);
 
   /****************************/
   // Backup system:
@@ -158,6 +165,10 @@ class DBgr{
   // dpolicy -- what to do with duplicated timestamps:
   //   (replace, skip, error, sshift, nsshift)
   void put(const std::string &t, const std::vector<std::string> & dat,
+           const std::string &dpolicy);
+
+  // put data using input filter
+  void put_flt(std::string &t, std::vector<std::string> & dat,
            const std::string &dpolicy);
 
   // All get* functions get some data from the database

@@ -266,6 +266,55 @@ correctly.
 There is a script `graphene_sync` for implementing incremental syncronization
 of databases using backup timer mechanism.
 
+#### Input filter
+
+Incoming data can be filtered through a used-defined filter which is
+attached to a database. It can be used to skip some data or implement
+averaging.
+
+- `set_ifilter <name> <tcl code>` -- set input filter
+
+- `print_ifilter <name>` -- print code of the input filter
+
+- `put_flt <name> <timestamp> <data> ...` -- put data to the database through the input filter
+
+Filter is a piec of TCL code executed in a safe TCL interpreter.
+Three variables are defined:
+
+- `time` -- timestamp in `<seconds>.<nanoseconds>` format. Filter
+can modify this variable to change the timestamp. Note that the timestamp
+format is wider then `double` value. Do not convert it to numbber if you
+want to keep precision.
+
+- `data` -- list of data to be written to the database. Filter can
+modify this list.
+
+- `storage` -- a filter specific variable which is kept in the database
+and can be used to save filter state. It can be TCL list, but not array.
+
+If filter returns false value (`0`, `off`, `false`) then data will not
+be written to the database.
+
+Simple example:
+```
+code='
+  # use storage var as a counter: 1,2,3,4:
+  incr storage
+  # round time to integer value:
+  set time [expr int($time)]
+  # change data: add one to the first element,
+  # replace others by the counter value
+  set data [list [expr [lindex $data 0] + 1] $storage]
+  # put every third element, skip others
+  return [expr $storage%3==1]
+'
+graphene set_ifilter mydb "$code"
+graphene put_flt mydb 123.456 10 20 30
+```
+
+Here `11 1` wil be written with timestamp `123`.
+
+
 ### Examples
 
 See `examples/*` in the source folder

@@ -162,8 +162,6 @@ DBgr::c_get(DBC *curs, DBT *k, DBT *v, int flags) {
   return res==0;
 }
 
-
-
 /************************************/
 // Write database information.
 // key = (uint8_t)0 (1byte), value = data_fmt (1byte) + description
@@ -215,7 +213,7 @@ DBgr::write_info(){
 }
 
 /************************************/
-// Get database information (version, ttype, dtype)
+// Get database information (version, ttype, dtype, ifilter)
 //
 void
 DBgr::read_info(){
@@ -253,11 +251,62 @@ DBgr::read_info(){
       case 2: ttype=TIME_V2; break;
       default: throw Err() << "unsupported database version: " << version;
     }
+
+    // Read ifilter
+    x=KEY_IFLT_CODE;
+    k = mk_dbt(&x);
+    v = mk_dbt();
+    ret = dbp->get(dbp.get(), txn, &k, &v, 0);
+    if (ret == 0)
+      iflt.set_code(string((char*)v.data, (char*)v.data+v.size));
+    else if (ret == DB_NOTFOUND)
+      iflt.set_code();
+    else
+      throw Err() << name << ".db: " << db_strerror(ret);
+
   }
   catch (Err e){
     txn_abort(txn);
     throw e;
   }
+  txn_commit(txn);
+}
+
+/************************************/
+void
+DBgr::write_ifilter(const std::string & luacode){
+  iflt.set_code(luacode);
+  int ret;
+  // do everything in a single transaction
+  DB_TXN *txn = txn_begin();
+  try {
+    // Remove filter storage if it exists:
+    uint8_t x=KEY_IFLT_DATA;
+    DBT k = mk_dbt(&x);
+    ret = dbp->del(dbp.get(), txn, &k, 0);
+    if (ret != 0 && ret != DB_NOTFOUND)
+      throw Err() << name << ".db: " << db_strerror(ret);
+
+    // Remove the entry if it exists:
+    x=KEY_IFLT_CODE;
+    k = mk_dbt(&x);
+    ret = dbp->del(dbp.get(), txn, &k, 0);
+    if (ret != 0 && ret != DB_NOTFOUND)
+      throw Err() << name << ".db: " << db_strerror(ret);
+
+    // Write new data:
+    if (iflt.code != ""){
+      DBT v = mk_dbt(iflt.code);
+      ret = dbp->put(dbp.get(), txn, &k, &v, 0);
+      if (ret != 0)
+        throw Err() << name << ".db: " << db_strerror(ret);
+    }
+  }
+  catch (Err e){
+    txn_abort(txn);
+    throw e;
+  }
+  sync();
   txn_commit(txn);
 }
 
@@ -408,6 +457,53 @@ DBgr::put(const string &t, const vector<string> & dat, const string &dpolicy){
     throw e;
   }
   txn_commit(txn);
+}
+
+/************************************/
+// Put data to the database using input filter
+void
+DBgr::put_flt(string &t, vector<string> & dat, const string &dpolicy){
+  // read filter data
+  DB_TXN *txn = txn_begin(DB_TXN_SNAPSHOT);
+  std::string fdata;
+  try {
+    uint8_t x=KEY_IFLT_DATA;
+    DBT k = mk_dbt(&x);
+    DBT v = mk_dbt();
+    int ret = dbp->get(dbp.get(), txn, &k, &v, 0);
+    if (ret == 0)
+      iflt.set_storage(string((char*)v.data, (char*)v.data+v.size));
+    else if (ret == DB_NOTFOUND)
+      iflt.set_storage();
+    else
+      throw Err() << name << ".db: " << db_strerror(ret);
+  }
+  catch (Err e){
+    txn_abort(txn);
+    throw e;
+  }
+  txn_commit(txn);
+
+  // run input filter
+  auto t1 = graphene_time_print(graphene_time_parse(t, ttype),ttype);
+  if (iflt.run(t1, dat)) put(t1,dat,dpolicy);
+
+  // write fdata
+  txn = txn_begin(DB_TXN_SNAPSHOT);
+  try {
+    uint8_t x=KEY_IFLT_DATA;
+    DBT k = mk_dbt(&x);
+    DBT v = mk_dbt(iflt.get_storage());
+    int ret = dbp->put(dbp.get(), txn, &k, &v, 0);
+    if (ret != 0)
+      throw Err() << name << ".db: " << db_strerror(ret);
+  }
+  catch (Err e){
+    txn_abort(txn);
+    throw e;
+  }
+  txn_commit(txn);
+
 }
 
 /************************************/

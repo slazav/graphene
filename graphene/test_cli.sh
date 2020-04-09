@@ -523,8 +523,39 @@ assert "$(./graphene -d . put test_1 1234 1)" ""
 assert "$(./graphene -d . backup_end test_1 2000)" ""
 assert "$(./graphene -d . backup_print test_1)" "1234.000000000"
 
+assert "$(./graphene -d . delete test_1)" ""
+
+###########################################################################
+## input filters
+assert "$(./graphene -d . create test_1 DOUBLE)" ""
+
+# put every third record; round time to int; add 1 to first data element,
+# replace others with counter value
+code='
+  incr storage
+  set time [expr int($time)]
+  set data [list [expr [lindex $data 0] + 1] $storage]
+  return [expr $storage%3==1]
+'
+assert "$(./graphene -d . set_ifilter test_1 "$code")" ""
+assert "$(./graphene -d . print_ifilter test_1)" "$(echo "$code")"
+assert "$(./graphene -d . put_flt test_1 123.456 10 20 30)" ""
+assert "$(./graphene -d . put_flt test_1 200.1  15)" ""
+assert "$(./graphene -d . put_flt test_1 201.1  16)" ""
+assert "$(./graphene -d . put_flt test_1 202.1  17)" ""
+assert "$(./graphene -d . put_flt test_1 203.1  18)" ""
+
+assert "$(./graphene -d . get_range test_1)" \
+"123.000000000 11 1
+202.000000000 18 4"
+
+# setting of the filter resets also storage information
+assert "$(./graphene -d . set_ifilter test_1 "$code")" ""
+assert "$(./graphene -d . put_flt test_1 523.456 10 20 30)" ""
+assert "$(./graphene -d . get test_1)" "523.000000000 11 1"
 
 assert "$(./graphene -d . delete test_1)" ""
+
 
 ###########################################################################
 # remove all test databases
