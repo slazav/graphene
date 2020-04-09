@@ -40,8 +40,8 @@ creation. Possible variants are: TEXT, INT8, UINT8, INT16, UINT16,
 INT32, UINT32, INT64, UINT64, FLOAT, DOUBLE.
 
 Records with 8-bit keys are reserved for database information: data
-format, database version, description. Records with 16-bit keys are
-reserved for arbitrary user data. These records are not affected by
+format, database version, description, filters. Records with 16-bit keys
+are reserved for arbitrary user data. These records are not affected by
 regular get/put commands.
 
 
@@ -72,8 +72,7 @@ command-line option).
 only one program can access database at a time. This setting can be
 useful if you want to do massive and fast operations with a database and
 no other programs use this database. For example, importing large amount
-of data to a database can be done faster without using environment. This
-mode is also used in readonly mode (`-R` command-line option).
+of data to a database can be done faster without using environment.
 
 - `lock` -- Default mode. Environment (a few additional files) provides
 database locking to allow multiple programs work with the database
@@ -154,6 +153,9 @@ socket.
   For TEXT values all arguments are joined with a single spaces between
   then. If you do not want this, use quoted argument.
 
+- `put_flt <name> <time> <value1> ... <valueN>` -- Write a data point
+  using database input filter (see below).
+
 - `get_next <extended name> [<time1>]` -- Get first point with t>=time1.
 
 - `get_prev <extended name> [<time2>]` -- Get last point with t<=time2.
@@ -172,19 +174,14 @@ socket.
 You can use words "now", "now_s" and "inf" as a timestamp. You can also
 add "+" or "-" symbol after numerical value to add of subtract 1 ns. This
 is convenient if you know a timestamp of some value and want to read next
-or  previous one. Default value for time1 is 0, for time2 is "inf".
+or previous one. Default value for time1 is 0, for time2 is "inf".
 
 The "extended name" used in get_* commands have the following format:
-`<name>[:<column>][|<filter>]`
+`<name>[:<column>]`
 
 `<column>` is a column number (0,1,..), if it exists, then only this
 column is shown. If a certain column is requested but data array is not
 long enough, a "NaN" value is returned. Columns are ignored for text data.
-
-`<filter>` is a name of filter program, if it exists, the program is run and
-data is filtered through it. The program should be located in the
-database directory, program name can not contain '.:|+ \t\n/' symbols.
-`TODO: remove this feature?`
 
 #### Commands for deleting data:
 
@@ -220,12 +217,12 @@ used if you want to close unused databases and sync data.
 
 #### Backup  system:
 
-Graphene database supportes incremental backups. This can be done using
+Graphene database supports incremental backups. This can be done using
 `backup_*` commands.
 
 It is assumed that there is one backup process for a database. It notifies
 the database before and after data transfer. Database answers which time
-range was modified since the last transfer.
+range was modified since the last successful transfer.
 
 - `backup_start <name>` -- Notify that we want to backup the database `name`,
 get time value of the earliest change since last backup or zero if
@@ -245,7 +242,7 @@ smallest time of modified record: (`timer = min(timer,
 modification_time)`).
 
 The temporary timer is reset before backup starts (`backup_start`
-command) and commited to the main timer after backup process is
+command) and committed to the main timer after backup process is
 successfully finished (`backup_end` command). Main timer value is
 returned by `backup_start` and `backup_print` commands.
 
@@ -256,15 +253,15 @@ For incremental backup the following procedure can be done:
 - `backup_end` in the master database
 
 Such backup should be efficient in normal operation, when records with
-contineously-increasing timestamps are added to the master database and
+continuously-increasing timestamps are added to the master database and
 modifications of old values happens rarely.
 
 If backup process fails and `backup_end` command is not executed then the
 main backup timer will not be reset and the next backup will work
 correctly.
 
-There is a script `graphene_sync` for implementing incremental syncronization
-of databases using backup timer mechanism.
+There is a script `graphene_sync` for implementing incremental synchronization
+of databases.
 
 #### Input filter
 
@@ -278,29 +275,29 @@ averaging.
 
 - `put_flt <name> <timestamp> <data> ...` -- put data to the database through the input filter
 
-Filter is a piec of TCL code executed in a safe TCL interpreter.
+Filter is a piece of TCL code executed in a safe TCL interpreter.
 Three variables are defined:
 
 - `time` -- timestamp in `<seconds>.<nanoseconds>` format. Filter
 can modify this variable to change the timestamp. Note that the timestamp
-format is wider then `double` value. Do not convert it to numbber if you
+format is wider then `double` value. Do not convert it to number if you
 want to keep precision.
 
 - `data` -- list of data to be written to the database. Filter can
 modify this list.
 
-- `storage` -- a filter specific variable which is kept in the database
-and can be used to save filter state. It can be TCL list, but not array.
+- `storage` -- a filter-specific data which is kept in the database
+and can be used to save filter state. It can be TCL list, but not an array.
 
-If filter returns false value (`0`, `off`, `false`) then data will not
+If filter returns false value (`0`, `off`, `false`) data will not
 be written to the database.
 
 Simple example:
 ```
 code='
-  # use storage var as a counter: 1,2,3,4:
+  # use storage variable as a counter: 1,2,3,4:
   incr storage
-  # round time to integer value:
+  # round time to integer value (this will save some space):
   set time [expr int($time)]
   # change data: add one to the first element,
   # replace others by the counter value
@@ -312,7 +309,7 @@ graphene set_ifilter mydb "$code"
 graphene put_flt mydb 123.456 10 20 30
 ```
 
-Here `11 1` wil be written with timestamp `123`.
+Here `11 1` will be written with timestamp `123`.
 
 
 ### Examples
@@ -369,9 +366,10 @@ wget localhost:8182/tmp_db'?cmd=get_range&t1=10&t2=12&tfmt=rel' -O - -o /dev/nul
 Nothing is ready yet. You can use something like this to get data using the
 graphene program:
 
+```
   [r, out] = system('graphene get_range my_dataset 1464260400 now 60000');
   [t val1 val2] = strread(out, '%f %f %f');
-
+```
 
 ### `graphene_tab` script
 

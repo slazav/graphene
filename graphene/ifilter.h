@@ -12,11 +12,11 @@
 
 /***************************************************/
 
-// input filter for the graphene database
+// filter for the graphene database
 class iFilter {
   public:
 
-  // Lua script.
+  // TCL script.
   std::string code;
 
   // Filter data. Should be updated before each call,
@@ -25,8 +25,6 @@ class iFilter {
 
   /********************************************************/
 
-  // Write the filter in a human-readable form:
-  // <type> <par> <value> ...
   std::string get_code() const {return code;}
   std::string get_storage() const {return storage;}
   void set_code(const std::string & c = std::string()) {code=c;}
