@@ -156,6 +156,8 @@ static int request_answer(void * cls, struct MHD_Connection * connection, const 
         e.str().length(), (void*)e.str().data(), MHD_RESPMEM_MUST_COPY);
     MHD_add_response_header(response, "Error", e.str().c_str());
     code = 400;
+    // close all databases. In case of an error which needs recovery/reopening.
+    pool->close();
   }
 
   // this allowes external grafana server make requests

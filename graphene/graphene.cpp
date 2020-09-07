@@ -181,6 +181,8 @@ class Pars{
         catch(Err e){
           if (e.str()!="") out << "#Error: " << e.str() << "\n";
           out.flush();
+          // close all databases. In case of an error which needs recovery/reopening.
+          pool.close();
         }
       }
     }
