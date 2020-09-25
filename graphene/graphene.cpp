@@ -260,7 +260,7 @@ class Pars{
     // print libdb version (<major>.<minor>.<patch>)
     if (strcasecmp(cmd.c_str(), "libdb_version")==0){
       if (pars.size()>1) throw Err() << "too many parameters";
-      cout << db_version(NULL,NULL,NULL);
+      cout << db_version(NULL,NULL,NULL) << "\n";
       return;
     }
 
