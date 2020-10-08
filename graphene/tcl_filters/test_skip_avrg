@@ -1,0 +1,26 @@
+#!/usr/bin/tclsh
+
+source time_ops.tcl
+source flt_skip_avrg.tcl
+
+set storage {}
+set pars(avrg) 1
+set pars(maxn) 100
+set pars(adiff) 0.1
+set pars(rdiff) 0; #0.1
+set pars(tdiff) 0; #0.1
+set pars(dcol)  0; #0.1
+
+set f [open "test_skip_avrg.dat" "w"]
+
+for {set i 0} {$i<1000} {incr i} {
+  set time [expr {0.01*$i}]
+  set data [expr {sin($time) + 0.1*(rand()-0.5)}]
+  if {[flt_skip_avrg]} {
+    puts $f "$time $data"
+  }
+}
+
+close $f
+
+

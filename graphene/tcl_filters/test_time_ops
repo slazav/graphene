@@ -1,0 +1,16 @@
+#!/usr/bin/tclsh
+
+source time_ops.tcl
+
+if { [graphene_time_diff 1602152801.651790123 1602152800.651790122] ne "-1.000000001" }\
+ {error "error in test 1"}
+
+if { [graphene_time_diff 1602152800.651790122 1602152801.651790123] ne "1.000000001" }\
+ {error "error in test 2"}
+
+if { [graphene_time_add 1602152801.651790123 1.500000001] ne "1602152803.151790124"}\
+ {error "error in test 3"}
+
+if { [graphene_time_add 1602152801.651790123 -1.500000001] ne "1602152800.151790122"}\
+ {error "error in test 4"}
+
