@@ -23,3 +23,5 @@ graphene -d . get_next press
 graphene -d . get_range press
 
 graphene -d . delete press
+
+rm -f __db.*

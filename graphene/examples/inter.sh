@@ -3,7 +3,7 @@
 
 PATH=../src:$PATH
 
-graphene -d . interactive <<EOF
+graphene -d . -i <<EOF
 create pressure INT16 "Some_text"
 delete pressure
 
@@ -27,3 +27,5 @@ get_range press
 
 delete press
 EOF
+
+rm -f __db.*

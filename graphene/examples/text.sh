@@ -14,3 +14,5 @@ graphene -d . get_next  db
 graphene -d . get_range db
 
 graphene -d . delete db
+
+rm -f __db.*

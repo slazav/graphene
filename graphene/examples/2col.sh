@@ -21,3 +21,5 @@ graphene -d . get_prev 2col:0
 graphene -d . get_prev 2col:10
 
 graphene -d . delete 2col
+
+rm -f __db.*
