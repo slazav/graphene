@@ -32,6 +32,10 @@
 
 #include "dbpool.h"
 
+#if MHD_VERSION < 0x00097002
+#define MHD_Result int
+#endif
+
 using namespace std;
 
 /*************************************************/
@@ -48,22 +52,21 @@ void usage(const GetOptSet & options, bool pod=false){
 
 /*************************************************/
 // signal handler
-static void StopFunc(int signum){ throw 0; }
+static void
+StopFunc(int signum){ throw 0; }
 
 /**********************************************************/
 /* libmicrohttpd callback for processing a requent. */
-static int request_answer(void * cls, struct MHD_Connection * connection, const char * url,
-                          const char * method, const char * version,
-                          const char * upload_data, size_t * upload_data_size, void ** con_cls) {
+static MHD_Result
+request_answer(void * cls, struct MHD_Connection * connection, const char * url,
+               const char * method, const char * version,
+               const char * upload_data, size_t * upload_data_size, void ** con_cls) {
   struct MHD_Response * response;
   static string in_data; // data recieved in POST requests
-  int ret;
   int code = MHD_HTTP_OK;
   DBpool *pool = (DBpool *) cls; /* server parameters */
 
   Log(2) << "> " << method << " " << url << "\n";
-
-
 
   try {
     // simple-json interface: GET method with empty URL
@@ -104,7 +107,7 @@ static int request_answer(void * cls, struct MHD_Connection * connection, const 
     // GET with database name as an URL
     else if (strcmp(method, "GET")==0){
       int col=-1, flt=-1;
- 
+
       const char * n   = MHD_lookup_connection_value(connection, MHD_GET_ARGUMENT_KIND, "name");
       const char * t1  = MHD_lookup_connection_value(connection, MHD_GET_ARGUMENT_KIND, "t1");
       const char * t2  = MHD_lookup_connection_value(connection, MHD_GET_ARGUMENT_KIND, "t2");
@@ -163,7 +166,7 @@ static int request_answer(void * cls, struct MHD_Connection * connection, const 
   // this allowes external grafana server make requests
   MHD_add_response_header (response, "Access-Control-Allow-Origin",  "*");
 
-  ret = MHD_queue_response(connection, code, response);
+  auto ret = MHD_queue_response(connection, code, response);
   MHD_destroy_response(response);
   return ret;
 }
@@ -253,7 +256,7 @@ int main(int argc, char ** argv) {
     }
 
     // check pid file
-    { 
+    {
       std::ifstream pf(pidfile);
       if (!pf.fail()){
         int pid;
