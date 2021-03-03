@@ -146,9 +146,9 @@ request_answer(void * cls, struct MHD_Connection * connection, const char * url,
       else throw Err() << "bad command: " << cmd.c_str();
 
       string out_data = dbo.get_str();
-      MHD_add_response_header (response, "Content-Type", "text/plain");
       response = MHD_create_response_from_buffer(
           out_data.size(), (void *)out_data.data(), MHD_RESPMEM_MUST_COPY);
+      MHD_add_response_header (response, "Content-Type", "text/plain");
     }
     else {
       throw Err() << "unknown HTTP request";
