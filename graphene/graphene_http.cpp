@@ -98,9 +98,9 @@ request_answer(void * cls, struct MHD_Connection * connection, const char * url,
         Log(3) << ">>> " << in_data << "\n";
         Log(4) << "<<< " << out_data << "\n";
 
-        MHD_add_response_header (response, "Content-Type", "application/json");
         response = MHD_create_response_from_buffer(
           out_data.size(), (void *)out_data.data(), MHD_RESPMEM_MUST_COPY);
+        MHD_add_response_header (response, "Content-Type", "application/json");
         if (response==NULL) return MHD_NO;
       }
     }
