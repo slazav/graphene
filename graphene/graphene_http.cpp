@@ -285,7 +285,7 @@ int main(int argc, char ** argv) {
       mypid = true;
 
       // Change the file mode mask
-      umask(0);
+      umask(022);
 
       // Create a new SID for the child process
       sid = setsid();
