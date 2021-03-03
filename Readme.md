@@ -311,8 +311,7 @@ modify this list.
 in the database and can be used to save filter state. It can be TCL
 list, but not an array. For filters 1..15 this data is not stored.
 
-If filter 0 returns false value (`0`, `off`, `false`) data will not
-be written to the database.
+If a filter returns false value (`0`, `off`, `false`) data point will be skipped.
 
 Simple example:
 ```

@@ -561,13 +561,14 @@ assert "$(./graphene -d . get test_1)" "523.000000000 11 1"
 code='
   set time [expr int($time)+2]
   set data [list [expr [lindex $data 0]*2]]
+  return [expr $time < 500]
 '
 assert "$(./graphene -d . set_filter test_1 -1 "$code")" "Error: filter number out of range: -1"
 assert "$(./graphene -d . set_filter test_1 1000 "$code")" "Error: filter number out of range: 1000"
 assert "$(./graphene -d . set_filter test_1 5 "$code")" ""
 assert "$(./graphene -d . print_filter test_1 5)" "$(echo "$code")"
 
-# f1 is not set
+# f1 is not set, get original data
 assert "$(./graphene -d . get_range test_1:f1)" \
 "123.000000000 11 1
 202.000000000 18 4
@@ -575,8 +576,7 @@ assert "$(./graphene -d . get_range test_1:f1)" \
 
 assert "$(./graphene -d . get_range test_1:f5)" \
 "125 22
-204 36
-525 22"
+204 36"
 
 assert "$(./graphene -d . delete test_1)" ""
 

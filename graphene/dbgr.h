@@ -216,8 +216,7 @@ class DBgr{
     auto d = graphene_data_print(vs, dbo.col, dtype);
 
     if (dbo.flt>=MAX_FILTERS) throw Err() << "filter number out of range: " << dbo.flt;
-    if (dbo.flt>0) filters[dbo.flt].run(t,d);
-
+    if (dbo.flt>0 && !filters[dbo.flt].run(t,d)) return;
 
     // print values into a string (always \n in the end!)
     std::string s =  t;
