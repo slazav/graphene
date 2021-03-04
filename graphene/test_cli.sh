@@ -532,7 +532,7 @@ assert "$(./graphene -d . create test_1 DOUBLE)" ""
 # put every third record; round time to int; add 1 to first data element,
 # replace others with counter value
 code='
-  incr storage
+  if {$storage ne ""} {incr storage} else {set storage 1}
   set time [expr int($time)]
   set data [list [expr [lindex $data 0] + 1] $storage]
   return [expr $storage%3==1]
