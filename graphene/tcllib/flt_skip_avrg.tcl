@@ -35,12 +35,11 @@
 #              for adiff/rdiff reset condition
 #
 
-proc flt_skip_avrg {} {
+proc flt_skip_avrg {pars} {
   # Global variables provided by graphene:
   global data; # list of data values
   global time; # list of time values
   global storage; # storage which is kept between calls
-  global pars;
   array set st $storage
 
   # Default parameters:
