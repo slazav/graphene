@@ -47,10 +47,8 @@ Filter::run(std::string & t, std::vector<std::string> & d){
       throw Err() << "filter: can't set data variable: " << t;
 
   // define global variable storage
-  if (storage != "") {
-    if (Tcl_SetVar(interp, "storage", storage.c_str(), TCL_GLOBAL_ONLY) == NULL)
-      throw Err() << "filter: can't set storage variable: " << storage;
-  }
+  if (Tcl_SetVar(interp, "storage", storage.c_str(), TCL_GLOBAL_ONLY) == NULL)
+    throw Err() << "filter: can't set storage variable: " << storage;
 
   // use library
   if (library!= "" && Tcl_Eval(interp, library.c_str()) != TCL_OK)
