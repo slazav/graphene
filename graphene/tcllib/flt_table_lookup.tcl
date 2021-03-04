@@ -11,10 +11,19 @@ proc flt_table_lookup {tab {col 0} {log 0}} {
   global data
 
   set x [lindex $data $col]
-  if {$log} { set x [expr log($x)/log(10.0)] }
-
-  set x1 [lindex tab 0]
-  set y1 [lindex tab 1]
+  if {$log} {
+    if {$x<=0} {
+      set data {NaN}
+      return
+    }
+    set x [expr log($x)/log(10.0)]
+  }
+  set x1 [lindex $tab 0]
+  set y1 [lindex $tab 1]
+  if {$x == $x1} {
+    set data $y1
+    return
+  }
   foreach {x2 y2} $tab {
     if {($x>$x1 && $x<=$x2) || ($x<$x1 && $x>=$x2) } {
       set data [expr $y1 + {($x-$x1)/($x2-$x1)*($y2-$y1)}]

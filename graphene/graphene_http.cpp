@@ -31,6 +31,7 @@
 #include "getopt/getopt.h"
 
 #include "dbpool.h"
+#include "filter.h"
 
 #if MHD_VERSION < 0x00097002
 #define MHD_Result int
@@ -187,6 +188,7 @@ int main(int argc, char ** argv) {
     // fill option structure
     GetOptSet options;
     options.add("dbpath",   1,'d', "GR", "database path (default: /var/lib/graphene/)");
+    options.add("tcllib",   1,'T', "GR", "TCL library path (default: /usr/share/graphene/tcllib/)");
     options.add("env_type", 1,'E', "GR", "environment type: none, lock, txn "
        "(default: lock)");
     options.add("port",    1,'p', "GR", "TCP port for connections (default: 8081).");
@@ -213,6 +215,7 @@ int main(int argc, char ** argv) {
     if (opts.exists("pod"))  usage(options,true);
 
     string dbpath   = opts.get("dbpath",   "/var/lib/graphene/");
+    string tcllib   = opts.get("tcllib",   "/usr/share/graphene/tcllib/");
     string env_type = opts.get("env_type", "lock");
     DBpool pool(dbpath, true, env_type);
 
@@ -222,6 +225,9 @@ int main(int argc, char ** argv) {
     pidfile     = opts.get("pidfile", "/var/run/graphene_http.pid");
     bool stop   = opts.exists("stop");
     bool dofork = opts.exists("dofork");
+
+    // load TCL library
+    Filter::load_library(tcllib);
 
     // default log file
     if (logfile==""){

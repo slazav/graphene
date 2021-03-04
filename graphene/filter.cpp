@@ -5,7 +5,7 @@
 #include "err/err.h"
 #include "filter.h"
 
-//#include <lua.hpp>
+
 #include <tcl.h>
 
 /***************************************************/
@@ -52,6 +52,10 @@ Filter::run(std::string & t, std::vector<std::string> & d){
       throw Err() << "filter: can't set storage variable: " << storage;
   }
 
+  // use library
+  if (library!= "" && Tcl_Eval(interp, library.c_str()) != TCL_OK)
+    throw Err() << "filter: can't use TCL library: " << Tcl_GetVar(interp, "errorInfo", TCL_GLOBAL_ONLY);
+
   // run TCL script
   if (Tcl_Eval(interp, code.c_str()) != TCL_OK)
     throw Err() << "filter: can't run TCL script: " << Tcl_GetVar(interp, "errorInfo", TCL_GLOBAL_ONLY);
@@ -90,4 +94,33 @@ Filter::run(std::string & t, std::vector<std::string> & d){
   // delete TCL interpreter
   Tcl_DeleteInterp(interp);
   return ret;
+}
+
+#include <sys/types.h>
+#include <dirent.h>
+#include <errno.h>
+#include <fstream>
+#include <streambuf>
+#include "filename/filename.h"
+
+std::string Filter::library;
+
+void
+Filter::load_library(const std::string & tcl_libdir){
+  struct dirent *ent;
+  DIR *dir = opendir(tcl_libdir.c_str());
+//  if (dir==NULL) throw Err() << "can't read TCL libraries in "
+//    << tcl_libdir << ": " << strerror(errno);
+  if (dir==NULL) return;
+
+  library = std::string();
+
+  while ((ent = readdir(dir)) != NULL) {
+    if (!file_ext_check(ent->d_name, ".tcl")) continue;
+    std::ifstream f(tcl_libdir + "/" + ent->d_name);
+    library.append((std::istreambuf_iterator<char>(f)),
+                     (std::istreambuf_iterator<char>()));
+    library+='\n';
+  }
+  closedir (dir);
 }

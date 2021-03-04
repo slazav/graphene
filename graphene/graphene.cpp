@@ -5,6 +5,7 @@
 #define GRAPHENE_DEF_ENV "lock"
 #define GRAPHENE_DEF_DPOLICY "replace"
 #define GRAPHENE_DEF_DBPATH  "."
+#define GRAPHENE_DEF_TCLLIB  "/usr/share/graphene/tcllib/"
 
 #include <cstdlib>
 #include <stdint.h>
@@ -20,6 +21,7 @@
 #include "dbgr.h"
 #include "dbpool.h"
 #include "dbout.h"
+#include "filter.h"
 
 #include "err/err.h"
 #include "read_words/read_words.h"
@@ -37,6 +39,7 @@ using namespace std;
 class Pars{
   public:
   string dbpath;       /* path to the databases */
+  string tcllib;       /* tcl library path */
   string dpolicy;      /* what to do with duplicated timestamps*/
   string env_type;     /* environment type (see dbpool.h)*/
   string sockname;     /* socket name*/
@@ -48,6 +51,7 @@ class Pars{
   // get options and parameters from argc/argv
   Pars(const int argc, char **argv){
     dbpath  = GRAPHENE_DEF_DBPATH;
+    tcllib  = GRAPHENE_DEF_TCLLIB;
     dpolicy = GRAPHENE_DEF_DPOLICY;
     env_type = GRAPHENE_DEF_ENV;
     interactive = false;
@@ -56,11 +60,12 @@ class Pars{
     if (argc<1) return; // needed for print_help()
     /* parse  options */
     int c;
-    while((c = getopt(argc, argv, "+d:D:E:his:rR"))!=-1){
+    while((c = getopt(argc, argv, "+d:T:D:E:his:rR"))!=-1){
       switch (c){
         case '?':
         case ':': throw Err(); /* error msg is printed by getopt*/
         case 'd': dbpath = optarg; break;
+        case 'T': tcllib = optarg; break;
         case 'D': dpolicy = optarg; break;
         case 'E': env_type = optarg; break;
         case 'h': print_help();
@@ -71,6 +76,9 @@ class Pars{
       }
     }
     pars = vector<string>(argv+optind, argv+argc);
+
+    // load TCL library
+    Filter::load_library(tcllib);
   }
 
   // print command list (used in both -h message and interactive mode help)
@@ -138,6 +146,7 @@ class Pars{
             "Usage: graphene [options] <command> <parameters>\n"
             "Options:\n"
             "  -d <path> -- database directory (default " << p.dbpath << "\n"
+            "  -T <path> -- TCL library path (default " << p.tcllib << "\n"
             "  -D <word> -- what to do with duplicated timestamps:\n"
             "               replace, skip, error, sshift, nsshift (default: " << p.dpolicy << ")\n"
             "  -E <word> -- environment type:\n"

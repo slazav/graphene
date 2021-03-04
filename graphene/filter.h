@@ -19,6 +19,9 @@ class Filter {
   // TCL script.
   std::string code;
 
+  // TCL library.
+  static std::string library;
+
   // Filter data. Should be updated before each call,
   // and saved to the database after it.
   std::string storage;
@@ -32,6 +35,9 @@ class Filter {
 
   // Process input, return true if it should be recorded
   bool run(std::string & t, std::vector<std::string> & d);
+
+  // Read library (all files from tcl_libdir)
+  static void load_library(const std::string & tcl_libdir);
 
 };
 

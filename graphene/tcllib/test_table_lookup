@@ -1,0 +1,43 @@
+#!/usr/bin/tclsh
+
+source flt_table_lookup.tcl
+
+proc test_flt {tab time_in data_in col log  data_exp} {
+  set ::time $time_in
+  set ::data $data_in
+  flt_table_lookup $tab $col $log
+#  puts "($time_in $data_in)-> ($::time $::data) = ($time_in $data_exp)"
+  if {($::time ne NaN || $time_in ne NaN) && $::time != $time_in}   {error "unexpected time: $::time != $time_in"}
+  if {($::data ne NaN || $data_exp ne NaN) && abs($::data - $data_exp)>1e-8} {error "unexpected data: $::data != $data_exp"}
+}
+
+set tab {
+1 200
+2 300
+3 400
+}
+
+# first data column
+test_flt $tab 1.2 {1.5 2 3} 0 0  250
+test_flt $tab 1.2 1 0 0  200
+test_flt $tab 1.2 3 0 0  400
+
+# second data column
+test_flt $tab 1.2 {1.5 2 3} 1 0  300 
+
+# too large data column
+test_flt $tab 1.2 {1.5 2 3} 4 0  NaN
+
+# out-of range
+test_flt $tab 1.2 0.5 0 0  NaN
+test_flt $tab 1.2 3.1 0 0  NaN
+
+
+# log
+test_flt $tab 1.2   10 0 1  200
+test_flt $tab 1.2  100 0 1  300
+test_flt $tab 1.2 1000 0 1  400
+test_flt $tab 1.2   -1 0 1  NaN
+test_flt $tab 1.2    1 0 1  NaN
+test_flt $tab 1.2  1e5 0 1  NaN
+

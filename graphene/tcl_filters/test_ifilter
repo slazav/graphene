@@ -1,0 +1,29 @@
+#!/bin/sh -efu
+
+# Test input filter by creating a database, setting the filter,
+# putting datafile to the db, printing values from the db.
+# Double values are used.
+
+# Usage: test_ifilter <db>
+
+if [ "${1:-}" == "" -o "${1:-}" == "" ]; then
+  printf "Usage: test_ifilter <db> <idata> > <odata>"
+fi
+
+filter=$1
+idata=$2
+gr="../graphene -E none -d ."
+dbname=ifilter
+dtype=DOUBLE
+
+$gr delete $dbname &> /dev/null ||:
+$gr create $dbname $dtype
+$gr set_filter $dbname 0 "$(cat "$filter")"
+
+while read l; do
+  $gr put_flt $dbname $l
+done < "$idata"
+
+$gr get_range $dbname $l
+$gr delete $dbname
+
