@@ -556,6 +556,14 @@ assert "$(./graphene -d . set_filter test_1 0 "$code")" ""
 assert "$(./graphene -d . put_flt test_1 523.456 10 20 30)" ""
 assert "$(./graphene -d . get test_1)" "523.000000000 11 1"
 
+# code with error: no stdout in the safe TCL interpreter
+code='puts "text"; return 1'
+assert "$(./graphene -d . set_filter test_1 0 "$code")" ""
+assert "$(./graphene -d . print_filter test_1 0)" "$(echo "$code")"
+
+assert "$(./graphene -d . put_flt test_1 123.456 10 20 30)"\
+  "Error: filter: can't run TCL script: can not find channel named \"stdout\"     while executing \"puts \"text\"\""
+
 ###########################################################################
 ## output filter
 code='

@@ -23,8 +23,8 @@ int main() {
   vs.push_back("0.2");
 
   assert_err(f1.run(t, vs),
-    "filter: can't run TCL script: invalid command name \"abc\"\n"
-    "    while executing\n\"abc\"");
+    "filter: can't run TCL script: invalid command name \"abc\""
+    "     while executing \"abc\"");
 
   f1.set_code("return 1");
   assert_eq(f1.run(t, vs), true);

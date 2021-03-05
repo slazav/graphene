@@ -1,5 +1,6 @@
 #include <cstring>
 #include <string>
+#include <algorithm>
 
 #include "opt/opt.h"
 #include "err/err.h"
@@ -7,6 +8,13 @@
 
 
 #include <tcl.h>
+
+// format TCL error; We do not want multi-line errors in SPP output
+std::string tcl_error(Tcl_Interp *interp){
+  std::string ret = Tcl_GetVar(interp, "errorInfo", TCL_GLOBAL_ONLY);
+  std::replace( ret.begin(), ret.end(), '\n', ' ');
+  return ret;
+}
 
 /***************************************************/
 
@@ -31,32 +39,30 @@ Filter::run(std::string & t, std::vector<std::string> & d){
   if (interp == NULL) throw Err() << "filter: can't run TCL interpreter\n";
 
   // switch to safe mode
-  if (Tcl_MakeSafe(interp) != TCL_OK){
-    Tcl_Obj *infoObj = Tcl_GetVar2Ex(interp, "errorInfo", NULL, TCL_GLOBAL_ONLY);
-    throw Err() << "filter: Tcl_MakeSafe failed: " << Tcl_GetString(infoObj);
-  }
+  if (Tcl_MakeSafe(interp) != TCL_OK)
+    throw Err() << "filter: Tcl_MakeSafe failed: " << tcl_error(interp);
 
   // define global variable time
   if (Tcl_SetVar(interp, "time", t.c_str(), TCL_GLOBAL_ONLY) == NULL)
-    throw Err() << "filter: can't set time variable: " << t;
+    throw Err() << "filter: can't set time variable: " << tcl_error(interp);
 
   // define global variable data
   for (auto const & v:d)
     if (Tcl_SetVar(interp, "data", v.c_str(),
             TCL_GLOBAL_ONLY | TCL_APPEND_VALUE | TCL_LIST_ELEMENT) == NULL)
-      throw Err() << "filter: can't set data variable: " << t;
+      throw Err() << "filter: can't set data variable: " << tcl_error(interp);
 
   // define global variable storage
   if (Tcl_SetVar(interp, "storage", storage.c_str(), TCL_GLOBAL_ONLY) == NULL)
-    throw Err() << "filter: can't set storage variable: " << storage;
+    throw Err() << "filter: can't set storage variable: " << tcl_error(interp);
 
   // use library
   if (library!= "" && Tcl_Eval(interp, library.c_str()) != TCL_OK)
-    throw Err() << "filter: can't use TCL library: " << Tcl_GetVar(interp, "errorInfo", TCL_GLOBAL_ONLY);
+    throw Err() << "filter: can't use TCL library: " << tcl_error(interp);
 
   // run TCL script
   if (Tcl_Eval(interp, code.c_str()) != TCL_OK)
-    throw Err() << "filter: can't run TCL script: " << Tcl_GetVar(interp, "errorInfo", TCL_GLOBAL_ONLY);
+    throw Err() << "filter: can't run TCL script: " << tcl_error(interp);
 
   // get timestamp back
   auto tc = Tcl_GetVar(interp, "time", TCL_GLOBAL_ONLY);
@@ -69,7 +75,7 @@ Filter::run(std::string & t, std::vector<std::string> & d){
     Tcl_Obj** elem;
     int n;
     if (Tcl_ListObjGetElements(interp, lst, &n, &elem) != TCL_OK)
-      throw Err() << "filter: broken data list: " << Tcl_GetVar(interp, "errorInfo", TCL_GLOBAL_ONLY);
+      throw Err() << "filter: broken data list: " << tcl_error(interp);
     d.clear();
     for (int i = 0; i < n; ++i,++elem){
       int len;
