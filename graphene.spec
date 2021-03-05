@@ -38,6 +38,7 @@ mkdir -p %buildroot%_sharedstatedir/graphene
 %_bindir/graphene
 %_bindir/graphene_*
 %config %_initdir/graphene_http
+%_datadir/graphene/tcllib
 
 %changelog
 * Thu Apr 09 2020 Vladislav Zavjalov <slazav@altlinux.org> 2.9-alt1
