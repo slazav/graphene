@@ -32,3 +32,8 @@ for {set i 0} {$i<200} {incr i} {
   if {$i < 100} {puts $f "$x [expr $i/100.0+0.2*[nrand]]"}\
   else {puts $f "$x [expr 1+0.2*[nrand]]"}
 }
+
+incr x
+puts $f "$x 0"
+incr x
+puts $f "$x 0"

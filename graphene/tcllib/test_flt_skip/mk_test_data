@@ -35,7 +35,7 @@ for {set i 0} {$i<100} {incr i} {
 for {set i 0} {$i<200} {incr i} {
   incr x
   if {$i != 100} {puts $f "$x 0"}\
-  else {puts $f "$x 1"}
+  else {puts $f "$x 2"}
 }
 
 for {set i 0} {$i<200} {incr i} {

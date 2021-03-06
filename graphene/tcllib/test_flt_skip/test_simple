@@ -14,6 +14,6 @@ set storage {}
 foreach l [split [read stdin] '\n'] {
   set time [lindex $l 0]
   set data [lreplace $l 0 0]
-
+  if {$time eq {}} continue
   if {[eval $cmd]} {puts "$time $data"}
 }
