@@ -37,7 +37,7 @@ proc flt_skip {maxd {maxn 0} {maxt 100} {col 0} {avrg 1}} {
       # extract d-d0, t-t0 lists
       set dts {}; set dds {}
       foreach p $st(buf) {
-        lappend dts [graphene_time_diff $st(t0) [lindex $p 0]]
+        lappend dts [time_diff $st(t0) [lindex $p 0]]
         lappend dds [expr [lindex [lindex $p 1] $col]- $st(d0)]
       }
 
@@ -126,7 +126,7 @@ proc flt_skip {maxd {maxn 0} {maxt 100} {col 0} {avrg 1}} {
       set B $opt_B
       set Q1 $opt_D
 
-      set tn [graphene_time_diff $st(t0) $time]
+      set tn [time_diff $st(t0) $time]
       set dn [expr [lindex $data $col] - $st(d0)]
       set Q2 [expr {abs($A*$tn + $B*($tn-$tj) - $dn)}]
 
@@ -135,7 +135,7 @@ proc flt_skip {maxd {maxn 0} {maxt 100} {col 0} {avrg 1}} {
           ($maxn>0 && $n > $maxn) ||\
           ($maxt>0 && $dt > $maxt)} {
         set ret 1
-        set ret_t [graphene_time_add $st(t0) $tj]
+        set ret_t [time_add $st(t0) $tj]
         set ret_d [expr {$A*$tj + $st(d0)}]
 
 ### debug: print 2-segment fits:

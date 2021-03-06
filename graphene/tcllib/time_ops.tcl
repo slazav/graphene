@@ -2,7 +2,7 @@
 # keeping ns precision.
 # - both timestamps should be positive numbers.
 # - if difference is large then precision is lost
-proc graphene_time_diff {t1 t2} {
+proc time_diff {t1 t2} {
   # split into seconds and fractional parts, do subtraction separately
   set t1l [split $t1 {.}]
   set t2l [split $t2 {.}]
@@ -15,7 +15,7 @@ proc graphene_time_diff {t1 t2} {
 
 # Add (small, positive or negative) value to a graphene timestamp,
 # keeping ns precision.
-proc graphene_time_add {t dt} {
+proc time_add {t dt} {
   # split into seconds and fractional parts
   set tl [split $t {.}]
   if {[llength $tl]<2} {lappend tl 0}
