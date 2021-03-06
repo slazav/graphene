@@ -4,14 +4,12 @@
 # putting datafile to the db, printing values from the db.
 # Double values are used.
 
-
-if [ "${1:-}" == "" -o "${2:-}" == "" ]; then
-  printf "Usage: test_ifilter <filter> <idata> > <odata>\n"
+if [ "${1:-}" == "" ]; then
+  printf "Usage: test_ifilter <filter> < <idata> > <odata>\n"
   exit 1
 fi
 
 filter=$1
-idata=$2
 
 gr="../../graphene -E none -d . -T .."
 dbname=ifilter
@@ -23,7 +21,7 @@ $gr set_filter $dbname 0 "$filter"
 
 while read l; do
   echo put_flt $dbname $l
-done < "$idata" | $gr -i | grep -v '#OK' 1>&2
+done | $gr -i | grep '#Error' 1>&2 ||:
 
 $gr get_range $dbname
 $gr delete $dbname

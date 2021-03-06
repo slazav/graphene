@@ -6,6 +6,8 @@
 #   maxn - Max.filtering length, points (0 for no limit)
 #   maxn - Max.filtering length, seconds (0 for no limit)
 #   col  - Data column to use
+# No point averaging or interpolation, only original datapoints
+# with all colums are used.
 
 proc flt_skip {maxd {maxn 0} {maxt 100} {col 0}} {
   global time data
