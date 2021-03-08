@@ -60,7 +60,7 @@ string convert_time(const string & tstr){
   tt.tm_year = atoi(tstr.c_str() +  0)-1900;   /* year */
   tt.tm_wday  = 0;   /* day of the week */
   tt.tm_yday  = 0;   /* day in the year */
-  tt.tm_isdst = 0;   /* daylight saving time */
+  tt.tm_isdst = -1;   /* daylight saving time */
   uint64_t ms = atoi(tstr.c_str() + 20); /* milliseconds */
 
   char *tz;

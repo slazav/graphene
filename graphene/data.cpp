@@ -470,7 +470,7 @@ graphene_time_parse(const std::string & str, const TimeType ttype){
       ts.tm_hour  = 0;
       ts.tm_min   = 0;
       ts.tm_sec   = 0;
-      ts.tm_isdst   = 1;
+      ts.tm_isdst   = -1;
       ts.tm_year = str_to_type<int>(str.substr(0,4))-1900;
       ts.tm_mon  = str_to_type<int>(str.substr(5,2))-1;
       ts.tm_mday = str_to_type<int>(str.substr(8,2));
@@ -482,7 +482,7 @@ graphene_time_parse(const std::string & str, const TimeType ttype){
         sec = str_to_type<double>(str.substr(17,-1));
       ts.tm_sec = floor(sec);
       int64_t t0 = mktime(&ts);
-      if (t0<0) throw Err() << "bad timestamp";
+      if (t0<0) throw Err() << "bad timestamp: " << str;
       t = ((uint64_t)t0 << 32) + uint64_t((sec-floor(sec))*1e9);
     }
     else {
