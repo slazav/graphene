@@ -234,12 +234,10 @@ proc flt_skip {args} {
       # let's send the point to output!
       if {$stop} {
         set ret 1
-        set ret_t [lindex [lindex $st(buf) $tj] 0]
-        set ret_d [lindex [lindex $st(buf) $tj] 1]
+        set ret_t [lindex [lindex $st(buf) $j] 0]
+        set ret_d [lindex [lindex $st(buf) $j] 1]
         # Crop beginning of the buffer, it should start with the sent point!
         set st(buf) [lreplace $st(buf) 0 $j-1];
-        set st(d0) [lindex $ret_d $col]
-        set st(t0) $ret_t
       }
     }
   }\
@@ -248,8 +246,6 @@ proc flt_skip {args} {
     set ret 1
     set ret_t $time
     set ret_d $data
-    set st(d0) $ret_d
-    set st(t0) $ret_t
   }
 
   # Add new point to the buffer
@@ -259,6 +255,8 @@ proc flt_skip {args} {
   if {$ret} {
     set time $ret_t
     set data $ret_d
+    set st(d0) [lindex $ret_d $col]
+    set st(t0) $ret_t
   }
 
   # Convert storage
