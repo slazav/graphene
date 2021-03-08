@@ -1,0 +1,10 @@
+#!/bin/sh -efu
+
+src=https://raw.githubusercontent.com/slazav/data_filter/main/data_filter
+
+{
+  echo '# copy from https://github.com/slazav/data_filter'
+  wget $src -O - |
+    sed -n '/^proc flt_skip {args}/,/^}/p'
+} > flt_skip.tcl
+

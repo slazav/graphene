@@ -1,5 +1,4 @@
 # copy from https://github.com/slazav/data_filter
-
 proc flt_skip {args} {
   ## parse options
   set col   0
@@ -36,6 +35,16 @@ proc flt_skip {args} {
   if {![info exists st(d0)]} { set st(d0) {} };
   set n [llength $st(buf)]
 
+  # If data is non-numeric (including NaN, Inf)
+  # reset buffers and return 0.
+  if {[catch {expr 0*[lindex $data $col]}]} {
+    set st(buf) {}
+    set st(sbuf) {}
+    set st(t0) {}
+    set st(d0) {}
+    set ::storage [array get st]
+    return 0
+  }
 
   ####
   # Noise level finder
