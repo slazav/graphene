@@ -10,7 +10,7 @@ License:      GPL
 Packager:     Vladislav Zavjalov <slazav@altlinux.org>
 
 Source:       %name-%version.tar
-BuildRequires: libmicrohttpd-devel libjansson-devel libdb4.7-devel db4.7-utils
+BuildRequires: libmicrohttpd-devel libjansson-devel libdb4.7-devel db4.7-utils tcl-devel
 Requires:      libmicrohttpd libjansson libdb4.7
 
 %description
