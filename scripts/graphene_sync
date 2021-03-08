@@ -62,6 +62,7 @@ die "dst_db_prog (-D) is not set" if $dst_db_prog eq '';
 sub spp_write {
   my $conn = shift;
   my $cmd  = shift;
+  #print "=> $cmd\n" if $verb;
   print $conn $cmd, "\n";
 }
 sub spp_read {
@@ -79,6 +80,7 @@ sub spp_read {
     last if $line =~/^\#OK/;
     $ret .= $line;
   }
+  #print "<= $ret\n" if $verb;
   return $ret;
 }
 
@@ -142,6 +144,7 @@ foreach my $src_name (@names) {
   spp_write(\*SI, "get_range $src_name $tstamp inf");
   my $num=0;
   while( my $line = <SO>)  {
+    next if $line =~/^\s*$/;
     die $line if $line =~ /^#Error/;
     last if $line =~/^\#OK/;
     spp_write(\*DI, "put $dst_name $line");
