@@ -292,7 +292,9 @@ Filters 1..15 are output filters.
 
 - `print_filter <name> <N>` -- print code of filter N
 
-- `print_f0data <name>` -- print data of filter 0
+- `print_f0data <name>` -- print data of filter 0 (input filter)
+
+- `clear_f0data <name>` -- clear data of filter 0 (input filter)
 
 - `put_flt <name> <timestamp> <data> ...` -- put data to the database through the filter 0
 

@@ -285,6 +285,22 @@ DBgr::write_filter(const int n, const std::string & code){
 }
 
 /************************************/
+void
+DBgr::clear_f0data(){
+  int ret;
+  DB_TXN *txn = txn_begin();
+  try {
+    del_key(txn, KEY_FLT0DATA);
+  }
+  catch (Err e){
+    txn_abort(txn);
+    throw e;
+  }
+  sync();
+  txn_commit(txn);
+}
+
+/************************************/
 
 std::string
 DBgr::backup_start(){

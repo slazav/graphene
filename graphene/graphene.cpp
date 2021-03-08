@@ -96,7 +96,9 @@ class Pars{
             "  print_filter <name> <N>\n"
             "      -- print code of the filter N\n"
             "  print_f0data <name>\n"
-            "      -- print data of the filter N\n"
+            "      -- print data of the input filter\n"
+            "  clear_f0data <name>\n"
+            "      -- clear data of the input filter\n"
             "  info <name>\n"
             "      -- print database information, tab-separated time format,\n"
             "         data format and description (if it is not empty)\n"
@@ -557,6 +559,14 @@ class Pars{
     if (strcasecmp(cmd.c_str(), "print_f0data")==0){
       if (pars.size()!=2) throw Err() << "database name expected";
       out << pool->get(pars[1]).filters[0].get_storage() << "\n";
+      return;
+    }
+
+    // clearinput filter data
+    // args: clear_f0data <name>
+    if (strcasecmp(cmd.c_str(), "clear_f0data")==0){
+      if (pars.size()!=2) throw Err() << "database name expected";
+      pool->get(pars[1]).clear_f0data();
       return;
     }
 

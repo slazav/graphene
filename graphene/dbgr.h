@@ -132,7 +132,11 @@ class DBgr{
     void write_info();
     void read_info();
 
-    void write_filter(const int slot, const std::string & code);
+  // write filter N. For input filter (N=0) storage is cleared
+  void write_filter(const int N, const std::string & code);
+
+  // clear storage of the input filter
+  void clear_f0data();
 
   /****************************/
   // Backup system:

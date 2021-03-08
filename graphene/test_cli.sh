@@ -551,6 +551,12 @@ assert "$(./graphene -d . get_range test_1)" \
 
 assert "$(./graphene -d . print_f0data test_1)" "5"
 
+assert "$(./graphene -d . clear_f0data test_1)" ""
+assert "$(./graphene -d . print_f0data test_1)" ""
+assert "$(./graphene -d . put_flt test_1 200 1)" ""
+assert "$(./graphene -d . print_f0data test_1)" "1"
+
+
 # setting of the filter resets also storage information
 assert "$(./graphene -d . set_filter test_1 0 "$code")" ""
 assert "$(./graphene -d . put_flt test_1 523.456 10 20 30)" ""
@@ -579,11 +585,13 @@ assert "$(./graphene -d . print_filter test_1 5)" "$(echo "$code")"
 # f1 is not set, get original data
 assert "$(./graphene -d . get_range test_1:f1)" \
 "123.000000000 11 1
+200.000000000 2 1
 202.000000000 18 4
 523.000000000 11 1"
 
 assert "$(./graphene -d . get_range test_1:f5)" \
 "125 22
+202 4
 204 36"
 
 assert "$(./graphene -d . delete test_1)" ""
