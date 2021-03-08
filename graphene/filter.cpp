@@ -30,7 +30,7 @@ std::string tcl_error(Tcl_Interp *interp){
 // * `storage` - global variable which which will be kept
 //   between filter runs
 bool
-Filter::run(std::string & t, std::vector<std::string> & d){
+Filter::run(std::string & t, std::vector<std::string> & d, std::string & storage){
 
   if (code=="") return true;
 

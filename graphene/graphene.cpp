@@ -558,7 +558,7 @@ class Pars{
     // args: print_f0data <name>
     if (strcasecmp(cmd.c_str(), "print_f0data")==0){
       if (pars.size()!=2) throw Err() << "database name expected";
-      out << pool->get(pars[1]).filters[0].get_storage() << "\n";
+      out << pool->get(pars[1]).read_f0data() << "\n";
       return;
     }
 

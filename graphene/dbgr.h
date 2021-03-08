@@ -138,6 +138,12 @@ class DBgr{
   // clear storage of the input filter
   void clear_f0data();
 
+  // read storage of the input filter from database
+  std::string read_f0data();
+
+  // write storage of the input filter to database
+  void write_f0data(const std::string & storage);
+
   /****************************/
   // Backup system:
 
@@ -219,8 +225,9 @@ class DBgr{
     auto t = graphene_time_print(ks, ttype, timefmt, time0);
     auto d = graphene_data_print(vs, dbo.col, dtype);
 
+    std::string storage; // output filters do not use storage, but we need to provide the variable
     if (dbo.flt>=MAX_FILTERS) throw Err() << "filter number out of range: " << dbo.flt;
-    if (dbo.flt>0 && !filters[dbo.flt].run(t,d)) return;
+    if (dbo.flt>0 && !filters[dbo.flt].run(t,d,storage)) return;
 
     // print values into a string (always \n in the end!)
     std::string s =  t;

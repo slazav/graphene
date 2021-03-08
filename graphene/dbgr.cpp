@@ -250,7 +250,6 @@ DBgr::read_info(){
     }
 
     // Read filters
-    filters[0].set_storage( get_key(txn, KEY_FLT0DATA) );
     for (int n=0; n<MAX_FILTERS; n++)
       filters[n].set_code( get_key(txn, KEY_FLT+n) );
 
@@ -288,10 +287,8 @@ DBgr::write_filter(const int n, const std::string & code){
 void
 DBgr::clear_f0data(){
   int ret;
-  DB_TXN *txn = txn_begin();
-  try {
-    del_key(txn, KEY_FLT0DATA);
-  }
+  DB_TXN *txn = txn_begin(DB_TXN_SNAPSHOT);
+  try { del_key(txn, KEY_FLT0DATA); }
   catch (Err e){
     txn_abort(txn);
     throw e;
@@ -299,6 +296,35 @@ DBgr::clear_f0data(){
   sync();
   txn_commit(txn);
 }
+
+/************************************/
+std::string
+DBgr::read_f0data(){
+
+  DB_TXN *txn = txn_begin(DB_TXN_SNAPSHOT);
+  std::string storage;
+  try { storage = get_key(txn, KEY_FLT0DATA); }
+  catch (Err e){
+    txn_abort(txn);
+    throw e;
+  }
+  txn_commit(txn);
+  return storage;
+}
+
+/************************************/
+void
+DBgr::write_f0data(const std::string & storage){
+  DB_TXN *txn = txn_begin(DB_TXN_SNAPSHOT);
+  try { set_key(txn, KEY_FLT0DATA, mk_dbt(storage)); }
+  catch (Err e){
+    txn_abort(txn);
+    throw e;
+  }
+  sync();
+  txn_commit(txn);
+}
+
 
 /************************************/
 
@@ -439,32 +465,15 @@ DBgr::put(const string &t, const vector<string> & dat, const string &dpolicy){
 void
 DBgr::put_flt(string &t, vector<string> & dat, const string &dpolicy){
 
-  // read filter data
-  DB_TXN *txn = txn_begin(DB_TXN_SNAPSHOT);
-  std::string fdata;
-  try { filters[0].set_storage( get_key(txn, KEY_FLT0DATA) ); }
-  catch (Err e){
-    txn_abort(txn);
-    throw e;
-  }
-  txn_commit(txn);
+  // read filter storage
+  std::string storage = read_f0data();
 
   // run input filter
   auto t1 = graphene_time_print(graphene_time_parse(t, ttype),ttype);
-  if (filters[0].run(t1, dat)) put(t1,dat,dpolicy);
+  if (filters[0].run(t1, dat, storage)) put(t1,dat,dpolicy);
 
-  // write fdata
-  txn = txn_begin(DB_TXN_SNAPSHOT);
-  try {
-    auto s = filters[0].get_storage();
-    set_key(txn, KEY_FLT0DATA, mk_dbt(s));
-  }
-  catch (Err e){
-    txn_abort(txn);
-    throw e;
-  }
-  txn_commit(txn);
-
+  // write storage
+  write_f0data(storage);
 }
 
 /************************************/
