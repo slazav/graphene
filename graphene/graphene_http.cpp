@@ -113,6 +113,7 @@ request_answer(void * cls, struct MHD_Connection * connection, const char * url,
       const char * t1  = MHD_lookup_connection_value(connection, MHD_GET_ARGUMENT_KIND, "t1");
       const char * t2  = MHD_lookup_connection_value(connection, MHD_GET_ARGUMENT_KIND, "t2");
       const char * dt  = MHD_lookup_connection_value(connection, MHD_GET_ARGUMENT_KIND, "dt");
+      const char *cnt  = MHD_lookup_connection_value(connection, MHD_GET_ARGUMENT_KIND, "cnt");
       const char *tfmt = MHD_lookup_connection_value(connection, MHD_GET_ARGUMENT_KIND, "tfmt");
 
       std::string cmd  = string(url).substr(1);
@@ -142,6 +143,11 @@ request_answer(void * cls, struct MHD_Connection * connection, const char * url,
          db.timefmt = graphene_tfmt_parse(tfmt? tfmt : "def");
          db.time0   = t1 ? t1 : "0";
          db.get_range(t1? t1:"0", t2? t2:"inf", dt? dt:"0", dbo); }
+      else if (strcasecmp(cmd.c_str(),"get_count")==0){
+         DBgr & db = pool->get(name, DB_RDONLY);
+         db.timefmt = graphene_tfmt_parse(tfmt? tfmt : "def");
+         db.time0   = t1 ? t1 : "0";
+         db.get_count(t1? t1:"0", cnt? cnt:"1000", dbo); }
       else if (strcasecmp(cmd.c_str(), "list")==0){
          for (auto const & n: pool->dblist()) dbo.print_point(n + "\n"); }
       else throw Err() << "bad command: " << cmd.c_str();

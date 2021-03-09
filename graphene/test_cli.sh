@@ -201,6 +201,30 @@ assert "$(./graphene -d . get test_1 1)" "1.000000000 -inf -inf nan nan nan inf 
 assert "$(./graphene -d . put test_1 3 10 10 10 10 10 10 10)" ""
 assert "$(./graphene -d . get test_1 2)" "2.000000000 -inf -inf nan nan nan inf inf"
 
+
+###########################################################################
+# get_count
+assert "$(./graphene -d . get_count test_1)" "1.000000000 -inf -inf nan nan nan inf inf
+3.000000000 10 10 10 10 10 10 10
+1234567890.000000000 0.1
+2234567890.123000000 0.2"
+
+assert "$(./graphene -d . get_count test_1 2 10)" "3.000000000 10 10 10 10 10 10 10
+1234567890.000000000 0.1
+2234567890.123000000 0.2"
+
+assert "$(./graphene -d . get_count test_1 2 2)" "3.000000000 10 10 10 10 10 10 10
+1234567890.000000000 0.1"
+
+assert "$(./graphene -d . get_count test_1 1234567890 2)" "1234567890.000000000 0.1
+2234567890.123000000 0.2"
+
+assert "$(./graphene -d . get_count test_1 1234567889.1 1)" "1234567890.000000000 0.1"
+assert "$(./graphene -d . get_count test_1 1234567890.1)" "2234567890.123000000 0.2"
+assert "$(./graphene -d . get_count test_1 2234567891.1)" ""
+assert "$(./graphene -d . get_count test_1 1 0)" ""
+
+
 assert "$(./graphene -d . delete test_1)" ""
 
 ###########################################################################

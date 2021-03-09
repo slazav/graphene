@@ -198,6 +198,10 @@ class DBgr{
   void get_range(const std::string &t1, const std::string &t2,
                  const std::string &dt, DBout & dbo);
 
+  // get data from the database -- get_count
+  void get_count(const std::string &t1,
+                 const std::string &count, DBout & dbo);
+
   // delete data data from the database -- del_range
   void del(const std::string &t1);
 

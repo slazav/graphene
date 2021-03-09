@@ -694,6 +694,63 @@ DBgr::get_range(const string &t1, const string &t2,
 }
 
 /************************************/
+// get data from the database -- get_count
+//
+void
+DBgr::get_count(const string &t1,
+                const string &count, DBout & dbo){
+
+  string t1p = graphene_time_parse(t1, ttype);
+  istringstream s(count);
+  uint64_t N = 0;
+  s >> N;
+  if (s.bad() || s.fail() || !s.eof())
+    throw Err() << "Can't parse data count: " << count;
+
+  DBT k = mk_dbt(t1p);
+  DBT v = mk_dbt();
+
+  // do everything in a single transaction (with snapshot isolation)
+  DB_TXN *txn = txn_begin(DB_TXN_SNAPSHOT);
+  DBC *curs = NULL;
+  try {
+
+    // Get a cursor
+    get_cursor(dbp.get(), txn, &curs, 0);
+
+    int fl = DB_SET_RANGE; // first get t >= t1
+    for (int i=0; i<N; ++i) {
+      string pre((char *)k.data, (char *)k.data+k.size);
+
+      if (!c_get(curs, &k, &v, fl)) break;
+
+      // unpack new time value
+      string tnp((char *)k.data, (char *)k.data+k.size);
+
+      // I have a broken database where DB_SET_RANGE/DB_NEXT can
+      // get non-increasing values. Let's check this to prevent the
+      // program from infinite loops..
+      if (graphene_time_cmp(tnp,pre,ttype)<0)
+        throw Err() << "Broken database (DB_SET_RANGE/DB_NEXT get smaller timestamp)";
+
+      // we want every point, switch to DB_NEXT and repeat
+      proc_point(&k, &v, dbo, true);
+      fl=DB_NEXT;
+    }
+    curs->close(curs);
+  }
+  catch (Err e){
+    if (curs) curs->close(curs);
+    txn_abort(txn);
+    throw e;
+  }
+  txn_commit(txn);
+
+}
+
+
+
+/************************************/
 // delete data data from the database -- del
 void
 DBgr::del(const string &t1){

@@ -166,10 +166,13 @@ socket.
   larger then that of the latest point.
 
 - `get_range <extended name> [<time1>] [<time2>] [<dt>]` -- Get
-  points in the time range. If parameter dt>0 then data are filtered,
+  points in the time range. If parameter `dt>0` then data are filtered,
   only points with distance >dt between them are shown. This works fast
   for any ratio of dt and interpoint distance. For text data only first
   lines are shown.
+
+- `get_count <extended name> [<time1>] [<cnt>]` -- Get
+  up to `cnt` points (default 1000) starting from `time1`.
 
 
 Supported timestamp forms:
@@ -267,7 +270,7 @@ returned by `backup_start` and `backup_print` commands.
 For incremental backup the following procedure can be done:
 - `backup_start` in the master database, save timer value
 - `del_range <timer>` in the secondary database
-- `get_range <timer>` in the master database, put all values to the secondary one.
+- `get_range <timer>` (or a few calls to `get_count`) in the master database, put all values to the secondary one.
 - `backup_end` in the master database
 
 Such backup should be efficient in normal operation, when records with
@@ -372,11 +375,12 @@ Options:
 In addition to simple JSON interface `graphene_http` also implements
 a simple GET read-only interface to access data:
 - URL is graphene command, one of `get`, `get_prev`,
-  `get_next`, `get_range`, or `list`
+  `get_next`, `get_range`, `get_count`, or `list`
 - `name` parameter is a database name
 - `t1` parameter is timestamp for all `get_*` commands
 - `t2` and `dt` parameters are second timestamp and time interval
   for `get_range` command
+- `cnt` parameter is count for `get_count` command
 - `tfmt` parameter is time format `def`, or `rel`.
 
 Example:

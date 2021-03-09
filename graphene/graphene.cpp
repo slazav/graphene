@@ -116,6 +116,8 @@ class Pars{
             "      -- get previous point before time2\n"
             "  get_range <name>[:N] [<time1>] [<time2>] [<dt>]\n"
             "      -- get points in the time range\n"
+            "  get_count <name>[:N] [<time1>] [<cnt>]\n"
+            "      -- get up to cnt points starting from t1\n"
             "  del <name> <time>\n"
             "      -- delete one data point\n"
             "  del_range <name> <time1> <time2>\n"
@@ -472,6 +474,26 @@ class Pars{
       db.time0   = t1;
       dbo.spp    = interactive;
       db.get_range(t1,t2,dt, dbo);
+      return;
+    }
+
+    // get limited number of points
+    // args: get_range <name>[:N] [<time1>] [<cnt>]
+    if (strcasecmp(cmd.c_str(), "get_count")==0){
+      if (pars.size()<2) throw Err() << "database name expected";
+      if (pars.size()>5) throw Err() << "too many parameters";
+      string t1  = pars.size()>2? pars[2]: "0";
+      string cnt = pars.size()>3? pars[3]: "1000";
+      int col = -1, flt = -1;
+      std::string name = parse_ext_name(pars[1], col, flt);
+      DBgr & db = pool->get(name, DB_RDONLY);
+      DBout dbo(out);
+      dbo.col    = col;
+      dbo.flt    = flt;
+      db.timefmt = graphene_tfmt_parse(timefmt);
+      db.time0   = t1;
+      dbo.spp    = interactive;
+      db.get_count(t1,cnt, dbo);
       return;
     }
 
