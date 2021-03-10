@@ -62,7 +62,7 @@ die "dst_db_prog (-D) is not set" if $dst_db_prog eq '';
 sub spp_write {
   my $conn = shift;
   my $cmd  = shift;
-  #print "=> $cmd\n" if $verb;
+#  print "=> $cmd\n" if $verb;
   print $conn $cmd, "\n";
 }
 sub spp_read {
@@ -80,7 +80,7 @@ sub spp_read {
     last if $line =~/^\#OK/;
     $ret .= $line;
   }
-  #print "<= $ret\n" if $verb;
+#  print "<= $ret\n" if $verb;
   return $ret;
 }
 
@@ -133,7 +133,7 @@ foreach my $src_name (@names) {
 
   # calculate backup range
   $tstamp = 0 if $full;
-  print " start data transfer from $tstamp: " if $verb;
+  print " start data transfer from $tstamp:\n" if $verb;
   flush STDOUT if $verb;
 
   # delete the range in destination database:
@@ -141,29 +141,44 @@ foreach my $src_name (@names) {
   spp_read(\*DO, 0);
 
   # get range from source database, put values into destination one:
-  spp_write(\*SI, "get_range $src_name $tstamp inf");
-  my $num=0;
-  while( my $line = <SO>)  {
-    next if $line =~/^\s*$/;
-    die $line if $line =~ /^#Error/;
-    last if $line =~/^\#OK/;
-    spp_write(\*DI, "put $dst_name $line");
-    $num++;
-  }
+  my $num_total=0;
+  while (1) {
 
-  print "$num records: " if $verb;
-  flush STDOUT if $verb;
+    if ($num_total>0) {
+      spp_write(\*SI, "backup_start $src_name");
+      my $tstamp = spp_read(\*SO, 0);
+      chomp($tstamp);
+    }
 
-  # read all answers
-  while($num>0)  {
-    spp_read(\*DO, 0);
-    $num--;
-  }
+    my $num=0;
+    spp_write(\*SI, "get_count $src_name $tstamp 4096");
+    while( my $line = <SO>)  {
+      next if $line =~/^\s*$/;
+      die $line if $line =~ /^#Error/;
+      last if $line =~/^\#OK/;
+      my @l = split(/\s+/, $line);
+      $tstamp = $l[0];
+      spp_write(\*DI, "put $dst_name $line");
+      $num++;
+    }
+    last if $num==0;
+    $num_total += $num;
 
-  spp_write(\*SI, "backup_end $src_name");
-  spp_read(\*SO, 0);
+    # read all answers
+    while($num>0)  {
+      spp_read(\*DO, 0);
+      $num--;
+    }
 
-  print "OK\n" if $verb;
+    print "  $num_total records\n" if $verb;
+    flush STDOUT if $verb;
+
+    spp_write(\*SI, "backup_end $src_name $tstamp");
+    spp_read(\*SO, 0);
+
+  };
+
+  print "  Done\n" if $verb;
   flush STDOUT if $verb;
 
 }
