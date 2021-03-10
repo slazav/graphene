@@ -115,7 +115,8 @@ proc flt_skip {args} {
       # Compensate removed points. Theory?!
       set sum [expr $sum*1.2]
 
-      set noise [expr max($auto_noise*3*$sum, $noise)]
+      set anoise [expr $auto_noise*3*$sum]
+      set noise [expr {$anoise>$noise ? $anoise:$noise}]
     }
   }
 
