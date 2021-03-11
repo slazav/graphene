@@ -318,6 +318,9 @@ list, but not an array. For filters 1..15 this data is not stored.
 
 If a filter returns false value (`0`, `off`, `false`) data point will be skipped.
 
+For faster operations each database in a running graphene program uses a
+single TCL interpreter. One should be aware of this fact when writing filters.
+
 Simple example:
 ```
 code='

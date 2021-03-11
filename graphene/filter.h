@@ -6,9 +6,12 @@
 #include <vector>
 #include <sstream>
 #include <cmath>
+#include <memory>
 
 #include "opt/opt.h"
 #include "err/err.h"
+
+#include <tcl.h>
 
 /***************************************************/
 
@@ -22,7 +25,11 @@ class Filter {
   // TCL library.
   static std::string library;
 
+  std::shared_ptr<Tcl_Interp> interp;
+
   /********************************************************/
+
+  Filter();
 
   std::string get_code() const {return code;}
   void set_code(const std::string & c = std::string()) {code=c;}

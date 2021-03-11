@@ -16,6 +16,21 @@ std::string tcl_error(Tcl_Interp *interp){
   return ret;
 }
 
+// Constructor
+Filter::Filter(): interp(Tcl_CreateInterp(), Tcl_DeleteInterp){
+  // create TCL interpreter
+  if (!interp) throw Err() << "filter: can't run TCL interpreter\n";
+
+  // switch to safe mode
+  if (Tcl_MakeSafe(interp.get()) != TCL_OK)
+    throw Err() << "filter: Tcl_MakeSafe failed: " << tcl_error(interp.get());
+
+  // use library
+  if (library!= "" && Tcl_Eval(interp.get(), library.c_str()) != TCL_OK)
+    throw Err() << "filter: can't use TCL library: " << tcl_error(interp.get());
+}
+
+
 /***************************************************/
 
 // Process and optionally modify input, return true if it
@@ -34,48 +49,41 @@ Filter::run(std::string & t, std::vector<std::string> & d, std::string & storage
 
   if (code=="") return true;
 
-  // create TCL interpreter
-  Tcl_Interp *interp = Tcl_CreateInterp();
-  if (interp == NULL) throw Err() << "filter: can't run TCL interpreter\n";
-
-  // switch to safe mode
-  if (Tcl_MakeSafe(interp) != TCL_OK)
-    throw Err() << "filter: Tcl_MakeSafe failed: " << tcl_error(interp);
-
   // define global variable time
-  if (Tcl_SetVar(interp, "time", t.c_str(), TCL_GLOBAL_ONLY) == NULL)
-    throw Err() << "filter: can't set time variable: " << tcl_error(interp);
+  if (Tcl_SetVar(interp.get(), "time", t.c_str(), TCL_GLOBAL_ONLY) == NULL)
+    throw Err() << "filter: can't set time variable: " << tcl_error(interp.get());
 
   // define global variable data
+  if (Tcl_SetVar(interp.get(), "data", "", TCL_GLOBAL_ONLY) == NULL)
+    throw Err() << "filter: can't set data variable: " << tcl_error(interp.get());
+
+  // append values to data list
   for (auto const & v:d)
-    if (Tcl_SetVar(interp, "data", v.c_str(),
+    if (Tcl_SetVar(interp.get(), "data", v.c_str(),
             TCL_GLOBAL_ONLY | TCL_APPEND_VALUE | TCL_LIST_ELEMENT) == NULL)
-      throw Err() << "filter: can't set data variable: " << tcl_error(interp);
+      throw Err() << "filter: can't set data variable: " << tcl_error(interp.get());
 
   // define global variable storage
-  if (Tcl_SetVar(interp, "storage", storage.c_str(), TCL_GLOBAL_ONLY) == NULL)
-    throw Err() << "filter: can't set storage variable: " << tcl_error(interp);
+  if (Tcl_SetVar(interp.get(), "storage", storage.c_str(), TCL_GLOBAL_ONLY) == NULL)
+    throw Err() << "filter: can't set storage variable: " << tcl_error(interp.get());
 
-  // use library
-  if (library!= "" && Tcl_Eval(interp, library.c_str()) != TCL_OK)
-    throw Err() << "filter: can't use TCL library: " << tcl_error(interp);
 
   // run TCL script
-  if (Tcl_Eval(interp, code.c_str()) != TCL_OK)
-    throw Err() << "filter: can't run TCL script: " << tcl_error(interp);
+  if (Tcl_Eval(interp.get(), code.c_str()) != TCL_OK)
+    throw Err() << "filter: can't run TCL script: " << tcl_error(interp.get());
 
   // get timestamp back
-  auto tc = Tcl_GetVar(interp, "time", TCL_GLOBAL_ONLY);
+  auto tc = Tcl_GetVar(interp.get(), "time", TCL_GLOBAL_ONLY);
   if (tc==NULL) throw Err() << "filter: can't get time value";
   t = tc;
 
   // get data back
-  Tcl_Obj* lst = Tcl_GetVar2Ex(interp, "data", NULL, TCL_GLOBAL_ONLY);
+  Tcl_Obj* lst = Tcl_GetVar2Ex(interp.get(), "data", NULL, TCL_GLOBAL_ONLY);
   if (lst) {
     Tcl_Obj** elem;
     int n;
-    if (Tcl_ListObjGetElements(interp, lst, &n, &elem) != TCL_OK)
-      throw Err() << "filter: broken data list: " << tcl_error(interp);
+    if (Tcl_ListObjGetElements(interp.get(), lst, &n, &elem) != TCL_OK)
+      throw Err() << "filter: broken data list: " << tcl_error(interp.get());
     d.clear();
     for (int i = 0; i < n; ++i,++elem){
       int len;
@@ -86,17 +94,15 @@ Filter::run(std::string & t, std::vector<std::string> & d, std::string & storage
   }
 
   // get storage back
-  auto storagec = Tcl_GetVar(interp, "storage", TCL_GLOBAL_ONLY);
+  auto storagec = Tcl_GetVar(interp.get(), "storage", TCL_GLOBAL_ONLY);
   storage = storagec? storagec:"";
 
   // Return value. If value can not be converted assume true
   int ret;
-  auto ret_str = Tcl_GetString(Tcl_GetObjResult(interp));
-  if (!ret_str || Tcl_GetBoolean(interp, ret_str, &ret) != TCL_OK)
+  auto ret_str = Tcl_GetString(Tcl_GetObjResult(interp.get()));
+  if (!ret_str || Tcl_GetBoolean(interp.get(), ret_str, &ret) != TCL_OK)
     ret = true;
 
-  // delete TCL interpreter
-  Tcl_DeleteInterp(interp);
   return ret;
 }
 
