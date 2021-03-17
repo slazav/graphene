@@ -196,6 +196,7 @@ class Pars{
     // For SPP2 it should be #Fatal
     try {
       DBpool pool(dbpath, readonly, env_type);
+      if (setjmp(sig_jmp_buf)) throw 0;
       out << "#OK\n";
       out.flush();
 
@@ -268,6 +269,7 @@ class Pars{
   void run_cmdline(){
     if (pars.size() < 1) throw Err() << "command is expected";
     DBpool pool(dbpath, readonly, env_type);
+    if (setjmp(sig_jmp_buf)) throw 0;
     run_command(&pool, cout);
   }
 
@@ -557,6 +559,7 @@ class Pars{
       if (pars.size()<3) throw Err() << "database name and dump file expected";
       if (pars.size()>3) throw Err() << "too many parameters";
       DBpool simple_pool(dbpath, false, "none");
+      if (setjmp(sig_jmp_buf)) throw 0;
       DBgr & db = simple_pool.get(pars[1], DB_CREATE | DB_EXCL);
       db.load(pars[2]);
       return;
@@ -568,6 +571,7 @@ class Pars{
       if (pars.size()<3) throw Err() << "database name and dump file expected";
       if (pars.size()>3) throw Err() << "too many parameters";
       DBpool simple_pool(dbpath, false, "none");
+      if (setjmp(sig_jmp_buf)) throw 0;
       DBgr & db = simple_pool.get(pars[1], DB_RDONLY);
       db.dump(pars[2]);
       return;
@@ -655,7 +659,6 @@ int
 main(int argc, char **argv) {
 
   try {
-    if (setjmp(sig_jmp_buf)) throw 0;
     Pars p(argc, argv);
     if (p.interactive) p.run_interactive(cin, cout);
     else if (p.sockname!="") p.run_socket(p.sockname);
