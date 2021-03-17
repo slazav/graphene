@@ -94,6 +94,8 @@ class Pars{
     sa.sa_flags = SA_RESTART; // Restart functions if interrupted by handler
     if (sigaction(SIGTERM, &sa, NULL) == -1 ||
         sigaction(SIGQUIT, &sa, NULL) == -1 ||
+        sigaction(SIGABRT, &sa, NULL) == -1 ||
+        sigaction(SIGHUP,  &sa, NULL) == -1 ||
         sigaction(SIGINT,  &sa, NULL) == -1)
       throw Err() << "can't set signal handler";
   }
