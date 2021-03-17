@@ -13,6 +13,8 @@
 #include <cstdio>
 #include <iomanip>
 #include <cerrno>
+#include <csignal>
+#include <setjmp.h>
 
 #include <map>
 #include <string>
@@ -33,6 +35,10 @@
 #include <sys/un.h>
 
 using namespace std;
+
+// signal handler
+jmp_buf sig_jmp_buf;
+static void StopFunc(int signum){ longjmp(sig_jmp_buf, 0); }
 
 /**********************************************************/
 /* global parameters */
@@ -79,6 +85,17 @@ class Pars{
 
     // load TCL library
     Filter::load_library(tcllib);
+
+    // set signal handler
+    // set up signals
+    struct sigaction sa;
+    sa.sa_handler = StopFunc;
+    sigemptyset(&sa.sa_mask);
+    sa.sa_flags = SA_RESTART; // Restart functions if interrupted by handler
+    if (sigaction(SIGTERM, &sa, NULL) == -1 ||
+        sigaction(SIGQUIT, &sa, NULL) == -1 ||
+        sigaction(SIGINT,  &sa, NULL) == -1)
+      throw Err() << "can't set signal handler";
   }
 
   // print command list (used in both -h message and interactive mode help)
@@ -191,7 +208,7 @@ class Pars{
           out << "#OK\n";
           out.flush();
         }
-        catch(Err e){
+        catch(Err & e){
           if (e.str()!="") out << "#Error: " << e.str() << "\n";
           out.flush();
           // close all databases. In case of an error which needs recovery/reopening.
@@ -199,7 +216,7 @@ class Pars{
         }
       }
     }
-    catch(Err e){
+    catch(Err & e){
       if (e.str()!="") out << "#Error: " << e.str() << "\n";
       return;
     }
@@ -638,14 +655,17 @@ int
 main(int argc, char **argv) {
 
   try {
-
+    if (setjmp(sig_jmp_buf)) throw 0;
     Pars p(argc, argv);
     if (p.interactive) p.run_interactive(cin, cout);
     else if (p.sockname!="") p.run_socket(p.sockname);
     else p.run_cmdline();
 
-  } catch(Err e){
+  } catch(Err & e){
     if (e.str()!="") cout << "Error: " << e.str() << "\n";
     return 1;
+  } catch(int r){
+    return 1;
   }
+  return 0;
 }
