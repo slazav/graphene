@@ -595,7 +595,7 @@ class Pars{
     if (strcasecmp(cmd.c_str(), "set_filter")==0){
       if (pars.size()!=4) throw Err() << "database name, filter number, filter code expected";
       int N = str_to_type<int>(pars[2]);
-      if (N<0 || N>MAX_FILTERS) throw Err() << "filter number out of range: " << N;
+      if (N<0 || N>=MAX_FILTERS) throw Err() << "filter number out of range: " << N;
       pool->get(pars[1]).write_filter(N, pars[3]);
       return;
     }
@@ -605,7 +605,7 @@ class Pars{
     if (strcasecmp(cmd.c_str(), "print_filter")==0){
       if (pars.size()!=3) throw Err() << "database name and filter number expected";
       int N = str_to_type<int>(pars[2]);
-      if (N<0 || N>MAX_FILTERS) throw Err() << "filter number out of range: " << N;
+      if (N<0 || N>=MAX_FILTERS) throw Err() << "filter number out of range: " << N;
       out << pool->get(pars[1]).filters[N].get_code() << "\n";
       return;
     }
