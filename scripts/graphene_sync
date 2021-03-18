@@ -157,7 +157,7 @@ foreach my $src_name (@names) {
       die $line if $line =~ /^#Error/;
       last if $line =~/^\#OK/;
       my @l = split(/\s+/, $line);
-      $tstamp = $l[0];
+      $tstamp = "$l[0]+";
       spp_write(\*DI, "put $dst_name $line");
       $num++;
     }
