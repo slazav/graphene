@@ -86,8 +86,19 @@ class Pars{
     // load TCL library
     Filter::load_library(tcllib);
 
-    // set signal handler
-    // set up signals
+    // Set signal handler.
+    // - It's important to close databases when
+    //   program terminates. Without this databases
+    //   (in a non-transactional env) can be easily broken.
+    // - Do not throw c++ exceptions from the handler through libdb!
+    //   This again can leave a database in a broken state.
+    // - Currently I'm using jongjmp in the signal handler,
+    //   resetting the jump point every time DBpool is
+    //   created. This works much better then nothing, but
+    //   I'm not sure that it is a good approach and catching
+    //   a signal in every part of the program will be proccessed
+    //   correctly.
+
     struct sigaction sa;
     sa.sa_handler = StopFunc;
     sigemptyset(&sa.sa_mask);
