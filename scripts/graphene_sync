@@ -29,6 +29,7 @@ Options:
 -p <string> | --dst_pref <string>
   -- set prefix for destination database name (default: '')
 
+-f | --filters  -- copy filters
 -F | --full  -- do full (non-incremental backup)
 -v | --verb  -- be verbose
 -h | --help  -- show help message
@@ -41,6 +42,7 @@ my $src_db_prog = 'graphene -i';
 my $dst_db_prog = '';
 my $src_names = '';
 my $dst_pref = '';
+my $filters = 0;
 my $full = 0;
 my $verb = 1;
 my $help = 0;
@@ -52,6 +54,7 @@ GetOptions(
   "n|src_names=s"    => \$src_names,
   "p|dst_pref=s"     => \$dst_pref,
   "F|full"           => \$full,
+  "f|filters"        => \$filters,
   "v|verb"           => \$verb,
   "h|help"           => \$help,
 ) or usage();
@@ -124,6 +127,18 @@ foreach my $src_name (@names) {
   }
   elsif ($dst_info ne $src_info) {
     die "Source and destination database have different format:\n$src_info\n$dst_info\n";
+  }
+
+  # copy filters if needed
+  if ($filters) {
+    for (my $f=0; $f<16; $f++){
+      spp_write(\*SI, "print_filter $src_name $f");
+      my $flt = spp_read(\*SO);
+      $flt=~s/\\/\\\\/g;
+      $flt=~s/'/\\'/g;
+      spp_write(\*DI, "set_filter $src_name $f '$flt'");
+      spp_read(\*DO);
+    }
   }
 
   # start_backup
