@@ -191,6 +191,9 @@ foreach my $src_name (@names) {
     spp_write(\*SI, "backup_end $src_name $tstamp");
     spp_read(\*SO, 0);
 
+    spp_write(\*DI, "sync $src_name");
+    spp_read(\*DO, 0);
+
   };
 
   print "  Done\n" if $verb;
