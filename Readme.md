@@ -388,7 +388,7 @@ a simple GET read-only interface to access data:
 
 Example:
 ```
-wget localhost:8182/tmp_db'?cmd=get_range&t1=10&t2=12&tfmt=rel' -O - -o /dev/null
+wget "localhost:8182/get_range?name=db_name&t1=10&t2=12&tfmt=rel" -O file.dat
 ```
 
 ###  Matlab/octave interface
