@@ -29,8 +29,8 @@ Options:
 
  -a | --append
   List of database names. Append values from these databases
-  to the sweep data. Values are taken for the peginning of the
-  sweep time range osing get_prev command (no interpolation).
+  to the sweep data. Values are taken for the beginning of the
+  sweep time range using get_prev command (no interpolation).
 
  -o | --out_db
   Sweep database name (default: ""). If it is empty then sweep data
