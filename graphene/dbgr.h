@@ -226,8 +226,10 @@ class DBgr{
     // convert DBT to strings
     std::string ks((char *)k->data, (char *)k->data+k->size);
     std::string vs((char *)v->data, (char *)v->data+v->size);
+
+    int col = (dbo.flt==-1 ? dbo.col:-1); // use all columns for filters
     auto t = graphene_time_print(ks, ttype, timefmt, time0);
-    auto d = graphene_data_print(vs, dbo.col, dtype);
+    auto d = graphene_data_print(vs, col, dtype);
 
     std::string storage; // output filters do not use storage, but we need to provide the variable
     if (dbo.flt>=MAX_FILTERS) throw Err() << "filter number out of range: " << dbo.flt;
