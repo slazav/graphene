@@ -1,5 +1,5 @@
 Name:         graphene
-Version:      2.9
+Version:      2.10
 Release:      alt1
 
 Summary:      Simple time series database.
@@ -42,6 +42,34 @@ mkdir -p %buildroot%_sharedstatedir/graphene
 %_datadir/graphene/tcllib
 
 %changelog
+* Sun Apr 18 2021 Vladislav Zavjalov <slazav@altlinux.org> 2.10-alt1
+- v2.10:
+ - safe database closing when catching signals
+ - close all databases on errors, in some cases reopening/recovery is needed
+ - always use tm_isdst=-1 in mktime (this also fixes aarch64 build)
+ - fix libdb_version command: add newline char at the end to avoid problems in interactive mode
+ - new commands:
+   - get_count: get limited amount of points starting from a timestamp
+   - clear_f0data: clear storage of the input filter
+ - graphene_http:
+   - fix build with gcc10, with old and new libmicrohttpd (MHD_Result return type)
+   - fix error in HTTP response initialization
+   - when stopping a server wait until the process exits
+   - use umask(022) in daemon mode
+   - fix error with filters + json datasource, always give all columns to filter input
+ - filters:
+   - fix error in set_filter/print_filter commands (filter range checking)
+   - fix error handling in filters
+   - always define storage variable in filters
+   - use a single TCL interpreter for each database (faster, less isolation)
+   - output filters can return false to skip data
+   - fully rewrite TCL filter library
+ - graphene_sync script:
+   - copy large amounts of data in small steps (use get_count command)
+   - add -f option for copying filters
+   - do sync on the destination db after backup
+ - fix/update documentation
+
 * Thu Apr 09 2020 Vladislav Zavjalov <slazav@altlinux.org> 2.9-alt1
 - v2.9
  - Allow human-readable timestamps on input (YYYY-mm-dd HH:MM:SS).
