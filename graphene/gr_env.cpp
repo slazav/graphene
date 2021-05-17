@@ -20,9 +20,6 @@
 // snapshot isolation:
 // https://docs.oracle.com/cd/E17076_05/html/gsg_txn/C/isolation.html#snapshot_isolation
 
-int
-is_alive(DB_ENV *dbenv, pid_t pid, db_threadid_t tid, u_int32_t flag) { return 1;}
-
 // Constructor: open DB environment
 GrapheneEnv::GrapheneEnv(const std::string & dbpath_, const bool readonly_, const std::string & env_type_):
     dbpath(dbpath_), env_type(env_type_), readonly(readonly_){
