@@ -10,7 +10,7 @@
 #include <errno.h>
 #include <sys/stat.h>
 
-#include "dbpool.h"
+#include "gr_env.h"
 #include "gr_db.h"
 #include "err/err.h"
 

@@ -21,7 +21,7 @@
 #include <vector>
 #include <iostream>
 #include "gr_db.h"
-#include "dbpool.h"
+#include "gr_env.h"
 #include "dbout.h"
 #include "filter.h"
 
@@ -47,7 +47,7 @@ class Pars{
   string dbpath;       /* path to the databases */
   string tcllib;       /* tcl library path */
   string dpolicy;      /* what to do with duplicated timestamps*/
-  string env_type;     /* environment type (see dbpool.h)*/
+  string env_type;     /* environment type (see gr_env.h)*/
   string sockname;     /* socket name*/
   bool interactive;    /* use interactive mode */
   vector<string> pars; /* non-option parameters */

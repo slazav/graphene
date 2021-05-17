@@ -30,7 +30,7 @@
 #include "log/log.h"
 #include "getopt/getopt.h"
 
-#include "dbpool.h"
+#include "gr_env.h"
 #include "filter.h"
 
 #if MHD_VERSION < 0x00097002
