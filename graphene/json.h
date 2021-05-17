@@ -6,7 +6,6 @@
 #include <cstdlib>
 #include <stdint.h>
 #include "jsonxx/jsonxx.h"
-#include "dbgr.h"
 
 #include "dbpool.h"
 

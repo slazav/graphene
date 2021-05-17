@@ -1,5 +1,5 @@
-MOD_HEADERS := dbgr.h dbout.h dbpool.h json.h data.h filter.h
-MOD_SOURCES := dbgr.cpp dbpool.cpp json.cpp data.cpp filter.cpp
+MOD_HEADERS := gr_db.h dbout.h dbpool.h json.h data.h filter.h
+MOD_SOURCES := gr_db.cpp dbpool.cpp json.cpp data.cpp filter.cpp
 
 SIMPLE_TESTS := dbout dbpool json0 data1 data2 filter
 SCRIPT_TESTS := json1

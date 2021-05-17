@@ -6,7 +6,7 @@
 #include "err/assert_err.h"
 
 #include "dbout.h"
-#include "dbgr.h"
+#include "gr_db.h"
 
 /*
 std::string

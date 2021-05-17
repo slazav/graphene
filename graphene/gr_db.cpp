@@ -8,7 +8,7 @@
 #include <cstring> /* memset */
 
 #include "data.h"
-#include "dbgr.h"
+#include "gr_db.h"
 #include "err/err.h"
 
 using namespace std;

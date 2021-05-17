@@ -20,7 +20,7 @@
 #include <string>
 #include <vector>
 #include <iostream>
-#include "dbgr.h"
+#include "gr_db.h"
 #include "dbpool.h"
 #include "dbout.h"
 #include "filter.h"
