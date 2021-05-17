@@ -165,7 +165,7 @@ GrapheneEnv::get(const std::string & name, const int fl){
 // close one database, close all databases
 void
 GrapheneEnv::close(const std::string & name){
-  std::map<std::string, GrapheneDB>::iterator i = pool.find(name);
+  auto i = pool.find(name);
   if (i!=pool.end()) pool.erase(i);
 }
 
@@ -176,14 +176,13 @@ GrapheneEnv::close(){ pool.clear(); }
 // sync one database, sync all databases
 void
 GrapheneEnv::sync(const std::string & name){
-  std::map<std::string, GrapheneDB>::iterator i = pool.find(name);
+  auto i = pool.find(name);
   if (i!=pool.end()) i->second.sync();
 }
 
 void
 GrapheneEnv::sync(){
-  std::map<std::string, GrapheneDB>::iterator i;
-  for (i = pool.begin(); i!=pool.end(); i++) i->second.sync();
+  for (auto &db:pool) db.second.sync();
 }
 
 void
