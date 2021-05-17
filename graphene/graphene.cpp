@@ -314,11 +314,9 @@ class Pars{
     if (strcasecmp(cmd.c_str(), "create")==0){
       if (pars.size()<2) throw Err() << "database name expected";
       DataType dtype = pars.size()<3 ? DATA_DOUBLE : graphene_dtype_parse(pars[2]);
-      GrapheneDB & db = env->get(pars[1], DB_CREATE | DB_EXCL);
-      db.dtype = dtype;
-      db.descr = pars.size()<4 ? "": pars[3];
-      for (int i=4; i<pars.size(); i++) db.descr+=" "+pars[i];
-      db.write_info();
+      std::string descr = pars.size()<4 ? "": pars[3];
+      for (int i=4; i<pars.size(); i++) descr+=" "+pars[i];
+      env->dbcreate(pars[1], descr, dtype);
       return;
     }
 

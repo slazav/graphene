@@ -35,6 +35,10 @@ class GrapheneEnv{
 
   ~GrapheneEnv();
 
+  // create new database
+  void dbcreate(const std::string & name, const std::string & descr,
+              const DataType type);
+
   // remove database file
   void dbremove(std::string name);
 

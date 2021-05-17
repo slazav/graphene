@@ -75,6 +75,18 @@ GrapheneEnv::~GrapheneEnv(){
   close();
 }
 
+
+// create new database
+void
+GrapheneEnv::dbcreate(const std::string & name, const std::string & descr,
+                    const DataType dtype){
+  GrapheneDB & db = get(name, DB_CREATE | DB_EXCL);
+  db.dtype = dtype;
+  db.descr = descr;
+  db.write_info();
+}
+
+
 // remove database file
 void
 GrapheneEnv::dbremove(std::string name){
