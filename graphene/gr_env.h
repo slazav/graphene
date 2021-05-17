@@ -40,10 +40,10 @@ class GrapheneEnv{
               const DataType type);
 
   // remove database file
-  void dbremove(std::string name);
+  void dbremove(const std::string & name);
 
   // rename database file
-  void dbrename(std::string name1, std::string name2);
+  void dbrename(const std::string & name1, const std::string & name2);
 
   // change database description
   void set_descr(const std::string & name, const std::string & descr);

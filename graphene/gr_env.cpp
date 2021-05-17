@@ -89,7 +89,7 @@ GrapheneEnv::dbcreate(const std::string & name, const std::string & descr,
 
 // remove database file
 void
-GrapheneEnv::dbremove(std::string name){
+GrapheneEnv::dbremove(const std::string & name){
   if (readonly) throw Err() << "can't remove database in readonly mode";
   check_name(name); // check name
   close(name);
@@ -105,7 +105,7 @@ GrapheneEnv::dbremove(std::string name){
 
 // rename database file
 void
-GrapheneEnv::dbrename(std::string name1, std::string name2){
+GrapheneEnv::dbrename(const std::string & name1, const std::string & name2){
   if (readonly) throw Err() << "can't rename database in readonly mode";
   check_name(name1); // check name
   check_name(name2); // check name
