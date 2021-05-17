@@ -45,6 +45,9 @@ class GrapheneEnv{
   // rename database file
   void dbrename(std::string name1, std::string name2);
 
+  // change database description
+  void set_descr(const std::string & name, const std::string & descr);
+
   // return listof all databases
   std::vector<std::string> dblist();
 

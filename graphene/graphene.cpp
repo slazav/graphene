@@ -342,10 +342,9 @@ class Pars{
     // args: set_descr <name> <description>
     if (strcasecmp(cmd.c_str(), "set_descr")==0){
       if (pars.size()<3) throw Err() << "database name and new description text expected";
-      GrapheneDB & db = env->get(pars[1]);
-      db.descr = pars[2];
-      for (int i=3; i<pars.size(); i++) db.descr+=" "+pars[i];
-      db.write_info();
+      std::string descr = pars[2];
+      for (int i=3; i<pars.size(); i++) descr+=" "+pars[i];
+      env->set_descr(pars[1], descr);
       return;
     }
 

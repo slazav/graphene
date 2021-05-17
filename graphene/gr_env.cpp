@@ -133,6 +133,15 @@ GrapheneEnv::dbrename(std::string name1, std::string name2){
   }
 }
 
+// change database description
+void
+GrapheneEnv::set_descr(const std::string & name, const std::string & descr){
+  auto db = get(name);
+  db.descr = descr;
+  db.write_info();
+}
+
+
 // make database list
 std::vector<std::string>
 GrapheneEnv::dblist(){
