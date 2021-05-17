@@ -30,8 +30,8 @@ proc_point_str(const std::string & input, const DBinfo & info){
   // pack input
   std::string kp = graphene_time_parse(key, info.ttype);
   std::string vp = graphene_data_parse(args, info.dtype);
-  DBT k = DBgr::mk_dbt(kp);
-  DBT v = DBgr::mk_dbt(vp);
+  DBT k = GrapheneDB::mk_dbt(kp);
+  DBT v = GrapheneDB::mk_dbt(vp);
 
   dbo.proc_point(&k,&v, info);
   return out.str();

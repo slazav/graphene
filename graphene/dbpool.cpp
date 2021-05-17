@@ -144,11 +144,11 @@ DBpool::dblist(){
 }
 
 // find database in the pool. Open/Reopen if needed
-DBgr &
+GrapheneDB &
 DBpool::get(const std::string & name, const int fl){
 
   if (readonly && !(fl & DB_RDONLY)) throw Err() << "can't write to database in readonly mode";
-  std::map<std::string, DBgr>::iterator i = pool.find(name);
+  std::map<std::string, GrapheneDB>::iterator i = pool.find(name);
 
   // if database was opened with wrong flags close it
   if (!(fl & DB_RDONLY) && i!=pool.end() &&
@@ -158,7 +158,7 @@ DBpool::get(const std::string & name, const int fl){
 
   // if database is not opened, open it
   if (!pool.count(name)) pool.insert(
-    std::pair<std::string, DBgr>(name, DBgr(env.get(), dbpath, name, fl)));
+    std::pair<std::string, GrapheneDB>(name, GrapheneDB(env.get(), dbpath, name, fl)));
 
   // return the database
   return pool.find(name)->second;
@@ -168,7 +168,7 @@ DBpool::get(const std::string & name, const int fl){
 // close one database, close all databases
 void
 DBpool::close(const std::string & name){
-  std::map<std::string, DBgr>::iterator i = pool.find(name);
+  std::map<std::string, GrapheneDB>::iterator i = pool.find(name);
   if (i!=pool.end()) pool.erase(i);
 }
 
@@ -179,13 +179,13 @@ DBpool::close(){ pool.clear(); }
 // sync one database, sync all databases
 void
 DBpool::sync(const std::string & name){
-  std::map<std::string, DBgr>::iterator i = pool.find(name);
+  std::map<std::string, GrapheneDB>::iterator i = pool.find(name);
   if (i!=pool.end()) i->second.sync();
 }
 
 void
 DBpool::sync(){
-  std::map<std::string, DBgr>::iterator i;
+  std::map<std::string, GrapheneDB>::iterator i;
   for (i = pool.begin(); i!=pool.end(); i++) i->second.sync();
 }
 

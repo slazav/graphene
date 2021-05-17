@@ -124,27 +124,27 @@ request_answer(void * cls, struct MHD_Connection * connection, const char * url,
       dbo.flt    = flt;
 
       if (strcasecmp(cmd.c_str(),"get")==0){
-         DBgr & db = pool->get(name, DB_RDONLY);
+         GrapheneDB & db = pool->get(name, DB_RDONLY);
          db.timefmt = graphene_tfmt_parse(tfmt? tfmt : "def");
          db.time0   = t1 ? t1 : "0";
          db.get(t1? t1:"inf", dbo); }
       else if (strcasecmp(cmd.c_str(),"get_next")==0) {
-         DBgr & db = pool->get(name, DB_RDONLY);
+         GrapheneDB & db = pool->get(name, DB_RDONLY);
          db.timefmt = graphene_tfmt_parse(tfmt? tfmt : "def");
          db.time0   = t1 ? t1 : "0";
          db.get_next(t1? t1:"0", dbo); }
       else if (strcasecmp(cmd.c_str(),"get_prev")==0) {
-         DBgr & db = pool->get(name, DB_RDONLY);
+         GrapheneDB & db = pool->get(name, DB_RDONLY);
          db.timefmt = graphene_tfmt_parse(tfmt? tfmt : "def");
          db.time0   = t1 ? t1 : "0";
          db.get_prev(t1? t1:"inf", dbo); }
       else if (strcasecmp(cmd.c_str(),"get_range")==0){
-         DBgr & db = pool->get(name, DB_RDONLY);
+         GrapheneDB & db = pool->get(name, DB_RDONLY);
          db.timefmt = graphene_tfmt_parse(tfmt? tfmt : "def");
          db.time0   = t1 ? t1 : "0";
          db.get_range(t1? t1:"0", t2? t2:"inf", dt? dt:"0", dbo); }
       else if (strcasecmp(cmd.c_str(),"get_count")==0){
-         DBgr & db = pool->get(name, DB_RDONLY);
+         GrapheneDB & db = pool->get(name, DB_RDONLY);
          db.timefmt = graphene_tfmt_parse(tfmt? tfmt : "def");
          db.time0   = t1 ? t1 : "0";
          db.get_count(t1? t1:"0", cnt? cnt:"1000", dbo); }

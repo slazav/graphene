@@ -20,7 +20,7 @@
 class DBpool{
   std::string dbpath;
   std::string env_type;
-  std::map<std::string, DBgr> pool;
+  std::map<std::string, GrapheneDB> pool;
   std::shared_ptr<DB_ENV> env; // database environment
   bool readonly;
 
@@ -47,7 +47,7 @@ class DBpool{
   std::vector<std::string> dblist();
 
   // find database in the pool. Create/Open/Reopen if needed
-  DBgr & get(const std::string & name, const int fl = 0);
+  GrapheneDB & get(const std::string & name, const int fl = 0);
 
   // close one database, close all databases
   void close(const std::string & name);

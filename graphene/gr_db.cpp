@@ -57,12 +57,12 @@ int cmpfunc(DB *dbp, const DBT *a, const DBT *b){
 
 
 /***********************************************************/
-// DBgr class
+// GrapheneDB class
 
 /************************************/
 // Constructor -- open a database
 //
-DBgr::DBgr(DB_ENV *env_,
+GrapheneDB::GrapheneDB(DB_ENV *env_,
      const string & path_,
      const string & name_,
      const int flags):
@@ -93,7 +93,7 @@ DBgr::DBgr(DB_ENV *env_,
   int ret = db_create(&dbp1, env, 0);
   if (ret != 0)
     throw Err() << name << ".db: " << db_strerror(ret);
-  dbp = std::shared_ptr<DB>(dbp1, DBgr::D());
+  dbp = std::shared_ptr<DB>(dbp1, GrapheneDB::D());
 
 
   /* set key compare function */
@@ -120,7 +120,7 @@ DBgr::DBgr(DB_ENV *env_,
 // Simple transaction wrappers:
 // For simple environments env can be NULL, txn can be null.
 DB_TXN *
-DBgr::txn_begin(int flags){
+GrapheneDB::txn_begin(int flags){
   DB_TXN *txn = NULL;
   if (env && (env_flags & DB_INIT_TXN)) {
     int ret = env->txn_begin(env, NULL, &txn, flags);
@@ -130,14 +130,14 @@ DBgr::txn_begin(int flags){
 }
 
 void
-DBgr::txn_commit(DB_TXN *txn){
+GrapheneDB::txn_commit(DB_TXN *txn){
   if (!txn) return;
   int ret = txn->commit(txn, 0);
   if (ret != 0) Err() << "Can't commit a transaction: " << name << ".db: " << db_strerror(ret);
 }
 
 void
-DBgr::txn_abort(DB_TXN *txn){
+GrapheneDB::txn_abort(DB_TXN *txn){
   if (!txn) return;
   int ret = txn->abort(txn);
   if (ret != 0) Err() << "Can't abort a transaction: " << name << ".db: " << db_strerror(ret);
@@ -148,7 +148,7 @@ DBgr::txn_abort(DB_TXN *txn){
 
 /* Get a cursor */
 void
-DBgr::get_cursor(DB *dbp, DB_TXN *txn, DBC **curs, int flags) {
+GrapheneDB::get_cursor(DB *dbp, DB_TXN *txn, DBC **curs, int flags) {
   *curs=NULL;
   dbp->cursor(dbp, txn, curs, flags);
   if (*curs==NULL)
@@ -156,7 +156,7 @@ DBgr::get_cursor(DB *dbp, DB_TXN *txn, DBC **curs, int flags) {
 }
 
 bool
-DBgr::c_get(DBC *curs, DBT *k, DBT *v, int flags) {
+GrapheneDB::c_get(DBC *curs, DBT *k, DBT *v, int flags) {
   int res = curs->c_get(curs, k, v, flags);
   if (res!=0 && res!=DB_NOTFOUND)
     throw Err() << name << ".db: " << db_strerror(res);
@@ -166,7 +166,7 @@ DBgr::c_get(DBC *curs, DBT *k, DBT *v, int flags) {
 /************************************/
 // Simple del/put/set operations for database information
 void
-DBgr::del_key(DB_TXN *txn, uint8_t key){
+GrapheneDB::del_key(DB_TXN *txn, uint8_t key){
   DBT k = mk_dbt(&key);
   int ret = dbp->del(dbp.get(), txn, &k, 0);
   if (ret != 0 && ret != DB_NOTFOUND)
@@ -174,7 +174,7 @@ DBgr::del_key(DB_TXN *txn, uint8_t key){
 }
 
 void
-DBgr::set_key(DB_TXN *txn, uint8_t key, DBT v){
+GrapheneDB::set_key(DB_TXN *txn, uint8_t key, DBT v){
   DBT k = mk_dbt(&key);
   int ret = dbp->put(dbp.get(), txn, &k, &v, 0);
   if (ret != 0)
@@ -182,7 +182,7 @@ DBgr::set_key(DB_TXN *txn, uint8_t key, DBT v){
 }
 
 std::string
-DBgr::get_key(DB_TXN *txn, uint8_t key, const std::string & def){
+GrapheneDB::get_key(DB_TXN *txn, uint8_t key, const std::string & def){
   DBT k = mk_dbt(&key);
   DBT v = mk_dbt();
   int ret = dbp->get(dbp.get(), txn, &k, &v, 0);
@@ -198,7 +198,7 @@ DBgr::get_key(DB_TXN *txn, uint8_t key, const std::string & def){
 // key = (uint8_t)1 (1byte), value = version  (1byte)
 //
 void
-DBgr::write_info(){
+GrapheneDB::write_info(){
   int ret;
 
   // do everything in a single transaction
@@ -223,7 +223,7 @@ DBgr::write_info(){
 // Get database information (version, ttype, dtype, filters)
 //
 void
-DBgr::read_info(){
+GrapheneDB::read_info(){
 
   // do everything in a single transaction (with snapshot isolation)
   DB_TXN *txn = txn_begin(DB_TXN_SNAPSHOT);
@@ -263,7 +263,7 @@ DBgr::read_info(){
 
 /************************************/
 void
-DBgr::write_filter(const int n, const std::string & code){
+GrapheneDB::write_filter(const int n, const std::string & code){
   if (n<0 || n>filters.size())
     throw Err() << "filter number out of range: " << n;
 
@@ -285,7 +285,7 @@ DBgr::write_filter(const int n, const std::string & code){
 
 /************************************/
 void
-DBgr::clear_f0data(){
+GrapheneDB::clear_f0data(){
   int ret;
   DB_TXN *txn = txn_begin(DB_TXN_SNAPSHOT);
   try { del_key(txn, KEY_FLT0DATA); }
@@ -299,7 +299,7 @@ DBgr::clear_f0data(){
 
 /************************************/
 std::string
-DBgr::read_f0data(){
+GrapheneDB::read_f0data(){
 
   DB_TXN *txn = txn_begin(DB_TXN_SNAPSHOT);
   std::string storage;
@@ -314,7 +314,7 @@ DBgr::read_f0data(){
 
 /************************************/
 void
-DBgr::write_f0data(const std::string & storage){
+GrapheneDB::write_f0data(const std::string & storage){
   DB_TXN *txn = txn_begin(DB_TXN_SNAPSHOT);
   try { set_key(txn, KEY_FLT0DATA, mk_dbt(storage)); }
   catch (Err e){
@@ -329,7 +329,7 @@ DBgr::write_f0data(const std::string & storage){
 /************************************/
 
 std::string
-DBgr::backup_start(){
+GrapheneDB::backup_start(){
   std::string ret;
   DB_TXN *txn = txn_begin();
   try {
@@ -350,7 +350,7 @@ DBgr::backup_start(){
 }
 
 void
-DBgr::backup_end(const std::string & t2){
+GrapheneDB::backup_end(const std::string & t2){
   std::string ret;
   DB_TXN *txn = txn_begin();
   try {
@@ -374,7 +374,7 @@ DBgr::backup_end(const std::string & t2){
 
 // reset backup timers to 0
 void
-DBgr::backup_reset(){
+GrapheneDB::backup_reset(){
   DB_TXN *txn = txn_begin();
   try {
     auto t = graphene_time_parse("0", ttype);
@@ -390,7 +390,7 @@ DBgr::backup_reset(){
 
 // print main backup timer
 std::string
-DBgr::backup_print(){
+GrapheneDB::backup_print(){
   DB_TXN *txn = txn_begin();
   try {
     auto timer = graphene_time_parse("0",ttype); // default
@@ -406,7 +406,7 @@ DBgr::backup_print(){
 
 // function to be called after each database modification
 void
-DBgr::backup_upd(DB_TXN *txn, const std::string &t){
+GrapheneDB::backup_upd(DB_TXN *txn, const std::string &t){
   // Read and update both main and temporary timers
   for (int i = 0; i<2; i++) {
     uint8_t key = (i==0)? KEY_BACKUP_TMP : KEY_BACKUP_MAIN;
@@ -424,7 +424,7 @@ DBgr::backup_upd(DB_TXN *txn, const std::string &t){
 // the database.
 //
 void
-DBgr::put(const string &t, const vector<string> & dat, const string &dpolicy){
+GrapheneDB::put(const string &t, const vector<string> & dat, const string &dpolicy){
   int ret;
   string ks = graphene_time_parse(t, ttype);
   string vs = graphene_data_parse(dat, dtype);
@@ -463,7 +463,7 @@ DBgr::put(const string &t, const vector<string> & dat, const string &dpolicy){
 /************************************/
 // Put data to the database using input filter
 void
-DBgr::put_flt(string &t, vector<string> & dat, const string &dpolicy){
+GrapheneDB::put_flt(string &t, vector<string> & dat, const string &dpolicy){
 
   // read filter storage
   std::string storage = read_f0data();
@@ -480,7 +480,7 @@ DBgr::put_flt(string &t, vector<string> & dat, const string &dpolicy){
 // get data from the database -- get_next
 //
 void
-DBgr::get_next(const string &t1, DBout & dbo){
+GrapheneDB::get_next(const string &t1, DBout & dbo){
   string t1p = graphene_time_parse(t1, ttype);
   DBT k = mk_dbt(t1p);
   DBT v = mk_dbt();
@@ -511,7 +511,7 @@ DBgr::get_next(const string &t1, DBout & dbo){
 // get data from the database -- get_prev
 //
 void
-DBgr::get_prev(const string &t2, DBout & dbo){
+GrapheneDB::get_prev(const string &t2, DBout & dbo){
 
   string t2p = graphene_time_parse(t2, ttype);
   DBT k = mk_dbt(t2p);
@@ -549,7 +549,7 @@ DBgr::get_prev(const string &t2, DBout & dbo){
 // get data from the database -- get_interp
 //
 void
-DBgr::get(const string &t, DBout & dbo){
+GrapheneDB::get(const string &t, DBout & dbo){
 
   /* for non-float databases use get_prev */
   if (dtype!=DATA_FLOAT && dtype!=DATA_DOUBLE)
@@ -623,7 +623,7 @@ DBgr::get(const string &t, DBout & dbo){
 // use DB_SET_RANGE with dt shift, if the point didn't
 // change - use DB_NEXT.
 void
-DBgr::get_range(const string &t1, const string &t2,
+GrapheneDB::get_range(const string &t1, const string &t2,
                 const string &dt, DBout & dbo){
 
   string t1p = graphene_time_parse(t1, ttype);
@@ -697,7 +697,7 @@ DBgr::get_range(const string &t1, const string &t2,
 // get data from the database -- get_count
 //
 void
-DBgr::get_count(const string &t1,
+GrapheneDB::get_count(const string &t1,
                 const string &count, DBout & dbo){
 
   string t1p = graphene_time_parse(t1, ttype);
@@ -753,7 +753,7 @@ DBgr::get_count(const string &t1,
 /************************************/
 // delete data data from the database -- del
 void
-DBgr::del(const string &t1){
+GrapheneDB::del(const string &t1){
   int ret;
   string t1p = graphene_time_parse(t1, ttype);
   DBT k = mk_dbt(t1p);
@@ -777,7 +777,7 @@ DBgr::del(const string &t1){
 /************************************/
 // delete data data from the database -- del_range
 void
-DBgr::del_range(const string &t1, const string &t2){
+GrapheneDB::del_range(const string &t1, const string &t2){
   int ret;
   std::string first_del; // for lastmod timestamp
 
@@ -832,7 +832,7 @@ DBgr::del_range(const string &t1, const string &t2){
 }
 
 /************************************/
-// functions for DBgr::load method
+// functions for GrapheneDB::load method
 uint8_t DIG(const char c){
   if (c>='0' && c<='9') return c-'0';
   if (c=='a' || c=='A') return 10;
@@ -866,7 +866,7 @@ strconv(const std::string &s){
 // - load command is used without BerkleyDB environment!
 //   (see how it is called in graphene.cpp)
 void
-DBgr::load(const std::string &file){
+GrapheneDB::load(const std::string &file){
   ifstream ff(file.c_str());
   // skip header
   while (1){
@@ -903,7 +903,7 @@ DBgr::load(const std::string &file){
 // - dump command is used without BerkleyDB environment
 //   in readonly mode (see how it is called in graphene.cpp)
 void
-DBgr::dump(const std::string &file){
+GrapheneDB::dump(const std::string &file){
   ofstream ff(file.c_str());
 
   // write header

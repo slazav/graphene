@@ -1,4 +1,4 @@
-/* DBgr class: wrapper for BerkleyDB, open/put/get/del functions
+/* GrapheneDB class: wrapper for BerkleyDB, open/put/get/del functions
  */
 
 #ifndef GRAPHENE_DB_H
@@ -44,7 +44,7 @@
 
 /***********************************************************/
 /* class for wrapping BerkleyDB */
-class DBgr{
+class GrapheneDB{
   public:
   /************************************/
   // Create DBT objects of various kinds.
@@ -98,7 +98,7 @@ class DBgr{
   // Constructor -- open a database
   // Path is a path to the database foolder.
   // Name is a database name, it can not contain some symbols (.|+ \n\t)
-  DBgr(DB_ENV *env,
+  GrapheneDB(DB_ENV *env,
        const std::string & path_,
        const std::string & name_,
        const int flags);
