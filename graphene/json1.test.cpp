@@ -33,8 +33,8 @@ main(int argc, char *argv[]){
   while (!cin.eof()){ string s; getline(cin, s); in_data +=s+'\n'; }
 
   try {
-    DBpool pool(dbpath, true, "none");
-    cout << graphene_json(&pool, url, in_data);
+    GrapheneEnv env(dbpath, true, "none");
+    cout << graphene_json(&env, url, in_data);
   }
   catch (Err e){
     cout << "Error: " << e.str();

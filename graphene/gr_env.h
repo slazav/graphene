@@ -15,9 +15,7 @@
 /***********************************************************/
 // Class for keeping a database environment and many opened
 // databases.
-// Note that DBpool objects can not be copied because of absence
-// of proper memory handling.
-class DBpool{
+class GrapheneEnv{
   std::string dbpath;
   std::string env_type;
   std::map<std::string, GrapheneDB> pool;
@@ -33,9 +31,9 @@ class DBpool{
 
   // Constructor: open DB environment
   // env_type: "none", "lock", "txn" (default)
-  DBpool(const std::string & dbpath_, const bool readonly, const std::string & env_type);
+  GrapheneEnv(const std::string & dbpath_, const bool readonly, const std::string & env_type);
 
-  ~DBpool();
+  ~GrapheneEnv();
 
   // remove database file
   void dbremove(std::string name);

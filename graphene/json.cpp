@@ -137,7 +137,7 @@ class DBoutJSON: public DBout{
 
 /***************************************************************************/
 // process /query
-Json json_query(DBpool * pool, const Json & ji){
+Json json_query(GrapheneEnv * env, const Json & ji){
 
   /*
   /query input:
@@ -177,7 +177,7 @@ Json json_query(DBpool * pool, const Json & ji){
     // Get a database
     int col,flt;
     std::string name = parse_ext_name(ji["targets"][i]["target"].as_string(), col, flt);
-    GrapheneDB db = pool->get(name, DB_RDONLY);
+    GrapheneDB db = env->get(name, DB_RDONLY);
 
     // output formatter
     DBoutJSON dbo(true);
@@ -202,7 +202,7 @@ Json json_query(DBpool * pool, const Json & ji){
 
 /***************************************************************************/
 // process /annotations
-Json json_annotations(DBpool * pool, const Json & ji){
+Json json_annotations(GrapheneEnv * env, const Json & ji){
 
   /*
   /annotations input:
@@ -228,7 +228,7 @@ Json json_annotations(DBpool * pool, const Json & ji){
   // Get a database
   int col,flt;
   std::string name = parse_ext_name(ji["annotation"]["name"].as_string(), col,flt);
-  GrapheneDB db = pool->get(name, DB_RDONLY);
+  GrapheneDB db = env->get(name, DB_RDONLY);
 
   // output formatter
   DBoutJSON dbo(false);
@@ -250,9 +250,9 @@ Json json_annotations(DBpool * pool, const Json & ji){
 
 /***************************************************************************/
 // process /search
-Json json_search(DBpool * pool, const Json & ji){
+Json json_search(GrapheneEnv * env, const Json & ji){
   Json out = Json::array();
-  auto names = pool->dblist();
+  auto names = env->dblist();
   for (auto const & n:names)
     out.append(Json(n));
   return out;
@@ -260,7 +260,7 @@ Json json_search(DBpool * pool, const Json & ji){
 
 /***************************************************************************/
 /* Process a JSON request to the database. */
-string graphene_json(DBpool * pool,
+string graphene_json(GrapheneEnv * env,
                      const string & url,     /* /query, /annotations, etc. */
                      const string & data){    /* input data */
 
@@ -270,13 +270,13 @@ string graphene_json(DBpool * pool,
   int out_fl = JSON_PRESERVE_ORDER;
 
   if (url == "/query")
-    return json_query(pool, ji).save_string(out_fl);
+    return json_query(env, ji).save_string(out_fl);
 
   if (url == "/search")
-    return json_search(pool, ji).save_string(out_fl);
+    return json_search(env, ji).save_string(out_fl);
 
   if (url == "/annotations")
-    return json_annotations(pool, ji).save_string(out_fl);
+    return json_annotations(env, ji).save_string(out_fl);
 
   throw Err() << "Unknown query";
 }

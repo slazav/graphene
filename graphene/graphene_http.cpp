@@ -65,7 +65,7 @@ request_answer(void * cls, struct MHD_Connection * connection, const char * url,
   struct MHD_Response * response;
   static string in_data; // data recieved in POST requests
   int code = MHD_HTTP_OK;
-  DBpool *pool = (DBpool *) cls; /* server parameters */
+  GrapheneEnv *env = (GrapheneEnv *) cls; /* server parameters */
 
   Log(2) << "> " << method << " " << url << "\n";
 
@@ -94,7 +94,7 @@ request_answer(void * cls, struct MHD_Connection * connection, const char * url,
       }
       else{ // Process the query by graphene_json() and answer
         string out_data;
-        out_data = graphene_json(pool, url, in_data);
+        out_data = graphene_json(env, url, in_data);
 
         Log(3) << ">>> " << in_data << "\n";
         Log(4) << "<<< " << out_data << "\n";
@@ -124,32 +124,32 @@ request_answer(void * cls, struct MHD_Connection * connection, const char * url,
       dbo.flt    = flt;
 
       if (strcasecmp(cmd.c_str(),"get")==0){
-         GrapheneDB & db = pool->get(name, DB_RDONLY);
+         GrapheneDB & db = env->get(name, DB_RDONLY);
          db.timefmt = graphene_tfmt_parse(tfmt? tfmt : "def");
          db.time0   = t1 ? t1 : "0";
          db.get(t1? t1:"inf", dbo); }
       else if (strcasecmp(cmd.c_str(),"get_next")==0) {
-         GrapheneDB & db = pool->get(name, DB_RDONLY);
+         GrapheneDB & db = env->get(name, DB_RDONLY);
          db.timefmt = graphene_tfmt_parse(tfmt? tfmt : "def");
          db.time0   = t1 ? t1 : "0";
          db.get_next(t1? t1:"0", dbo); }
       else if (strcasecmp(cmd.c_str(),"get_prev")==0) {
-         GrapheneDB & db = pool->get(name, DB_RDONLY);
+         GrapheneDB & db = env->get(name, DB_RDONLY);
          db.timefmt = graphene_tfmt_parse(tfmt? tfmt : "def");
          db.time0   = t1 ? t1 : "0";
          db.get_prev(t1? t1:"inf", dbo); }
       else if (strcasecmp(cmd.c_str(),"get_range")==0){
-         GrapheneDB & db = pool->get(name, DB_RDONLY);
+         GrapheneDB & db = env->get(name, DB_RDONLY);
          db.timefmt = graphene_tfmt_parse(tfmt? tfmt : "def");
          db.time0   = t1 ? t1 : "0";
          db.get_range(t1? t1:"0", t2? t2:"inf", dt? dt:"0", dbo); }
       else if (strcasecmp(cmd.c_str(),"get_count")==0){
-         GrapheneDB & db = pool->get(name, DB_RDONLY);
+         GrapheneDB & db = env->get(name, DB_RDONLY);
          db.timefmt = graphene_tfmt_parse(tfmt? tfmt : "def");
          db.time0   = t1 ? t1 : "0";
          db.get_count(t1? t1:"0", cnt? cnt:"1000", dbo); }
       else if (strcasecmp(cmd.c_str(), "list")==0){
-         for (auto const & n: pool->dblist()) dbo.print_point(n + "\n"); }
+         for (auto const & n: env->dblist()) dbo.print_point(n + "\n"); }
       else throw Err() << "bad command: " << cmd.c_str();
 
       string out_data = dbo.get_str();
@@ -167,7 +167,7 @@ request_answer(void * cls, struct MHD_Connection * connection, const char * url,
     MHD_add_response_header(response, "Error", e.str().c_str());
     code = 400;
     // close all databases. In case of an error which needs recovery/reopening.
-    pool->close();
+    env->close();
   }
 
   // this allowes external grafana server make requests
@@ -223,7 +223,7 @@ int main(int argc, char ** argv) {
     string dbpath   = opts.get("dbpath",   "/var/lib/graphene/");
     string tcllib   = opts.get("tcllib",   "/usr/share/graphene/tcllib/");
     string env_type = opts.get("env_type", "lock");
-    DBpool pool(dbpath, true, env_type);
+    GrapheneEnv env(dbpath, true, env_type);
 
     int port    = opts.get("port",  8081);
     int verb    = opts.get("verbose", 0);
@@ -329,7 +329,7 @@ int main(int argc, char ** argv) {
     // start server
     d = MHD_start_daemon(MHD_USE_SELECT_INTERNALLY,
                          port, NULL, NULL,
-                         &request_answer, &pool,
+                         &request_answer, &env,
                          MHD_OPTION_END);
     if (d == NULL)
       throw Err() << "can't start the http server";

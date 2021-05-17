@@ -13,7 +13,7 @@
 /* Returns allocated buffer with the data, set dsize to its size */
 /* Returns NULL on errors, dsize in unspecified then.*/
 
-std::string graphene_json(DBpool * pool,
+std::string graphene_json(GrapheneEnv * env,
                           const std::string & url,      /* /query, /annotations, etc. */
                           const std::string & data      /* input data */
                          );

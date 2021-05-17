@@ -93,7 +93,7 @@ class Pars{
     // - Do not throw c++ exceptions from the handler through libdb!
     //   This again can leave a database in a broken state.
     // - Currently I'm using jongjmp in the signal handler,
-    //   resetting the jump point every time DBpool is
+    //   resetting the jump point every time GrapheneEnv is
     //   created. This works much better then nothing, but
     //   I'm not sure that it is a good approach and catching
     //   a signal in every part of the program will be proccessed
@@ -208,7 +208,7 @@ class Pars{
     // Outer try -- exit on errors with #Error message
     // For SPP2 it should be #Fatal
     try {
-      DBpool pool(dbpath, readonly, env_type);
+      GrapheneEnv env(dbpath, readonly, env_type);
       if (setjmp(sig_jmp_buf)) throw 0;
       out << "#OK\n";
       out.flush();
@@ -218,7 +218,7 @@ class Pars{
         try {
           pars = read_words(in);
           if (pars.size()==0) break;
-          run_command(&pool, out);
+          run_command(&env, out);
           out << "#OK\n";
           out.flush();
         }
@@ -226,7 +226,7 @@ class Pars{
           if (e.str()!="") out << "#Error: " << e.str() << "\n";
           out.flush();
           // close all databases. In case of an error which needs recovery/reopening.
-          pool.close();
+          env.close();
         }
       }
     }
@@ -281,16 +281,16 @@ class Pars{
   // Cmdline mode.
   void run_cmdline(){
     if (pars.size() < 1) throw Err() << "command is expected";
-    DBpool pool(dbpath, readonly, env_type);
+    GrapheneEnv env(dbpath, readonly, env_type);
     if (setjmp(sig_jmp_buf)) throw 0;
-    run_command(&pool, cout);
+    run_command(&env, cout);
   }
 
   // Run command, using parameters
   // For read/write commands time is transferred as a string
   // to db.put, db.get_* functions without change.
   // "now", "now_s" and "inf" strings can be used.
-  void run_command(DBpool* pool, ostream & out){
+  void run_command(GrapheneEnv* env, ostream & out){
     string cmd = pars[0];
 
     // print current time (unix seconds with ms precision)
@@ -314,7 +314,7 @@ class Pars{
     if (strcasecmp(cmd.c_str(), "create")==0){
       if (pars.size()<2) throw Err() << "database name expected";
       DataType dtype = pars.size()<3 ? DATA_DOUBLE : graphene_dtype_parse(pars[2]);
-      GrapheneDB & db = pool->get(pars[1], DB_CREATE | DB_EXCL);
+      GrapheneDB & db = env->get(pars[1], DB_CREATE | DB_EXCL);
       db.dtype = dtype;
       db.descr = pars.size()<4 ? "": pars[3];
       for (int i=4; i<pars.size(); i++) db.descr+=" "+pars[i];
@@ -327,7 +327,7 @@ class Pars{
     if (strcasecmp(cmd.c_str(), "delete")==0){
       if (pars.size()<2) throw Err() << "database name expected";
       if (pars.size()>2) throw Err() << "too many parameters";
-      pool->dbremove(pars[1]);
+      env->dbremove(pars[1]);
       return;
     }
 
@@ -336,7 +336,7 @@ class Pars{
     if (strcasecmp(cmd.c_str(), "rename")==0){
       if (pars.size()<3) throw Err() << "database old and new names expected";
       if (pars.size()>3) throw Err() << "too many parameters";
-      pool->dbrename(pars[1], pars[2]);
+      env->dbrename(pars[1], pars[2]);
       return;
     }
 
@@ -344,7 +344,7 @@ class Pars{
     // args: set_descr <name> <description>
     if (strcasecmp(cmd.c_str(), "set_descr")==0){
       if (pars.size()<3) throw Err() << "database name and new description text expected";
-      GrapheneDB & db = pool->get(pars[1]);
+      GrapheneDB & db = env->get(pars[1]);
       db.descr = pars[2];
       for (int i=3; i<pars.size(); i++) db.descr+=" "+pars[i];
       db.write_info();
@@ -356,7 +356,7 @@ class Pars{
     if (strcasecmp(cmd.c_str(), "info")==0){
       if (pars.size()<2) throw Err() << "database name expected";
       if (pars.size()>2) throw Err() << "too many parameters";
-      GrapheneDB & db = pool->get(pars[1], DB_RDONLY);
+      GrapheneDB & db = env->get(pars[1], DB_RDONLY);
       cout << graphene_dtype_name(db.dtype);
       if (db.descr!="") out << '\t' << db.descr;
       out << "\n";
@@ -367,7 +367,7 @@ class Pars{
     // args: list
     if (strcasecmp(cmd.c_str(), "list")==0){
       if (pars.size()>1) throw Err() << "too many parameters";
-      auto names = pool->dblist();
+      auto names = env->dblist();
       for (auto const &n: names) out << n << "\n";
       return;
     }
@@ -378,7 +378,7 @@ class Pars{
     // args: backup_start <name>
     if (strcasecmp(cmd.c_str(), "backup_start")==0){
       if (pars.size()!=2) throw Err() << "database name expected";
-      out << pool->get(pars[1]).backup_start() << "\n";
+      out << env->get(pars[1]).backup_start() << "\n";
       return;
     }
 
@@ -389,7 +389,7 @@ class Pars{
       if (pars.size()<2) throw Err() << "database name expected";
       if (pars.size()>3) throw Err() << "too many parameters";
       string t2 = pars.size()>2? pars[2]: "inf";
-      pool->get(pars[1]).backup_end(t2);
+      env->get(pars[1]).backup_end(t2);
       return;
     }
 
@@ -397,7 +397,7 @@ class Pars{
     // args: backup_start <name>
     if (strcasecmp(cmd.c_str(), "backup_reset")==0){
       if (pars.size()!=2) throw Err() << "database name expected";
-      pool->get(pars[1]).backup_reset();
+      env->get(pars[1]).backup_reset();
       return;
     }
 
@@ -405,7 +405,7 @@ class Pars{
     // args: backup_print <name>
     if (strcasecmp(cmd.c_str(), "backup_print")==0){
       if (pars.size()!=2) throw Err() << "database name expected";
-      out << pool->get(pars[1]).backup_print() << "\n";
+      out << env->get(pars[1]).backup_print() << "\n";
       return;
     }
 
@@ -416,7 +416,7 @@ class Pars{
       vector<string> dat;
       for (int i=3; i<pars.size(); i++) dat.push_back(string(pars[i]));
       // open database and write data
-      pool->get(pars[1]).put(pars[2], dat, dpolicy);
+      env->get(pars[1]).put(pars[2], dat, dpolicy);
       return;
     }
 
@@ -427,7 +427,7 @@ class Pars{
       vector<string> dat;
       for (int i=3; i<pars.size(); i++) dat.push_back(string(pars[i]));
       // open database and write data
-      pool->get(pars[1]).put_flt(pars[2], dat, dpolicy);
+      env->get(pars[1]).put_flt(pars[2], dat, dpolicy);
       return;
     }
 
@@ -439,7 +439,7 @@ class Pars{
       string t1 = pars.size()>2? pars[2]: "0";
       int col = -1, flt = -1;
       std::string name = parse_ext_name(pars[1], col, flt);
-      GrapheneDB & db = pool->get(name, DB_RDONLY);
+      GrapheneDB & db = env->get(name, DB_RDONLY);
       DBout dbo(out);
       dbo.col    = col;
       dbo.flt    = flt;
@@ -458,7 +458,7 @@ class Pars{
       string t2 = pars.size()>2? pars[2]: "inf";
       int col = -1, flt = -1;
       std::string name = parse_ext_name(pars[1], col, flt);
-      GrapheneDB & db = pool->get(name, DB_RDONLY);
+      GrapheneDB & db = env->get(name, DB_RDONLY);
       DBout dbo(out);
       dbo.col    = col;
       dbo.flt    = flt;
@@ -477,7 +477,7 @@ class Pars{
       string t2 = pars.size()>2? pars[2]: "inf";
       int col = -1, flt = -1;
       std::string name = parse_ext_name(pars[1], col,flt);
-      GrapheneDB & db = pool->get(name, DB_RDONLY);
+      GrapheneDB & db = env->get(name, DB_RDONLY);
       DBout dbo(out);
       dbo.col    = col;
       dbo.flt    = flt;
@@ -498,7 +498,7 @@ class Pars{
       string dt = pars.size()>4? pars[4]: "0";
       int col = -1, flt = -1;
       std::string name = parse_ext_name(pars[1], col, flt);
-      GrapheneDB & db = pool->get(name, DB_RDONLY);
+      GrapheneDB & db = env->get(name, DB_RDONLY);
       DBout dbo(out);
       dbo.col    = col;
       dbo.flt    = flt;
@@ -518,7 +518,7 @@ class Pars{
       string cnt = pars.size()>3? pars[3]: "1000";
       int col = -1, flt = -1;
       std::string name = parse_ext_name(pars[1], col, flt);
-      GrapheneDB & db = pool->get(name, DB_RDONLY);
+      GrapheneDB & db = env->get(name, DB_RDONLY);
       DBout dbo(out);
       dbo.col    = col;
       dbo.flt    = flt;
@@ -534,7 +534,7 @@ class Pars{
     if (strcasecmp(cmd.c_str(), "del")==0){
       if (pars.size()<3) throw Err() << "database name and time expected";
       if (pars.size()>3) throw Err() << "too many parameters";
-      pool->get(pars[1]).del(pars[2]);
+      env->get(pars[1]).del(pars[2]);
       return;
     }
 
@@ -543,7 +543,7 @@ class Pars{
     if (strcasecmp(cmd.c_str(), "del_range")==0){
       if (pars.size()<4) throw Err() << "database name and two times expected";
       if (pars.size()>4) throw Err() << "too many parameters";
-      pool->get(pars[1]).del_range(pars[2],pars[3]);
+      env->get(pars[1]).del_range(pars[2],pars[3]);
       return;
     }
 
@@ -551,8 +551,8 @@ class Pars{
     // args: close
     if (strcasecmp(cmd.c_str(), "close")==0){
       if (pars.size()>2) throw Err() << "too many parameters";
-      if (pars.size()==2) pool->close(pars[1]);
-      else pool->close();
+      if (pars.size()==2) env->close(pars[1]);
+      else env->close();
       return;
     }
 
@@ -560,8 +560,8 @@ class Pars{
     // args: sync
     if (strcasecmp(cmd.c_str(), "sync")==0){
       if (pars.size()>2) throw Err() << "too many parameters";
-      if (pars.size()==2) pool->sync(pars[1]);
-      else pool->sync();
+      if (pars.size()==2) env->sync(pars[1]);
+      else env->sync();
       return;
     }
 
@@ -571,9 +571,9 @@ class Pars{
     if (strcasecmp(cmd.c_str(), "load")==0){
       if (pars.size()<3) throw Err() << "database name and dump file expected";
       if (pars.size()>3) throw Err() << "too many parameters";
-      DBpool simple_pool(dbpath, false, "none");
+      GrapheneEnv simple_env(dbpath, false, "none");
       if (setjmp(sig_jmp_buf)) throw 0;
-      GrapheneDB & db = simple_pool.get(pars[1], DB_CREATE | DB_EXCL);
+      GrapheneDB & db = simple_env.get(pars[1], DB_CREATE | DB_EXCL);
       db.load(pars[2]);
       return;
     }
@@ -583,9 +583,9 @@ class Pars{
     if (strcasecmp(cmd.c_str(), "dump")==0){
       if (pars.size()<3) throw Err() << "database name and dump file expected";
       if (pars.size()>3) throw Err() << "too many parameters";
-      DBpool simple_pool(dbpath, false, "none");
+      GrapheneEnv simple_env(dbpath, false, "none");
       if (setjmp(sig_jmp_buf)) throw 0;
-      GrapheneDB & db = simple_pool.get(pars[1], DB_RDONLY);
+      GrapheneDB & db = simple_env.get(pars[1], DB_RDONLY);
       db.dump(pars[2]);
       return;
     }
@@ -596,7 +596,7 @@ class Pars{
       if (pars.size()!=4) throw Err() << "database name, filter number, filter code expected";
       int N = str_to_type<int>(pars[2]);
       if (N<0 || N>=MAX_FILTERS) throw Err() << "filter number out of range: " << N;
-      pool->get(pars[1]).write_filter(N, pars[3]);
+      env->get(pars[1]).write_filter(N, pars[3]);
       return;
     }
 
@@ -606,7 +606,7 @@ class Pars{
       if (pars.size()!=3) throw Err() << "database name and filter number expected";
       int N = str_to_type<int>(pars[2]);
       if (N<0 || N>=MAX_FILTERS) throw Err() << "filter number out of range: " << N;
-      out << pool->get(pars[1]).filters[N].get_code() << "\n";
+      out << env->get(pars[1]).filters[N].get_code() << "\n";
       return;
     }
 
@@ -614,7 +614,7 @@ class Pars{
     // args: print_f0data <name>
     if (strcasecmp(cmd.c_str(), "print_f0data")==0){
       if (pars.size()!=2) throw Err() << "database name expected";
-      out << pool->get(pars[1]).read_f0data() << "\n";
+      out << env->get(pars[1]).read_f0data() << "\n";
       return;
     }
 
@@ -622,7 +622,7 @@ class Pars{
     // args: clear_f0data <name>
     if (strcasecmp(cmd.c_str(), "clear_f0data")==0){
       if (pars.size()!=2) throw Err() << "database name expected";
-      pool->get(pars[1]).clear_f0data();
+      env->get(pars[1]).clear_f0data();
       return;
     }
 
@@ -631,7 +631,7 @@ class Pars{
     if (strcasecmp(cmd.c_str(), "list_dbs")==0){
       if (pars.size()>1) throw Err() << "too many parameters";
       if (env_type != "txn") throw Err() << "list_dbs can not by run in this environment type: " << env_type;
-      pool->list_dbs();
+      env->list_dbs();
       return;
     }
 
@@ -640,7 +640,7 @@ class Pars{
     if (strcasecmp(cmd.c_str(), "list_logs")==0){
       if (pars.size()>1) throw Err() << "too many parameters";
       if (env_type != "txn") throw Err() << "list_logs can not by run in this environment type: " << env_type;
-      pool->list_logs();
+      env->list_logs();
       return;
     }
 

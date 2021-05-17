@@ -24,7 +24,7 @@ int
 is_alive(DB_ENV *dbenv, pid_t pid, db_threadid_t tid, u_int32_t flag) { return 1;}
 
 // Constructor: open DB environment
-DBpool::DBpool(const std::string & dbpath_, const bool readonly_, const std::string & env_type_):
+GrapheneEnv::GrapheneEnv(const std::string & dbpath_, const bool readonly_, const std::string & env_type_):
     dbpath(dbpath_), env_type(env_type_), readonly(readonly_){
 
   if (readonly || env_type == "none"){
@@ -37,7 +37,7 @@ DBpool::DBpool(const std::string & dbpath_, const bool readonly_, const std::str
   int res = db_env_create(&e, 0);
   if (res != 0)
     throw Err() << "creating DB_ENV: " << dbpath << ": " << db_strerror(res);
-  env = std::shared_ptr<DB_ENV>(e, DBpool::D());
+  env = std::shared_ptr<DB_ENV>(e, GrapheneEnv::D());
 
   // set logfile size
   res = env->set_lg_max(env.get(), GRAPHENE_LOGSIZE);
@@ -74,13 +74,13 @@ DBpool::DBpool(const std::string & dbpath_, const bool readonly_, const std::str
 }
 
 // Destructor: close the DB environment
-DBpool::~DBpool(){
+GrapheneEnv::~GrapheneEnv(){
   close();
 }
 
 // remove database file
 void
-DBpool::dbremove(std::string name){
+GrapheneEnv::dbremove(std::string name){
   if (readonly) throw Err() << "can't remove database in readonly mode";
   check_name(name); // check name
   close(name);
@@ -96,7 +96,7 @@ DBpool::dbremove(std::string name){
 
 // rename database file
 void
-DBpool::dbrename(std::string name1, std::string name2){
+GrapheneEnv::dbrename(std::string name1, std::string name2){
   if (readonly) throw Err() << "can't rename database in readonly mode";
   check_name(name1); // check name
   check_name(name2); // check name
@@ -126,7 +126,7 @@ DBpool::dbrename(std::string name1, std::string name2){
 
 // make database list
 std::vector<std::string>
-DBpool::dblist(){
+GrapheneEnv::dblist(){
   std::vector<std::string> ret;
   DIR *dir = opendir(dbpath.c_str());
   if (!dir) throw Err() << "can't open database directory: " << strerror(errno);
@@ -145,7 +145,7 @@ DBpool::dblist(){
 
 // find database in the pool. Open/Reopen if needed
 GrapheneDB &
-DBpool::get(const std::string & name, const int fl){
+GrapheneEnv::get(const std::string & name, const int fl){
 
   if (readonly && !(fl & DB_RDONLY)) throw Err() << "can't write to database in readonly mode";
   std::map<std::string, GrapheneDB>::iterator i = pool.find(name);
@@ -167,30 +167,30 @@ DBpool::get(const std::string & name, const int fl){
 
 // close one database, close all databases
 void
-DBpool::close(const std::string & name){
+GrapheneEnv::close(const std::string & name){
   std::map<std::string, GrapheneDB>::iterator i = pool.find(name);
   if (i!=pool.end()) pool.erase(i);
 }
 
 void
-DBpool::close(){ pool.clear(); }
+GrapheneEnv::close(){ pool.clear(); }
 
 
 // sync one database, sync all databases
 void
-DBpool::sync(const std::string & name){
+GrapheneEnv::sync(const std::string & name){
   std::map<std::string, GrapheneDB>::iterator i = pool.find(name);
   if (i!=pool.end()) i->second.sync();
 }
 
 void
-DBpool::sync(){
+GrapheneEnv::sync(){
   std::map<std::string, GrapheneDB>::iterator i;
   for (i = pool.begin(); i!=pool.end(); i++) i->second.sync();
 }
 
 void
-DBpool::list_dbs(){
+GrapheneEnv::list_dbs(){
   // see code in https://web.stanford.edu/class/cs276a/projects/docs/berkeleydb/ref/transapp/archival.html
   int ret;
   char **begin, **list;
@@ -207,7 +207,7 @@ DBpool::list_dbs(){
 }
 
 void
-DBpool::list_logs(){
+GrapheneEnv::list_logs(){
   // see code in https://web.stanford.edu/class/cs276a/projects/docs/berkeleydb/ref/transapp/archival.html
   int ret;
   char **begin, **list;
