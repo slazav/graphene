@@ -463,14 +463,15 @@ GrapheneDB::put(const string &t, const vector<string> & dat, const string &dpoli
 /************************************/
 // Put data to the database using input filter
 void
-GrapheneDB::put_flt(string &t, vector<string> & dat, const string &dpolicy){
+GrapheneDB::put_flt(const string &t, const vector<string> & dat, const string &dpolicy){
 
   // read filter storage
   std::string storage = read_f0data();
 
   // run input filter
   auto t1 = graphene_time_print(graphene_time_parse(t, ttype),ttype);
-  if (filters[0].run(t1, dat, storage)) put(t1,dat,dpolicy);
+  auto d1(dat);
+  if (filters[0].run(t1, d1, storage)) put(t1,d1,dpolicy);
 
   // write storage
   write_f0data(storage);

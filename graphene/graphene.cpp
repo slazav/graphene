@@ -410,10 +410,8 @@ class Pars{
     // args: put <name> <time> <value1> ...
     if (strcasecmp(cmd.c_str(), "put")==0){
       if (pars.size()<4) throw Err() << "database name, timestamp and some values expected";
-      vector<string> dat;
-      for (int i=3; i<pars.size(); i++) dat.push_back(string(pars[i]));
-      // open database and write data
-      env->get(pars[1]).put(pars[2], dat, dpolicy);
+      vector<string> dat(pars.begin()+3, pars.end());
+      env->put(pars[1], pars[2], dat, dpolicy);
       return;
     }
 
@@ -421,10 +419,8 @@ class Pars{
     // args: put_flt <name> <time> <value1> ...
     if (strcasecmp(cmd.c_str(), "put_flt")==0){
       if (pars.size()<4) throw Err() << "database name, timestamp and some values expected";
-      vector<string> dat;
-      for (int i=3; i<pars.size(); i++) dat.push_back(string(pars[i]));
-      // open database and write data
-      env->get(pars[1]).put_flt(pars[2], dat, dpolicy);
+      vector<string> dat(pars.begin()+3, pars.end());
+      env->put_flt(pars[1], pars[2], dat, dpolicy);
       return;
     }
 

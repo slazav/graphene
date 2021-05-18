@@ -89,6 +89,20 @@ class GrapheneEnv{
 
   /****************/
 
+  // write data to the database
+  void put(const std::string & name, const std::string & t,
+           const std::vector<std::string> & d, const std::string & dpolicy){
+    get(name).put(t, d, dpolicy);
+  }
+
+  // write data to the database through the input filter
+  void put_flt(const std::string & name, const std::string & t,
+           const std::vector<std::string> & d, const std::string & dpolicy){
+    get(name).put_flt(t, d, dpolicy);
+  }
+
+  /****************/
+
   // find database in the pool. Create/Open/Reopen if needed
   GrapheneDB & get(const std::string & name, const int fl = 0);
 

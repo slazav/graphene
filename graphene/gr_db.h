@@ -179,7 +179,7 @@ class GrapheneDB{
            const std::string &dpolicy);
 
   // put data using input filter
-  void put_flt(std::string &t, std::vector<std::string> & dat,
+  void put_flt(const std::string &t, const std::vector<std::string> & dat,
            const std::string &dpolicy);
 
   // All get* functions get some data from the database
