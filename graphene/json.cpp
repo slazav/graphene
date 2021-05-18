@@ -177,7 +177,7 @@ Json json_query(GrapheneEnv * env, const Json & ji){
     // Get a database
     int col,flt;
     std::string name = parse_ext_name(ji["targets"][i]["target"].as_string(), col, flt);
-    GrapheneDB db = env->get(name, DB_RDONLY);
+    GrapheneDB db = env->getdb(name, DB_RDONLY);
 
     // output formatter
     DBoutJSON dbo(true);
@@ -228,7 +228,7 @@ Json json_annotations(GrapheneEnv * env, const Json & ji){
   // Get a database
   int col,flt;
   std::string name = parse_ext_name(ji["annotation"]["name"].as_string(), col,flt);
-  GrapheneDB db = env->get(name, DB_RDONLY);
+  GrapheneDB db = env->getdb(name, DB_RDONLY);
 
   // output formatter
   DBoutJSON dbo(false);

@@ -432,7 +432,7 @@ class Pars{
       string t1 = pars.size()>2? pars[2]: "0";
       int col = -1, flt = -1;
       std::string name = parse_ext_name(pars[1], col, flt);
-      GrapheneDB & db = env->get(name, DB_RDONLY);
+      GrapheneDB & db = env->getdb(name, DB_RDONLY);
       DBout dbo(out);
       dbo.col    = col;
       dbo.flt    = flt;
@@ -451,7 +451,7 @@ class Pars{
       string t2 = pars.size()>2? pars[2]: "inf";
       int col = -1, flt = -1;
       std::string name = parse_ext_name(pars[1], col, flt);
-      GrapheneDB & db = env->get(name, DB_RDONLY);
+      GrapheneDB & db = env->getdb(name, DB_RDONLY);
       DBout dbo(out);
       dbo.col    = col;
       dbo.flt    = flt;
@@ -470,7 +470,7 @@ class Pars{
       string t2 = pars.size()>2? pars[2]: "inf";
       int col = -1, flt = -1;
       std::string name = parse_ext_name(pars[1], col,flt);
-      GrapheneDB & db = env->get(name, DB_RDONLY);
+      GrapheneDB & db = env->getdb(name, DB_RDONLY);
       DBout dbo(out);
       dbo.col    = col;
       dbo.flt    = flt;
@@ -491,7 +491,7 @@ class Pars{
       string dt = pars.size()>4? pars[4]: "0";
       int col = -1, flt = -1;
       std::string name = parse_ext_name(pars[1], col, flt);
-      GrapheneDB & db = env->get(name, DB_RDONLY);
+      GrapheneDB & db = env->getdb(name, DB_RDONLY);
       DBout dbo(out);
       dbo.col    = col;
       dbo.flt    = flt;
@@ -511,7 +511,7 @@ class Pars{
       string cnt = pars.size()>3? pars[3]: "1000";
       int col = -1, flt = -1;
       std::string name = parse_ext_name(pars[1], col, flt);
-      GrapheneDB & db = env->get(name, DB_RDONLY);
+      GrapheneDB & db = env->getdb(name, DB_RDONLY);
       DBout dbo(out);
       dbo.col    = col;
       dbo.flt    = flt;
@@ -527,7 +527,7 @@ class Pars{
     if (strcasecmp(cmd.c_str(), "del")==0){
       if (pars.size()<3) throw Err() << "database name and time expected";
       if (pars.size()>3) throw Err() << "too many parameters";
-      env->get(pars[1]).del(pars[2]);
+      env->getdb(pars[1]).del(pars[2]);
       return;
     }
 
@@ -536,7 +536,7 @@ class Pars{
     if (strcasecmp(cmd.c_str(), "del_range")==0){
       if (pars.size()<4) throw Err() << "database name and two times expected";
       if (pars.size()>4) throw Err() << "too many parameters";
-      env->get(pars[1]).del_range(pars[2],pars[3]);
+      env->getdb(pars[1]).del_range(pars[2],pars[3]);
       return;
     }
 
@@ -566,7 +566,7 @@ class Pars{
       if (pars.size()>3) throw Err() << "too many parameters";
       GrapheneEnv simple_env(dbpath, false, "none");
       if (setjmp(sig_jmp_buf)) throw 0;
-      GrapheneDB & db = simple_env.get(pars[1], DB_CREATE | DB_EXCL);
+      GrapheneDB & db = simple_env.getdb(pars[1], DB_CREATE | DB_EXCL);
       db.load(pars[2]);
       return;
     }
@@ -578,7 +578,7 @@ class Pars{
       if (pars.size()>3) throw Err() << "too many parameters";
       GrapheneEnv simple_env(dbpath, false, "none");
       if (setjmp(sig_jmp_buf)) throw 0;
-      GrapheneDB & db = simple_env.get(pars[1], DB_RDONLY);
+      GrapheneDB & db = simple_env.getdb(pars[1], DB_RDONLY);
       db.dump(pars[2]);
       return;
     }
@@ -589,7 +589,7 @@ class Pars{
       if (pars.size()!=4) throw Err() << "database name, filter number, filter code expected";
       int N = str_to_type<int>(pars[2]);
       if (N<0 || N>=MAX_FILTERS) throw Err() << "filter number out of range: " << N;
-      env->get(pars[1]).write_filter(N, pars[3]);
+      env->getdb(pars[1]).write_filter(N, pars[3]);
       return;
     }
 
@@ -599,7 +599,7 @@ class Pars{
       if (pars.size()!=3) throw Err() << "database name and filter number expected";
       int N = str_to_type<int>(pars[2]);
       if (N<0 || N>=MAX_FILTERS) throw Err() << "filter number out of range: " << N;
-      out << env->get(pars[1]).filters[N].get_code() << "\n";
+      out << env->getdb(pars[1]).filters[N].get_code() << "\n";
       return;
     }
 
@@ -607,7 +607,7 @@ class Pars{
     // args: print_f0data <name>
     if (strcasecmp(cmd.c_str(), "print_f0data")==0){
       if (pars.size()!=2) throw Err() << "database name expected";
-      out << env->get(pars[1]).read_f0data() << "\n";
+      out << env->getdb(pars[1]).read_f0data() << "\n";
       return;
     }
 
@@ -615,7 +615,7 @@ class Pars{
     // args: clear_f0data <name>
     if (strcasecmp(cmd.c_str(), "clear_f0data")==0){
       if (pars.size()!=2) throw Err() << "database name expected";
-      env->get(pars[1]).clear_f0data();
+      env->getdb(pars[1]).clear_f0data();
       return;
     }
 

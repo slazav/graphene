@@ -35,7 +35,13 @@ class GrapheneEnv{
 
   ~GrapheneEnv();
 
+  // find database in the pool. Create/Open/Reopen if needed
+  GrapheneDB & getdb(const std::string & name, const int fl = 0);
+
   /****************/
+
+  // return list of all databases
+  std::vector<std::string> dblist();
 
   // create new database
   void dbcreate(const std::string & name, const std::string & descr,
@@ -54,16 +60,11 @@ class GrapheneEnv{
 
   // get database description
   std::string get_descr(const std::string & name) {
-    return get(name, DB_RDONLY).descr; }
+    return getdb(name, DB_RDONLY).descr; }
 
   // get database type
   DataType get_type(const std::string & name) {
-    return get(name, DB_RDONLY).dtype; }
-
-  /****************/
-
-  // return listof all databases
-  std::vector<std::string> dblist();
+    return getdb(name, DB_RDONLY).dtype; }
 
   /****************/
 
@@ -71,40 +72,37 @@ class GrapheneEnv{
   // - reset temporary backup timer
   // - return value of the main backup timer
   std::string backup_start(const std::string & name) {
-    return get(name).backup_start(); }
+    return getdb(name).backup_start(); }
 
   // backup end: notify that backup is successfully done
   // - commit temporary backup timer into main one
   // args: backup_end <name> [<timestamp>]
   void backup_end(const std::string & name, const std::string & t) {
-    get(name).backup_end(t); }
+    getdb(name).backup_end(t); }
 
   // reset backup timer
   void backup_reset(const std::string & name) {
-    get(name).backup_reset(); }
+    getdb(name).backup_reset(); }
 
   // get value of the backup timer
   std::string backup_get(const std::string & name) {
-    return get(name).backup_get(); }
+    return getdb(name).backup_get(); }
 
   /****************/
 
   // write data to the database
   void put(const std::string & name, const std::string & t,
            const std::vector<std::string> & d, const std::string & dpolicy){
-    get(name).put(t, d, dpolicy);
+    getdb(name).put(t, d, dpolicy);
   }
 
   // write data to the database through the input filter
   void put_flt(const std::string & name, const std::string & t,
            const std::vector<std::string> & d, const std::string & dpolicy){
-    get(name).put_flt(t, d, dpolicy);
+    getdb(name).put_flt(t, d, dpolicy);
   }
 
   /****************/
-
-  // find database in the pool. Create/Open/Reopen if needed
-  GrapheneDB & get(const std::string & name, const int fl = 0);
 
   // close one database, close all databases
   void close(const std::string & name);
@@ -113,6 +111,7 @@ class GrapheneEnv{
   // sync one database, sync all databases
   void sync(const std::string & name);
   void sync();
+
 
   // print environment database files for archiving (same as db_archive -s)
   void list_dbs();

@@ -76,11 +76,53 @@ GrapheneEnv::~GrapheneEnv(){
 }
 
 
+// find database in the pool. Open/Reopen if needed
+GrapheneDB &
+GrapheneEnv::getdb(const std::string & name, const int fl){
+
+  if (readonly && !(fl & DB_RDONLY)) throw Err() << "can't write to database in readonly mode";
+  std::map<std::string, GrapheneDB>::iterator i = pool.find(name);
+
+  // if database was opened with wrong flags close it
+  if (!(fl & DB_RDONLY) && i!=pool.end() &&
+       i->second.open_flags & DB_RDONLY){
+    pool.erase(i); i=pool.end();
+  }
+
+  // if database is not opened, open it
+  if (!pool.count(name)) pool.insert(
+    std::pair<std::string, GrapheneDB>(name, GrapheneDB(env.get(), dbpath, name, fl)));
+
+  // return the database
+  return pool.find(name)->second;
+}
+
+/****************/
+
+// make database list
+std::vector<std::string>
+GrapheneEnv::dblist(){
+  std::vector<std::string> ret;
+  DIR *dir = opendir(dbpath.c_str());
+  if (!dir) throw Err() << "can't open database directory: " << strerror(errno);
+  struct dirent *ent;
+  std::vector<std::string> names;
+  while ((ent = readdir (dir)) != NULL) {
+    std::string name(ent->d_name);
+    size_t p = name.find(".db");
+    if (name.size()>3 && p == name.size()-3)
+      ret.push_back(name.substr(0,p));
+  }
+  closedir(dir);
+  std::sort(ret.begin(), ret.end());
+  return ret;
+}
+
 // create new database
 void
 GrapheneEnv::dbcreate(const std::string & name, const std::string & descr,
                     const DataType dtype){
-  GrapheneDB & db = get(name, DB_CREATE | DB_EXCL);
+  GrapheneDB & db = getdb(name, DB_CREATE | DB_EXCL);
   db.dtype = dtype;
   db.descr = descr;
   db.write_info();
@@ -133,54 +175,15 @@ GrapheneEnv::dbrename(const std::string & name1, const std::string & name2){
   }
 }
 
+/****************/
+
 // change database description
 void
 GrapheneEnv::set_descr(const std::string & name, const std::string & descr){
-  auto db = get(name);
+  auto db = getdb(name);
   db.descr = descr;
   db.write_info();
 }
-
-// make database list
-std::vector<std::string>
-GrapheneEnv::dblist(){
-  std::vector<std::string> ret;
-  DIR *dir = opendir(dbpath.c_str());
-  if (!dir) throw Err() << "can't open database directory: " << strerror(errno);
-  struct dirent *ent;
-  std::vector<std::string> names;
-  while ((ent = readdir (dir)) != NULL) {
-    std::string name(ent->d_name);
-    size_t p = name.find(".db");
-    if (name.size()>3 && p == name.size()-3)
-      ret.push_back(name.substr(0,p));
-  }
-  closedir(dir);
-  std::sort(ret.begin(), ret.end());
-  return ret;
-}
-
-// find database in the pool. Open/Reopen if needed
-GrapheneDB &
-GrapheneEnv::get(const std::string & name, const int fl){
-
-  if (readonly && !(fl & DB_RDONLY)) throw Err() << "can't write to database in readonly mode";
-  std::map<std::string, GrapheneDB>::iterator i = pool.find(name);
-
-  // if database was opened with wrong flags close it
-  if (!(fl & DB_RDONLY) && i!=pool.end() &&
-       i->second.open_flags & DB_RDONLY){
-    pool.erase(i); i=pool.end();
-  }
-
-  // if database is not opened, open it
-  if (!pool.count(name)) pool.insert(
-    std::pair<std::string, GrapheneDB>(name, GrapheneDB(env.get(), dbpath, name, fl)));
-
-  // return the database
-  return pool.find(name)->second;
-}
-
 
 // close one database, close all databases
 void
