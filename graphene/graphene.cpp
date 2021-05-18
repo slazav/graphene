@@ -353,9 +353,9 @@ class Pars{
     if (strcasecmp(cmd.c_str(), "info")==0){
       if (pars.size()<2) throw Err() << "database name expected";
       if (pars.size()>2) throw Err() << "too many parameters";
-      GrapheneDB & db = env->get(pars[1], DB_RDONLY);
-      cout << graphene_dtype_name(db.dtype);
-      if (db.descr!="") out << '\t' << db.descr;
+      cout << graphene_dtype_name(env->get_type(pars[1]));
+      auto descr = env->get_descr(pars[1]);
+      if (descr!="") out << '\t' << descr;
       out << "\n";
       return;
     }

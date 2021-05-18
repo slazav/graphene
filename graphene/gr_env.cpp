@@ -141,7 +141,6 @@ GrapheneEnv::set_descr(const std::string & name, const std::string & descr){
   db.write_info();
 }
 
-
 // make database list
 std::vector<std::string>
 GrapheneEnv::dblist(){

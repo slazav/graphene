@@ -48,6 +48,14 @@ class GrapheneEnv{
   // change database description
   void set_descr(const std::string & name, const std::string & descr);
 
+  // get database description
+  std::string get_descr(const std::string & name) {
+    return get(name, DB_RDONLY).descr; }
+
+  // get database type
+  DataType get_type(const std::string & name) {
+    return get(name, DB_RDONLY).dtype; }
+
   // return listof all databases
   std::vector<std::string> dblist();
 
