@@ -66,6 +66,8 @@ class GrapheneDB{
     ret.size = sizeof(T);
     return ret;
   }
+  std::string dbt2str(DBT *k) {
+    return std::string((char *)k->data, (char *)k->data+k->size);}
 
   /************************************/
   /* data */
@@ -237,8 +239,8 @@ class GrapheneDB{
     // check for correct key size (do not parse DB info)
     if (k->size!=sizeof(uint64_t) && k->size!=sizeof(uint32_t) ) return;
     // convert DBT to strings
-    std::string ks((char *)k->data, (char *)k->data+k->size);
-    std::string vs((char *)v->data, (char *)v->data+v->size);
+    std::string ks = dbt2str(k);
+    std::string vs = dbt2str(v);
 
     int col = (dbo.flt==-1 ? dbo.col:-1); // use all columns for filters
     auto t = graphene_time_print(ks, ttype, dbo.timefmt, dbo.time0);

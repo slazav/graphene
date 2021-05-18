@@ -186,7 +186,7 @@ GrapheneDB::get_key(DB_TXN *txn, uint8_t key, const std::string & def){
   DBT k = mk_dbt(&key);
   DBT v = mk_dbt();
   int ret = dbp->get(dbp.get(), txn, &k, &v, 0);
-  if (ret == 0) return string((char*)v.data, (char*)v.data+v.size);
+  if (ret == 0) return dbt2str(&v);
   if (ret == DB_NOTFOUND) return def;
   throw Err() << name << ".db: " << db_strerror(ret);
 }
@@ -528,7 +528,7 @@ GrapheneDB::get_prev(const string &t2, DBout & dbo){
     bool found = c_get(curs, &k, &v, DB_SET_RANGE);
 
     // unpack time
-    string tp((char *)k.data, (char *)k.data+k.size);
+    string tp = dbt2str(&k);
 
     // if needed, get previous record:
     if (graphene_time_cmp(tp,t2p, ttype)>0 || !found)
@@ -580,8 +580,8 @@ GrapheneDB::get(const string &t, DBout & dbo){
     }
 
     // if "next" record is exactly at t - return it
-    t1p = string((char *)k.data, (char *)k.data+k.size);
-    v1p = string((char *)v.data, (char *)v.data+v.size);
+    t1p = dbt2str(&k);
+    v1p = dbt2str(&v);
     if (graphene_time_cmp(t1p,tp, ttype) == 0){
       proc_point(&k, &v, dbo);
       goto finish;
@@ -592,8 +592,8 @@ GrapheneDB::get(const string &t, DBout & dbo){
     found = c_get(curs, &k, &v, DB_PREV);
     if (!found || k.size < 4) goto finish; // not found or not a timestamp
 
-    t2p = string((char *)k.data, (char *)k.data+k.size);
-    v2p = string((char *)v.data, (char *)v.data+v.size);
+    t2p = dbt2str(&k);
+    v2p = dbt2str(&v);
     vp = graphene_interpolate(tp, t1p, t2p, v1p, v2p, ttype, dtype);
     if (vp!=""){
       DBT k0 = mk_dbt(tp);
@@ -645,12 +645,11 @@ GrapheneDB::get_range(const string &t1, const string &t2,
     int fl = DB_SET_RANGE; // first get t >= t1
     while (1){
 
-      string pre((char *)k.data, (char *)k.data+k.size);
-
+      string pre = dbt2str(&k);
       if (!c_get(curs, &k, &v, fl)) break;
 
       // unpack new time value and check the range
-      string tnp((char *)k.data, (char *)k.data+k.size);
+      string tnp = dbt2str(&k);
       if (graphene_time_cmp(tnp,t2p,ttype)>0) break;
 
       // I have a broken database where DB_SET_RANGE/DB_NEXT can
@@ -672,7 +671,7 @@ GrapheneDB::get_range(const string &t1, const string &t2,
         // get next value
         if (!c_get(curs, &k, &v, DB_NEXT)) break;
         // unpack new time value and check the range
-        tnp = string((char *)k.data, (char *)k.data+k.size);
+        tnp = dbt2str(&k);
         if (graphene_time_cmp(tnp,t2p,ttype) > 0 ) break;
       }
       proc_point(&k, &v, dbo, true);
@@ -721,12 +720,12 @@ GrapheneDB::get_count(const string &t1,
 
     int fl = DB_SET_RANGE; // first get t >= t1
     for (int i=0; i<N; ++i) {
-      string pre((char *)k.data, (char *)k.data+k.size);
+      string pre = dbt2str(&k);
 
       if (!c_get(curs, &k, &v, fl)) break;
 
       // unpack new time value
-      string tnp((char *)k.data, (char *)k.data+k.size);
+      string tnp = dbt2str(&k);
 
       // I have a broken database where DB_SET_RANGE/DB_NEXT can
       // get non-increasing values. Let's check this to prevent the
@@ -797,12 +796,12 @@ GrapheneDB::del_range(const string &t1, const string &t2){
     int fl = DB_SET_RANGE; // first get t >= t1
     while (1){
 
-      string pre((char *)k.data, (char *)k.data+k.size);
+      string pre = dbt2str(&k);
 
       if (!c_get(curs, &k, &v, fl)) break;
 
       // get packed time value and check the range
-      string tp((char *)k.data, (char *)k.data+k.size);
+      string tp = dbt2str(&k);
       if (graphene_time_cmp(tp,t2p,ttype)>0) break;
 
       // I have a broken database where DB_SET_RANGE/DB_NEXT can
