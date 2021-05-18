@@ -132,6 +132,18 @@ class GrapheneDB{
     void write_info();
     void read_info();
 
+  // change database description
+  void set_descr(const std::string & d){
+    descr = d;
+    write_info();
+  }
+
+  // get database description
+  std::string get_descr() const { return descr; }
+
+  // get database type
+  DataType get_type() const { return dtype; }
+
   // write filter N. For input filter (N=0) storage is cleared
   void write_filter(const int N, const std::string & code);
 

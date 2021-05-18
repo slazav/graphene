@@ -344,7 +344,7 @@ class Pars{
       if (pars.size()<3) throw Err() << "database name and new description text expected";
       std::string descr = pars[2];
       for (int i=3; i<pars.size(); i++) descr+=" "+pars[i];
-      env->set_descr(pars[1], descr);
+      env->getdb(pars[1]).set_descr(descr);
       return;
     }
 
@@ -353,8 +353,9 @@ class Pars{
     if (strcasecmp(cmd.c_str(), "info")==0){
       if (pars.size()<2) throw Err() << "database name expected";
       if (pars.size()>2) throw Err() << "too many parameters";
-      cout << graphene_dtype_name(env->get_type(pars[1]));
-      auto descr = env->get_descr(pars[1]);
+      auto dtype = env->getdb(pars[1]).get_type();
+      auto descr = env->getdb(pars[1]).get_descr();
+      cout << graphene_dtype_name(dtype);
       if (descr!="") out << '\t' << descr;
       out << "\n";
       return;
@@ -375,7 +376,7 @@ class Pars{
     // args: backup_start <name>
     if (strcasecmp(cmd.c_str(), "backup_start")==0){
       if (pars.size()!=2) throw Err() << "database name expected";
-      out << env->backup_start(pars[1]) << "\n";
+      out << env->getdb(pars[1]).backup_start() << "\n";
       return;
     }
 
@@ -386,7 +387,7 @@ class Pars{
       if (pars.size()<2) throw Err() << "database name expected";
       if (pars.size()>3) throw Err() << "too many parameters";
       string t2 = pars.size()>2? pars[2]: "inf";
-      env->backup_end(pars[1], t2);
+      env->getdb(pars[1]).backup_end(t2);
       return;
     }
 
@@ -394,7 +395,7 @@ class Pars{
     // args: backup_reset <name>
     if (strcasecmp(cmd.c_str(), "backup_reset")==0){
       if (pars.size()!=2) throw Err() << "database name expected";
-      env->backup_reset(pars[1]);
+      env->getdb(pars[1]).backup_reset();
       return;
     }
 
@@ -402,7 +403,7 @@ class Pars{
     // args: backup_print <name>
     if (strcasecmp(cmd.c_str(), "backup_print")==0){
       if (pars.size()!=2) throw Err() << "database name expected";
-      out << env->backup_get(pars[1]) << "\n";
+      out << env->getdb(pars[1]).backup_get() << "\n";
       return;
     }
 
@@ -411,7 +412,7 @@ class Pars{
     if (strcasecmp(cmd.c_str(), "put")==0){
       if (pars.size()<4) throw Err() << "database name, timestamp and some values expected";
       vector<string> dat(pars.begin()+3, pars.end());
-      env->put(pars[1], pars[2], dat, dpolicy);
+      env->getdb(pars[1]).put(pars[2], dat, dpolicy);
       return;
     }
 
@@ -420,7 +421,7 @@ class Pars{
     if (strcasecmp(cmd.c_str(), "put_flt")==0){
       if (pars.size()<4) throw Err() << "database name, timestamp and some values expected";
       vector<string> dat(pars.begin()+3, pars.end());
-      env->put_flt(pars[1], pars[2], dat, dpolicy);
+      env->getdb(pars[1]).put_flt(pars[2], dat, dpolicy);
       return;
     }
 

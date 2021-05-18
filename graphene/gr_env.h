@@ -53,57 +53,6 @@ class GrapheneEnv{
   // rename database file
   void dbrename(const std::string & name1, const std::string & name2);
 
-  /****************/
-
-  // change database description
-  void set_descr(const std::string & name, const std::string & descr);
-
-  // get database description
-  std::string get_descr(const std::string & name) {
-    return getdb(name, DB_RDONLY).descr; }
-
-  // get database type
-  DataType get_type(const std::string & name) {
-    return getdb(name, DB_RDONLY).dtype; }
-
-  /****************/
-
-  // backup start: notify that we are going to start backup.
-  // - reset temporary backup timer
-  // - return value of the main backup timer
-  std::string backup_start(const std::string & name) {
-    return getdb(name).backup_start(); }
-
-  // backup end: notify that backup is successfully done
-  // - commit temporary backup timer into main one
-  // args: backup_end <name> [<timestamp>]
-  void backup_end(const std::string & name, const std::string & t) {
-    getdb(name).backup_end(t); }
-
-  // reset backup timer
-  void backup_reset(const std::string & name) {
-    getdb(name).backup_reset(); }
-
-  // get value of the backup timer
-  std::string backup_get(const std::string & name) {
-    return getdb(name).backup_get(); }
-
-  /****************/
-
-  // write data to the database
-  void put(const std::string & name, const std::string & t,
-           const std::vector<std::string> & d, const std::string & dpolicy){
-    getdb(name).put(t, d, dpolicy);
-  }
-
-  // write data to the database through the input filter
-  void put_flt(const std::string & name, const std::string & t,
-           const std::vector<std::string> & d, const std::string & dpolicy){
-    getdb(name).put_flt(t, d, dpolicy);
-  }
-
-  /****************/
-
   // close one database, close all databases
   void close(const std::string & name);
   void close();
@@ -111,7 +60,6 @@ class GrapheneEnv{
   // sync one database, sync all databases
   void sync(const std::string & name);
   void sync();
-
 
   // print environment database files for archiving (same as db_archive -s)
   void list_dbs();

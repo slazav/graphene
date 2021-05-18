@@ -175,16 +175,6 @@ GrapheneEnv::dbrename(const std::string & name1, const std::string & name2){
   }
 }
 
-/****************/
-
-// change database description
-void
-GrapheneEnv::set_descr(const std::string & name, const std::string & descr){
-  auto db = getdb(name);
-  db.descr = descr;
-  db.write_info();
-}
-
 // close one database, close all databases
 void
 GrapheneEnv::close(const std::string & name){
