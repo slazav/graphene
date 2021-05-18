@@ -299,7 +299,7 @@ GrapheneDB::clear_f0data(){
 
 /************************************/
 std::string
-GrapheneDB::read_f0data(){
+GrapheneDB::get_f0data(){
 
   DB_TXN *txn = txn_begin(DB_TXN_SNAPSHOT);
   std::string storage;
@@ -466,7 +466,7 @@ void
 GrapheneDB::put_flt(const string &t, const vector<string> & dat, const string &dpolicy){
 
   // read filter storage
-  std::string storage = read_f0data();
+  std::string storage = get_f0data();
 
   // run input filter
   auto t1 = graphene_time_print(graphene_time_parse(t, ttype),ttype);

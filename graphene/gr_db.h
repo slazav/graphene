@@ -45,7 +45,6 @@
 /***********************************************************/
 /* class for wrapping BerkleyDB */
 class GrapheneDB{
-  public:
   /************************************/
   // Create DBT objects of various kinds.
   //
@@ -81,8 +80,6 @@ class GrapheneDB{
     TimeType ttype;    // timestamp type
     std::string descr; // database description
 
-    TimeFMT timefmt;     // output time format
-    std::string time0;   // zero time for relative time output (not parsed)
 
     std::vector<Filter> filters; // filters (see filter.h)
 
@@ -91,7 +88,31 @@ class GrapheneDB{
     void operator()(DB* dbp) { dbp->close(dbp, 0); }
   };
 
-  /************************************/
+  /****************************/
+  // Simple transaction wrappers:
+    DB_TXN *txn_begin(int flags=0);
+    void txn_commit(DB_TXN *txn);
+    void txn_abort(DB_TXN *txn);
+
+  /****************************/
+  // Simple wrappers for cursor operations:
+    void get_cursor(DB *dbp, DB_TXN *txn, DBC **curs, int flags);
+    bool c_get(DBC *curs, DBT *k, DBT *v, int flags);
+
+  /****************************/
+  // Simple del/put/set operations for database information
+    void del_key(DB_TXN *txn, uint8_t key);
+    void set_key(DB_TXN *txn, uint8_t key, DBT v);
+    std::string get_key(DB_TXN *txn, uint8_t key,
+                        const std::string & def = std::string());
+
+  /****************************/
+  // Read/Write database information.
+  // key = (uint8_t)0 (1byte),  value = data_fmt (1byte) + description
+  // key = (uint8_t)1 (1byte),  value = version  (1byte)
+    void write_info();
+    void read_info();
+
   public:
 
   /************************************/
@@ -103,55 +124,35 @@ class GrapheneDB{
        const std::string & name_,
        const int flags);
 
-  /****************************/
-  // Simple transaction wrappers:
-  private:
-    DB_TXN *txn_begin(int flags=0);
-    void txn_commit(DB_TXN *txn);
-    void txn_abort(DB_TXN *txn);
-
-  /****************************/
-  // Simple wrappers for cursor operations:
-  private:
-    void get_cursor(DB *dbp, DB_TXN *txn, DBC **curs, int flags);
-    bool c_get(DBC *curs, DBT *k, DBT *v, int flags);
-
-  /****************************/
-  // Simple del/put/set operations for database information
-  private:
-    void del_key(DB_TXN *txn, uint8_t key);
-    void set_key(DB_TXN *txn, uint8_t key, DBT v);
-    std::string get_key(DB_TXN *txn, uint8_t key,
-                        const std::string & def = std::string());
-
-  /****************************/
-  // Read/Write database information.
-  // key = (uint8_t)0 (1byte),  value = data_fmt (1byte) + description
-  // key = (uint8_t)1 (1byte),  value = version  (1byte)
-  public:
-    void write_info();
-    void read_info();
-
   // change database description
-  void set_descr(const std::string & d){
-    descr = d;
-    write_info();
-  }
+  void set_descr(const std::string & d){ descr = d; write_info(); }
+
+  // Set data type. Do it only after creating a new database.
+  void set_dtype(const DataType & t){ dtype = t; write_info(); }
 
   // get database description
   std::string get_descr() const { return descr; }
 
-  // get database type
-  DataType get_type() const { return dtype; }
+  // get data type
+  DataType get_dtype() const { return dtype; }
+
+  // get timestamp type
+  TimeType get_ttype() const { return ttype; }
+
+  // is the database opened readonly?
+  bool is_readonly() const {return open_flags & DB_RDONLY;}
 
   // write filter N. For input filter (N=0) storage is cleared
   void write_filter(const int N, const std::string & code);
+
+  // get filter code
+  std::string get_filter(const int N) const { return filters[N].get_code(); }
 
   // clear storage of the input filter
   void clear_f0data();
 
   // read storage of the input filter from database
-  std::string read_f0data();
+  std::string get_f0data();
 
   // write storage of the input filter to database
   void write_f0data(const std::string & storage);
@@ -231,6 +232,9 @@ class GrapheneDB{
   // (db_dump utility can be used instead)
   void dump(const std::string &file);
 
+
+  TimeFMT timefmt;     // output time format
+  std::string time0;   // zero time for relative time output (not parsed)
 
   void proc_point(DBT *k, DBT *v, DBout & dbo, const bool list = false) {
     // check for correct key size (do not parse DB info)

@@ -84,8 +84,7 @@ GrapheneEnv::getdb(const std::string & name, const int fl){
   std::map<std::string, GrapheneDB>::iterator i = pool.find(name);
 
   // if database was opened with wrong flags close it
-  if (!(fl & DB_RDONLY) && i!=pool.end() &&
-       i->second.open_flags & DB_RDONLY){
+  if (!(fl & DB_RDONLY) && i!=pool.end() && i->second.is_readonly()){
     pool.erase(i); i=pool.end();
   }
 
@@ -123,9 +122,8 @@ void
 GrapheneEnv::dbcreate(const std::string & name, const std::string & descr,
                     const DataType dtype){
   GrapheneDB & db = getdb(name, DB_CREATE | DB_EXCL);
-  db.dtype = dtype;
-  db.descr = descr;
-  db.write_info();
+  db.set_dtype(dtype);
+  db.set_descr(descr);
 }
 
 

@@ -185,7 +185,7 @@ Json json_query(GrapheneEnv * env, const Json & ji){
     dbo.flt = flt;
 
     // check DB format
-    if (db.dtype == DATA_TEXT)
+    if (db.get_dtype() == DATA_TEXT)
       throw Err() << "Can not do query from TEXT database. Use annotations";
 
     // Get data from the database
@@ -236,7 +236,7 @@ Json json_annotations(GrapheneEnv * env, const Json & ji){
   dbo.flt = flt;
 
   // check DB format
-  if (db.dtype != DATA_TEXT)
+  if (db.get_dtype() != DATA_TEXT)
     throw Err() << "Annotations can be found only in TEXT databases";
 
   ostringstream ss; ss << fixed << (atof(t2.c_str())-atof(t1.c_str()))/MAX_ANNOTATIONS;
