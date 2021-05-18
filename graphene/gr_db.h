@@ -41,6 +41,8 @@
 #define DEF_TIMETYPE   TIME_V2
 #define DEF_DATATYPE   DATA_DOUBLE
 
+// Callback for get_* functions.
+typedef void (*GrapheneGetCB) (const std::string &k, const std::string &v, void * cb_data);
 
 /***********************************************************/
 /* class for wrapping BerkleyDB */
@@ -151,7 +153,16 @@ class GrapheneDB{
   void write_filter(const int N, const std::string & code);
 
   // get filter code
-  std::string get_filter(const int N) const { return filters[N].get_code(); }
+  std::string get_filter(const int N) const {
+    if (N<0 || N>=MAX_FILTERS) return "";
+    return filters[N].get_code();
+  }
+
+  // get filter object
+  Filter * get_filter_obj(const int N) {
+    if (N<0 || N>=MAX_FILTERS) return 0;
+    return &filters[N];
+  }
 
   // clear storage of the input filter
   void clear_f0data();
@@ -201,24 +212,24 @@ class GrapheneDB{
            const std::string &dpolicy);
 
   // All get* functions get some data from the database
-  // and call proc_point() for each key-value pair
+  // and call cb for each key-value pair
 
   // get data from the database -- get_next
-  void get_next(const std::string &t1, DBout & dbo);
+  void get_next(const std::string &t1, GrapheneGetCB cb, void * cb_data);
 
   // get data from the database -- get_prev
-  void get_prev(const std::string &t2, DBout & dbo);
+  void get_prev(const std::string &t2, GrapheneGetCB cb, void * cb_data);
 
   // get data from the database -- get
-  void get(const std::string &t,  DBout & dbo);
+  void get(const std::string &t, GrapheneGetCB cb, void * cb_data);
 
   // get data from the database -- get_range
   void get_range(const std::string &t1, const std::string &t2,
-                 const std::string &dt, DBout & dbo);
+                 const std::string &dt, GrapheneGetCB cb, void * cb_data);
 
   // get data from the database -- get_count
   void get_count(const std::string &t1,
-                 const std::string &count, DBout & dbo);
+                 const std::string &count, GrapheneGetCB cb, void * cb_data);
 
   // delete data data from the database -- del_range
   void del(const std::string &t1);
@@ -236,30 +247,6 @@ class GrapheneDB{
   // dump file in a db_dump format
   // (db_dump utility can be used instead)
   void dump(const std::string &file);
-
-
-  void proc_point(const std::string &ks, const std::string &vs, const bool list, DBout & dbo) {
-
-    int col = (dbo.flt==-1 ? dbo.col:-1); // use all columns for filters
-    auto t = graphene_time_print(ks, ttype, dbo.timefmt, dbo.time0);
-    auto d = graphene_data_print(vs, col, dtype);
-
-    std::string storage; // output filters do not use storage, but we need to provide the variable
-    if (dbo.flt>=MAX_FILTERS) throw Err() << "filter number out of range: " << dbo.flt;
-    if (dbo.flt>0 && !filters[dbo.flt].run(t,d,storage)) return;
-
-    // print values into a string (always \n in the end!)
-    std::string s =  t;
-    for (auto const & v:d) s += " " + v;
-    s += "\n";
-
-    // in list mode keep only first line (s always ends with \n - see above)
-    if (list && dtype==DATA_TEXT)
-      s.resize(s.find('\n')+1);
-
-    dbo.print_point(s);
-  }
-
 
 };
 

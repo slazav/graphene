@@ -435,12 +435,14 @@ class Pars{
       std::string name = parse_ext_name(pars[1], col, flt);
       GrapheneDB & db = env->getdb(name, DB_RDONLY);
       DBout dbo(out);
+      dbo.ttype  = db.get_ttype();
+      dbo.dtype  = db.get_dtype();
+      dbo.filter = db.get_filter_obj(flt);
       dbo.col    = col;
-      dbo.flt    = flt;
       dbo.timefmt = graphene_tfmt_parse(timefmt);
       dbo.time0   = t1;
       dbo.spp    = interactive;
-      db.get_next(t1, dbo);
+      db.get_next(t1, proc_point, &dbo);
       return;
     }
 
@@ -454,12 +456,14 @@ class Pars{
       std::string name = parse_ext_name(pars[1], col, flt);
       GrapheneDB & db = env->getdb(name, DB_RDONLY);
       DBout dbo(out);
+      dbo.ttype  = db.get_ttype();
+      dbo.dtype  = db.get_dtype();
+      dbo.filter = db.get_filter_obj(flt);
       dbo.col    = col;
-      dbo.flt    = flt;
       dbo.timefmt = graphene_tfmt_parse(timefmt);
       dbo.time0   = t2;
       dbo.spp    = interactive;
-      db.get_prev(t2, dbo);
+      db.get_prev(t2, proc_point, &dbo);
       return;
     }
 
@@ -473,12 +477,14 @@ class Pars{
       std::string name = parse_ext_name(pars[1], col,flt);
       GrapheneDB & db = env->getdb(name, DB_RDONLY);
       DBout dbo(out);
+      dbo.ttype  = db.get_ttype();
+      dbo.dtype  = db.get_dtype();
+      dbo.filter = db.get_filter_obj(flt);
       dbo.col    = col;
-      dbo.flt    = flt;
       dbo.timefmt = graphene_tfmt_parse(timefmt);
       dbo.time0   = t2;
       dbo.spp    = interactive;
-      db.get(t2, dbo);
+      db.get(t2, proc_point, &dbo);
       return;
     }
 
@@ -494,17 +500,20 @@ class Pars{
       std::string name = parse_ext_name(pars[1], col, flt);
       GrapheneDB & db = env->getdb(name, DB_RDONLY);
       DBout dbo(out);
+      dbo.ttype  = db.get_ttype();
+      dbo.dtype  = db.get_dtype();
+      dbo.filter = db.get_filter_obj(flt);
+      dbo.list   = true;
       dbo.col    = col;
-      dbo.flt    = flt;
       dbo.timefmt = graphene_tfmt_parse(timefmt);
       dbo.time0   = t1;
       dbo.spp    = interactive;
-      db.get_range(t1,t2,dt, dbo);
+      db.get_range(t1,t2,dt, proc_point, &dbo);
       return;
     }
 
     // get limited number of points
-    // args: get_range <name>[:N] [<time1>] [<cnt>]
+    // args: get_count <name>[:N] [<time1>] [<cnt>]
     if (strcasecmp(cmd.c_str(), "get_count")==0){
       if (pars.size()<2) throw Err() << "database name expected";
       if (pars.size()>5) throw Err() << "too many parameters";
@@ -514,12 +523,15 @@ class Pars{
       std::string name = parse_ext_name(pars[1], col, flt);
       GrapheneDB & db = env->getdb(name, DB_RDONLY);
       DBout dbo(out);
+      dbo.ttype  = db.get_ttype();
+      dbo.dtype  = db.get_dtype();
+      dbo.filter = db.get_filter_obj(flt);
+      dbo.list   = true;
       dbo.col    = col;
-      dbo.flt    = flt;
       dbo.timefmt = graphene_tfmt_parse(timefmt);
       dbo.time0   = t1;
       dbo.spp    = interactive;
-      db.get_count(t1,cnt, dbo);
+      db.get_count(t1,cnt, proc_point, &dbo);
       return;
     }
 

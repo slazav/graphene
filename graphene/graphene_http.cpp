@@ -121,33 +121,49 @@ request_answer(void * cls, struct MHD_Connection * connection, const char * url,
 
       DBoutS dbo;
       dbo.col    = col;
-      dbo.flt    = flt;
 
       if (strcasecmp(cmd.c_str(),"get")==0){
          GrapheneDB & db = env->getdb(name, DB_RDONLY);
+         dbo.ttype  = db.get_ttype();
+         dbo.dtype  = db.get_dtype();
+         dbo.filter = db.get_filter_obj(flt);
          dbo.timefmt = graphene_tfmt_parse(tfmt? tfmt : "def");
          dbo.time0   = t1 ? t1 : "0";
-         db.get(t1? t1:"inf", dbo); }
+         db.get(t1? t1:"inf", proc_point, &dbo); }
       else if (strcasecmp(cmd.c_str(),"get_next")==0) {
          GrapheneDB & db = env->getdb(name, DB_RDONLY);
+         dbo.ttype  = db.get_ttype();
+         dbo.dtype  = db.get_dtype();
+         dbo.filter = db.get_filter_obj(flt);
          dbo.timefmt = graphene_tfmt_parse(tfmt? tfmt : "def");
          dbo.time0   = t1 ? t1 : "0";
-         db.get_next(t1? t1:"0", dbo); }
+         db.get_next(t1? t1:"0", proc_point, &dbo); }
       else if (strcasecmp(cmd.c_str(),"get_prev")==0) {
          GrapheneDB & db = env->getdb(name, DB_RDONLY);
+         dbo.ttype  = db.get_ttype();
+         dbo.dtype  = db.get_dtype();
+         dbo.filter = db.get_filter_obj(flt);
          dbo.timefmt = graphene_tfmt_parse(tfmt? tfmt : "def");
          dbo.time0   = t1 ? t1 : "0";
-         db.get_prev(t1? t1:"inf", dbo); }
+         db.get_prev(t1? t1:"inf", proc_point, &dbo); }
       else if (strcasecmp(cmd.c_str(),"get_range")==0){
          GrapheneDB & db = env->getdb(name, DB_RDONLY);
+         dbo.ttype  = db.get_ttype();
+         dbo.dtype  = db.get_dtype();
+         dbo.filter = db.get_filter_obj(flt);
+         dbo.list   = true;
          dbo.timefmt = graphene_tfmt_parse(tfmt? tfmt : "def");
          dbo.time0   = t1 ? t1 : "0";
-         db.get_range(t1? t1:"0", t2? t2:"inf", dt? dt:"0", dbo); }
+         db.get_range(t1? t1:"0", t2? t2:"inf", dt? dt:"0", proc_point, &dbo); }
       else if (strcasecmp(cmd.c_str(),"get_count")==0){
          GrapheneDB & db = env->getdb(name, DB_RDONLY);
+         dbo.ttype  = db.get_ttype();
+         dbo.dtype  = db.get_dtype();
+         dbo.filter = db.get_filter_obj(flt);
+         dbo.list   = true;
          dbo.timefmt = graphene_tfmt_parse(tfmt? tfmt : "def");
          dbo.time0   = t1 ? t1 : "0";
-         db.get_count(t1? t1:"0", cnt? cnt:"1000", dbo); }
+         db.get_count(t1? t1:"0", cnt? cnt:"1000", proc_point, &dbo); }
       else if (strcasecmp(cmd.c_str(), "list")==0){
          for (auto const & n: env->dblist()) dbo.print_point(n + "\n"); }
       else throw Err() << "bad command: " << cmd.c_str();

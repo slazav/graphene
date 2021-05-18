@@ -69,4 +69,7 @@ class GrapheneEnv{
 
 };
 
+// default callback
+void proc_point(const std::string &ks, const std::string &vs, void * cb_data);
+
 #endif

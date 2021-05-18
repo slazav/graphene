@@ -6,6 +6,7 @@
 #include <iostream>
 
 #include "data.h"
+#include "filter.h"
 
 /***********************************************************/
 // Class for an extended dataset object.
@@ -20,17 +21,21 @@ class DBout {
 
   bool spp;    // SPP mode (protect # in the beginning of line)
 
+  TimeType ttype;
+  DataType dtype;
+  Filter * filter;
+  bool list;
+
   std::ostream & out;  // stream for output
   int col; // column number, for the main database
-
-  int flt; // filter number 1..MAX_FILTERS-1; <1 for no filtering
 
   TimeFMT timefmt;     // output time format
   std::string time0;   // zero time for relative time output (not parsed)
 
   // constructor -- parse the dataset string, create iostream
   DBout(std::ostream & out_ = std::cout):
-          col(-1), flt(-1), out(out_), spp(false), timefmt(TFMT_DEF) {}
+          col(-1), out(out_), spp(false), timefmt(TFMT_DEF),
+          ttype(TIME_V2), dtype(DATA_DOUBLE), list(false), filter(0) {}
 
   // print_point  -- by default it just prints the line to out,
   // but this function can be overriden.

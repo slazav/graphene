@@ -110,7 +110,7 @@ class DBoutJSON: public DBout{
     col=0; // default
   };
 
-  void print_point(const std::string & str) {
+  void print_point(const std::string & str) override {
     if (isnum){ //read timestamp and one value from the line:
       istringstream istr(str);
       double t; // we need 1ms accuracy
@@ -182,14 +182,17 @@ Json json_query(GrapheneEnv * env, const Json & ji){
     // output formatter
     DBoutJSON dbo(true);
     dbo.col = col<0 ? 0:col;
-    dbo.flt = flt;
+    dbo.ttype  = db.get_ttype();
+    dbo.dtype  = db.get_dtype();
+    dbo.filter = db.get_filter_obj(flt);
+    dbo.list   = true;
 
     // check DB format
     if (db.get_dtype() == DATA_TEXT)
       throw Err() << "Can not do query from TEXT database. Use annotations";
 
     // Get data from the database
-    db.get_range(t1,t2,dt, dbo);
+    db.get_range(t1,t2,dt, proc_point, &dbo);
 
     Json jt = Json::object();
     jt.set("target", ji["targets"][i]["target"]);
@@ -233,7 +236,10 @@ Json json_annotations(GrapheneEnv * env, const Json & ji){
   // output formatter
   DBoutJSON dbo(false);
   dbo.col = col<0 ? 0:col;
-  dbo.flt = flt;
+  dbo.ttype  = db.get_ttype();
+  dbo.dtype  = db.get_dtype();
+  dbo.filter = db.get_filter_obj(flt);
+  dbo.list   = true;
 
   // check DB format
   if (db.get_dtype() != DATA_TEXT)
@@ -241,7 +247,7 @@ Json json_annotations(GrapheneEnv * env, const Json & ji){
 
   ostringstream ss; ss << fixed << (atof(t2.c_str())-atof(t1.c_str()))/MAX_ANNOTATIONS;
 
-  db.get_range(t1,t2, ss.str(), dbo);
+  db.get_range(t1,t2, ss.str(), proc_point, &dbo);
   for (size_t i=0; i<dbo.json_buffer.size(); i++){
     dbo.json_buffer[i].set("annotation", ji["annotation"]);
   }

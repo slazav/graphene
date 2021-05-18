@@ -229,3 +229,26 @@ GrapheneEnv::list_logs(){
     free (begin);
   }
 }
+
+
+void proc_point(const std::string &ks, const std::string &vs, void * cb_data) {
+  auto dbo = (DBout *)cb_data;
+  int col = (!dbo->filter ? dbo->col:-1); // use all columns for filters
+  auto t = graphene_time_print(ks, dbo->ttype, dbo->timefmt, dbo->time0);
+  auto d = graphene_data_print(vs, col, dbo->dtype);
+
+
+  std::string storage; // output filters do not use storage, but we need to provide the variable
+  if (dbo->filter && !dbo->filter->run(t,d,storage)) return;
+
+  // print values into a string (always \n in the end!)
+  std::string s =  t;
+  for (auto const & v:d) s += " " + v;
+  s += "\n";
+
+  // in list mode keep only first line (s always ends with \n - see above)
+  if (dbo->list && dbo->dtype==DATA_TEXT)
+    s.resize(s.find('\n')+1);
+
+  dbo->print_point(s);
+}
