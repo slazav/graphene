@@ -66,7 +66,7 @@ GrapheneDB::GrapheneDB(DB_ENV *env_,
      const string & path_,
      const string & name_,
      const int flags):
-       env(env_), name(name_), timefmt(TFMT_DEF),
+       env(env_), name(name_),
        ttype(DEF_TIMETYPE), dtype(DEF_DATATYPE), version(DEF_DBVERSION),
        filters(MAX_FILTERS, Filter()) {
 

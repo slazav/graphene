@@ -233,9 +233,6 @@ class GrapheneDB{
   void dump(const std::string &file);
 
 
-  TimeFMT timefmt;     // output time format
-  std::string time0;   // zero time for relative time output (not parsed)
-
   void proc_point(DBT *k, DBT *v, DBout & dbo, const bool list = false) {
     // check for correct key size (do not parse DB info)
     if (k->size!=sizeof(uint64_t) && k->size!=sizeof(uint32_t) ) return;
@@ -244,7 +241,7 @@ class GrapheneDB{
     std::string vs((char *)v->data, (char *)v->data+v->size);
 
     int col = (dbo.flt==-1 ? dbo.col:-1); // use all columns for filters
-    auto t = graphene_time_print(ks, ttype, timefmt, time0);
+    auto t = graphene_time_print(ks, ttype, dbo.timefmt, dbo.time0);
     auto d = graphene_data_print(vs, col, dtype);
 
     std::string storage; // output filters do not use storage, but we need to provide the variable

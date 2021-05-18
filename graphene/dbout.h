@@ -25,9 +25,12 @@ class DBout {
 
   int flt; // filter number 1..MAX_FILTERS-1; <1 for no filtering
 
+  TimeFMT timefmt;     // output time format
+  std::string time0;   // zero time for relative time output (not parsed)
+
   // constructor -- parse the dataset string, create iostream
   DBout(std::ostream & out_ = std::cout):
-          col(-1), flt(-1), out(out_), spp(false) {}
+          col(-1), flt(-1), out(out_), spp(false), timefmt(TFMT_DEF) {}
 
   // print_point  -- by default it just prints the line to out,
   // but this function can be overriden.

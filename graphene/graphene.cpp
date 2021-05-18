@@ -437,8 +437,8 @@ class Pars{
       DBout dbo(out);
       dbo.col    = col;
       dbo.flt    = flt;
-      db.timefmt = graphene_tfmt_parse(timefmt);
-      db.time0   = t1;
+      dbo.timefmt = graphene_tfmt_parse(timefmt);
+      dbo.time0   = t1;
       dbo.spp    = interactive;
       db.get_next(t1, dbo);
       return;
@@ -456,8 +456,8 @@ class Pars{
       DBout dbo(out);
       dbo.col    = col;
       dbo.flt    = flt;
-      db.timefmt = graphene_tfmt_parse(timefmt);
-      db.time0   = t2;
+      dbo.timefmt = graphene_tfmt_parse(timefmt);
+      dbo.time0   = t2;
       dbo.spp    = interactive;
       db.get_prev(t2, dbo);
       return;
@@ -475,8 +475,8 @@ class Pars{
       DBout dbo(out);
       dbo.col    = col;
       dbo.flt    = flt;
-      db.timefmt = graphene_tfmt_parse(timefmt);
-      db.time0   = t2;
+      dbo.timefmt = graphene_tfmt_parse(timefmt);
+      dbo.time0   = t2;
       dbo.spp    = interactive;
       db.get(t2, dbo);
       return;
@@ -496,8 +496,8 @@ class Pars{
       DBout dbo(out);
       dbo.col    = col;
       dbo.flt    = flt;
-      db.timefmt = graphene_tfmt_parse(timefmt);
-      db.time0   = t1;
+      dbo.timefmt = graphene_tfmt_parse(timefmt);
+      dbo.time0   = t1;
       dbo.spp    = interactive;
       db.get_range(t1,t2,dt, dbo);
       return;
@@ -516,8 +516,8 @@ class Pars{
       DBout dbo(out);
       dbo.col    = col;
       dbo.flt    = flt;
-      db.timefmt = graphene_tfmt_parse(timefmt);
-      db.time0   = t1;
+      dbo.timefmt = graphene_tfmt_parse(timefmt);
+      dbo.time0   = t1;
       dbo.spp    = interactive;
       db.get_count(t1,cnt, dbo);
       return;
