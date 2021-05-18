@@ -493,8 +493,8 @@ GrapheneDB::get_next(const string &t1, DBout & dbo){
     /* Get a cursor */
     get_cursor(dbp.get(), txn, &curs, 0);
 
-    if (c_get(curs, &k, &v, DB_SET_RANGE))
-      proc_point(&k, &v, dbo);
+    if (c_get(curs, &k, &v, DB_SET_RANGE) && is_tstamp(&k))
+      proc_point(dbt2str(&k), dbt2str(&v), false, dbo);
 
     curs->close(curs);
   }
@@ -534,7 +534,8 @@ GrapheneDB::get_prev(const string &t2, DBout & dbo){
     if (graphene_time_cmp(tp,t2p, ttype)>0 || !found)
       found=c_get(curs, &k, &v, DB_PREV);
 
-    if (found) proc_point(&k, &v, dbo);
+    if (found && is_tstamp(&k))
+      proc_point(dbt2str(&k), dbt2str(&v), false, dbo);
 
     curs->close(curs);
   }
@@ -571,11 +572,12 @@ GrapheneDB::get(const string &t, DBout & dbo){
 
     // find next value
     bool found = c_get(curs, &k, &v, DB_SET_RANGE);
+    if (!is_tstamp(&k)) goto finish;
 
     // if there is no next value - give the last value if any
     if (!found) {
-      if (c_get(curs, &k, &v, DB_PREV))
-        proc_point(&k, &v, dbo);
+      if (c_get(curs, &k, &v, DB_PREV) && is_tstamp(&k))
+        proc_point(dbt2str(&k), dbt2str(&v), false, dbo);
       goto finish;
     }
 
@@ -583,23 +585,19 @@ GrapheneDB::get(const string &t, DBout & dbo){
     t1p = dbt2str(&k);
     v1p = dbt2str(&v);
     if (graphene_time_cmp(t1p,tp, ttype) == 0){
-      proc_point(&k, &v, dbo);
+      proc_point(t1p, v1p, false, dbo);
       goto finish;
     }
 
     // get the previous value and do interpolation
     // find prev value
     found = c_get(curs, &k, &v, DB_PREV);
-    if (!found || k.size < 4) goto finish; // not found or not a timestamp
+    if (!found || !is_tstamp(&k)) goto finish; // not found or not a timestamp
 
     t2p = dbt2str(&k);
     v2p = dbt2str(&v);
     vp = graphene_interpolate(tp, t1p, t2p, v1p, v2p, ttype, dtype);
-    if (vp!=""){
-      DBT k0 = mk_dbt(tp);
-      DBT v0 = mk_dbt(vp);
-      proc_point(&k0, &v0, dbo);
-    }
+    if (vp!="") proc_point(tp, vp, false, dbo);
 
     finish:
     curs->close(curs);
@@ -648,6 +646,11 @@ GrapheneDB::get_range(const string &t1, const string &t2,
       string pre = dbt2str(&k);
       if (!c_get(curs, &k, &v, fl)) break;
 
+      if (!is_tstamp(&k)) {
+        fl=DB_NEXT;
+        continue;
+      }
+
       // unpack new time value and check the range
       string tnp = dbt2str(&k);
       if (graphene_time_cmp(tnp,t2p,ttype)>0) break;
@@ -660,7 +663,7 @@ GrapheneDB::get_range(const string &t1, const string &t2,
 
       // if we want every point, switch to DB_NEXT and repeat
       if (graphene_time_zero(dtp, ttype)){
-        proc_point(&k, &v, dbo, true);
+        proc_point(dbt2str(&k), dbt2str(&v), true, dbo);
         fl=DB_NEXT;
         continue;
       }
@@ -674,7 +677,7 @@ GrapheneDB::get_range(const string &t1, const string &t2,
         tnp = dbt2str(&k);
         if (graphene_time_cmp(tnp,t2p,ttype) > 0 ) break;
       }
-      proc_point(&k, &v, dbo, true);
+      proc_point(dbt2str(&k), dbt2str(&v), true, dbo);
       tlp=tnp; // update last printed value
 
       // add dt to the key for the next loop:
@@ -734,7 +737,7 @@ GrapheneDB::get_count(const string &t1,
         throw Err() << "Broken database (DB_SET_RANGE/DB_NEXT get smaller timestamp)";
 
       // we want every point, switch to DB_NEXT and repeat
-      proc_point(&k, &v, dbo, true);
+      proc_point(dbt2str(&k), dbt2str(&v), true, dbo);
       fl=DB_NEXT;
     }
     curs->close(curs);

@@ -66,8 +66,11 @@ class GrapheneDB{
     ret.size = sizeof(T);
     return ret;
   }
-  std::string dbt2str(DBT *k) {
+  static std::string dbt2str(DBT *k) {
     return std::string((char *)k->data, (char *)k->data+k->size);}
+
+  // check if database key is a valid timestamp (not a 1- or 2-byte special keys)
+  static bool is_tstamp(DBT *k) { return k->size==sizeof(uint64_t) || k->size==sizeof(uint32_t); }
 
   /************************************/
   /* data */
@@ -235,12 +238,7 @@ class GrapheneDB{
   void dump(const std::string &file);
 
 
-  void proc_point(DBT *k, DBT *v, DBout & dbo, const bool list = false) {
-    // check for correct key size (do not parse DB info)
-    if (k->size!=sizeof(uint64_t) && k->size!=sizeof(uint32_t) ) return;
-    // convert DBT to strings
-    std::string ks = dbt2str(k);
-    std::string vs = dbt2str(v);
+  void proc_point(const std::string &ks, const std::string &vs, const bool list, DBout & dbo) {
 
     int col = (dbo.flt==-1 ? dbo.col:-1); // use all columns for filters
     auto t = graphene_time_print(ks, ttype, dbo.timefmt, dbo.time0);
