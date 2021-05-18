@@ -161,10 +161,10 @@ class GrapheneDB{
   // reset backup timers to 0
   void backup_reset();
 
-  // print main backup timer
-  std::string backup_print();
+  // get value of the main backup timer
+  std::string backup_get();
 
-  // Internal function, should be calld after each
+  // Internal function, should be called after each
   // database modification.
   void backup_upd(DB_TXN *txn, const std::string &t);
 

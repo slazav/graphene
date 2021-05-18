@@ -388,9 +388,9 @@ GrapheneDB::backup_reset(){
   txn_commit(txn);
 }
 
-// print main backup timer
+// get value of the main backup timer
 std::string
-GrapheneDB::backup_print(){
+GrapheneDB::backup_get(){
   DB_TXN *txn = txn_begin();
   try {
     auto timer = graphene_time_parse("0",ttype); // default

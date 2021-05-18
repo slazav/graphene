@@ -35,6 +35,8 @@ class GrapheneEnv{
 
   ~GrapheneEnv();
 
+  /****************/
+
   // create new database
   void dbcreate(const std::string & name, const std::string & descr,
               const DataType type);
@@ -44,6 +46,8 @@ class GrapheneEnv{
 
   // rename database file
   void dbrename(const std::string & name1, const std::string & name2);
+
+  /****************/
 
   // change database description
   void set_descr(const std::string & name, const std::string & descr);
@@ -56,8 +60,34 @@ class GrapheneEnv{
   DataType get_type(const std::string & name) {
     return get(name, DB_RDONLY).dtype; }
 
+  /****************/
+
   // return listof all databases
   std::vector<std::string> dblist();
+
+  /****************/
+
+  // backup start: notify that we are going to start backup.
+  // - reset temporary backup timer
+  // - return value of the main backup timer
+  std::string backup_start(const std::string & name) {
+    return get(name).backup_start(); }
+
+  // backup end: notify that backup is successfully done
+  // - commit temporary backup timer into main one
+  // args: backup_end <name> [<timestamp>]
+  void backup_end(const std::string & name, const std::string & t) {
+    get(name).backup_end(t); }
+
+  // reset backup timer
+  void backup_reset(const std::string & name) {
+    get(name).backup_reset(); }
+
+  // get value of the backup timer
+  std::string backup_get(const std::string & name) {
+    return get(name).backup_get(); }
+
+  /****************/
 
   // find database in the pool. Create/Open/Reopen if needed
   GrapheneDB & get(const std::string & name, const int fl = 0);

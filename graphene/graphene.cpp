@@ -375,7 +375,7 @@ class Pars{
     // args: backup_start <name>
     if (strcasecmp(cmd.c_str(), "backup_start")==0){
       if (pars.size()!=2) throw Err() << "database name expected";
-      out << env->get(pars[1]).backup_start() << "\n";
+      out << env->backup_start(pars[1]) << "\n";
       return;
     }
 
@@ -386,15 +386,15 @@ class Pars{
       if (pars.size()<2) throw Err() << "database name expected";
       if (pars.size()>3) throw Err() << "too many parameters";
       string t2 = pars.size()>2? pars[2]: "inf";
-      env->get(pars[1]).backup_end(t2);
+      env->backup_end(pars[1], t2);
       return;
     }
 
     // reset backup timer
-    // args: backup_start <name>
+    // args: backup_reset <name>
     if (strcasecmp(cmd.c_str(), "backup_reset")==0){
       if (pars.size()!=2) throw Err() << "database name expected";
-      env->get(pars[1]).backup_reset();
+      env->backup_reset(pars[1]);
       return;
     }
 
@@ -402,7 +402,7 @@ class Pars{
     // args: backup_print <name>
     if (strcasecmp(cmd.c_str(), "backup_print")==0){
       if (pars.size()!=2) throw Err() << "database name expected";
-      out << env->get(pars[1]).backup_print() << "\n";
+      out << env->backup_get(pars[1]) << "\n";
       return;
     }
 
