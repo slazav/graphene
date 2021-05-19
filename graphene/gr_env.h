@@ -15,7 +15,6 @@
 #include "data.h"
 #include "filter.h"
 
-
 // Formatter callback
 typedef void (*GrapheneFmtCB) (const std::string &t,
      const std::vector<std::string> &d, void * cb_data);
@@ -34,11 +33,9 @@ void out_fmt_cb_simple(const std::string &t,
 // <name>:<column>
 // <name>:<filter>
 //
-class DBout {
+class GrapheneEnvFormatter: public GrapheneFormatter {
   public:
 
-  TimeType ttype;
-  DataType dtype;
   Filter * filter;
   bool list;
 
@@ -52,17 +49,19 @@ class DBout {
   std::string time0;   // zero time for relative time output (not parsed)
 
   // constructor -- parse the dataset string, create iostream
-  DBout(std::ostream & out_ = std::cout):
+  GrapheneEnvFormatter(std::ostream & out_ = std::cout):
           col(-1), out(out_), timefmt(TFMT_DEF),
-          ttype(TIME_V2), dtype(DATA_DOUBLE), list(false), filter(0),
+          list(false), filter(0),
           fmt_cb(NULL), fmt_cb_data(NULL) {}
+
+  // This method is called from GrapheneGB::get_* for each data point
+  // It gets unpacked values from the database, do formatting,
+  // column selection and filtering and call print_point method.
+  void proc_point(const std::string &k, const std::string &v,
+     const TimeType ttype, const DataType dtype) override;
 
 };
 
-
-
-// Callback for GrapheneDB get_functions (see gr_db.h).
-void proc_point(const std::string &ks, const std::string &vs, void * cb_data);
 
 /***********************************************************/
 // Class for keeping a database environment and many opened
@@ -134,16 +133,14 @@ class GrapheneEnv{
     int col = -1, flt = -1;
     auto name = parse_ext_name(ext_name, col, flt);
     auto & db = getdb(name, DB_RDONLY);
-    DBout dbo;
-    dbo.ttype   = db.get_ttype();
-    dbo.dtype   = db.get_dtype();
+    GrapheneEnvFormatter dbo;
     dbo.filter  = db.get_filter_obj(flt);
     dbo.col     = col;
     dbo.timefmt = timefmt;
     dbo.time0   = t;
     dbo.fmt_cb  = fmt_cb;
     dbo.fmt_cb_data  = fmt_cb_data;
-    db.get_next(t, proc_point, &dbo);
+    db.get_next(t, dbo);
   }
 
   // get previous point before t
@@ -152,16 +149,14 @@ class GrapheneEnv{
     int col = -1, flt = -1;
     auto name = parse_ext_name(ext_name, col, flt);
     auto & db = getdb(name, DB_RDONLY);
-    DBout dbo;
-    dbo.ttype   = db.get_ttype();
-    dbo.dtype   = db.get_dtype();
+    GrapheneEnvFormatter dbo;
     dbo.filter  = db.get_filter_obj(flt);
     dbo.col     = col;
     dbo.timefmt = timefmt;
     dbo.time0   = t;
     dbo.fmt_cb  = fmt_cb;
     dbo.fmt_cb_data  = fmt_cb_data;
-    db.get_prev(t, proc_point, &dbo);
+    db.get_prev(t, dbo);
   }
 
   // get previous or interpolated point
@@ -170,16 +165,14 @@ class GrapheneEnv{
     int col = -1, flt = -1;
     auto name = parse_ext_name(ext_name, col, flt);
     auto & db = getdb(name, DB_RDONLY);
-    DBout dbo;
-    dbo.ttype   = db.get_ttype();
-    dbo.dtype   = db.get_dtype();
+    GrapheneEnvFormatter dbo;
     dbo.filter  = db.get_filter_obj(flt);
     dbo.col     = col;
     dbo.timefmt = timefmt;
     dbo.time0   = t;
     dbo.fmt_cb  = fmt_cb;
     dbo.fmt_cb_data  = fmt_cb_data;
-    db.get(t, proc_point, &dbo);
+    db.get(t, dbo);
   }
 
   // get data range
@@ -189,9 +182,7 @@ class GrapheneEnv{
     int col = -1, flt = -1;
     auto name = parse_ext_name(ext_name, col, flt);
     auto & db = getdb(name, DB_RDONLY);
-    DBout dbo;
-    dbo.ttype   = db.get_ttype();
-    dbo.dtype   = db.get_dtype();
+    GrapheneEnvFormatter dbo;
     dbo.filter  = db.get_filter_obj(flt);
     dbo.list   = true;
     dbo.col     = col;
@@ -199,7 +190,7 @@ class GrapheneEnv{
     dbo.time0   = t1;
     dbo.fmt_cb  = fmt_cb;
     dbo.fmt_cb_data  = fmt_cb_data;
-    db.get_range(t1,t2,dt, proc_point, &dbo);
+    db.get_range(t1,t2,dt, dbo);
   }
 
   // get limited number of points starting at t
@@ -209,9 +200,7 @@ class GrapheneEnv{
     int col = -1, flt = -1;
     auto name = parse_ext_name(ext_name, col, flt);
     auto & db = getdb(name, DB_RDONLY);
-    DBout dbo;
-    dbo.ttype   = db.get_ttype();
-    dbo.dtype   = db.get_dtype();
+    GrapheneEnvFormatter dbo;
     dbo.filter  = db.get_filter_obj(flt);
     dbo.list   = true;
     dbo.col     = col;
@@ -219,7 +208,7 @@ class GrapheneEnv{
     dbo.time0   = t;
     dbo.fmt_cb  = fmt_cb;
     dbo.fmt_cb_data  = fmt_cb_data;
-    db.get_count(t,cnt, proc_point, &dbo);
+    db.get_count(t,cnt, dbo);
   }
 
   /****************/

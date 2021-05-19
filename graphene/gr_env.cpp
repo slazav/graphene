@@ -232,25 +232,26 @@ GrapheneEnv::list_logs(){
 
 
 void
-proc_point(const std::string &ks, const std::string &vs, void * cb_data) {
-  auto dbo = (DBout *)cb_data;
-  int col = (!dbo->filter ? dbo->col:-1); // use all columns for filters
-  auto t = graphene_time_print(ks, dbo->ttype, dbo->timefmt, dbo->time0);
-  auto d = graphene_data_print(vs, col, dbo->dtype);
+GrapheneEnvFormatter::proc_point(const std::string &ks, const std::string &vs,
+    const TimeType ttype, const DataType dtype) {
+
+  auto t = graphene_time_print(ks, ttype, timefmt, time0);
+  auto d = graphene_data_print(vs, (!filter ? col:-1), dtype); // use all columns for filters
 
   // run filters
   std::string storage; // output filters do not use storage, but we need to provide the variable
-  if (dbo->filter && !dbo->filter->run(t,d,storage)) return;
+  if (filter && !filter->run(t,d,storage)) return;
 
   // in list mode keep only first line
-  if (dbo->list && dbo->dtype==DATA_TEXT){
+  if (list && dtype==DATA_TEXT){
     d.resize(1); // it should be already 1 for TEXT dbs
     auto n = d[0].find('\n');
     if (n!=std::string::npos) d[0].resize(n);
   }
 
-  if (dbo->fmt_cb) (dbo->fmt_cb)(t, d, dbo->fmt_cb_data);
+  if (fmt_cb) (fmt_cb)(t, d, fmt_cb_data);
 }
+
 
 void
 out_fmt_cb_simple(const std::string &t,  const std::vector<std::string> &d, void * cb_data){
@@ -259,3 +260,4 @@ out_fmt_cb_simple(const std::string &t,  const std::vector<std::string> &d, void
   for (auto const & v:d) *out << " " << v;
   *out << "\n";
 }
+

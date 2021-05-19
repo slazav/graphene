@@ -41,8 +41,14 @@
 #define DEF_TIMETYPE   TIME_V2
 #define DEF_DATATYPE   DATA_DOUBLE
 
-// Callback for get_* functions.
-typedef void (*GrapheneGetCB) (const std::string &k, const std::string &v, void * cb_data);
+// Base formatter class for GrapheneDB. All get_* methods call
+// GrapheneFormatter::proc_point on each record (without any
+// filtering or column selection).
+class GrapheneFormatter {
+  public:
+  virtual void proc_point(const std::string &k, const std::string &v,
+     const TimeType ttype, const DataType dtype) = 0;
+};
 
 /***********************************************************/
 /* class for wrapping BerkleyDB */
@@ -215,21 +221,21 @@ class GrapheneDB{
   // and call cb for each key-value pair
 
   // get data from the database -- get_next
-  void get_next(const std::string &t1, GrapheneGetCB cb, void * cb_data);
+  void get_next(const std::string &t1, GrapheneFormatter & out);
 
   // get data from the database -- get_prev
-  void get_prev(const std::string &t2, GrapheneGetCB cb, void * cb_data);
+  void get_prev(const std::string &t2, GrapheneFormatter & out);
 
   // get data from the database -- get
-  void get(const std::string &t, GrapheneGetCB cb, void * cb_data);
+  void get(const std::string &t, GrapheneFormatter & out);
 
   // get data from the database -- get_range
   void get_range(const std::string &t1, const std::string &t2,
-                 const std::string &dt, GrapheneGetCB cb, void * cb_data);
+                 const std::string &dt, GrapheneFormatter & out);
 
   // get data from the database -- get_count
   void get_count(const std::string &t1,
-                 const std::string &count, GrapheneGetCB cb, void * cb_data);
+                 const std::string &count, GrapheneFormatter & out);
 
   // delete data data from the database -- del_range
   void del(const std::string &t1);
