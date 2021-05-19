@@ -96,43 +96,35 @@ string convert_interval(const string & tstr){
   return ret.str();
 }
 
-/***************************************************************************/
-// json data formatter
-//
-class DBoutJSON: public DBout{
-  public:
-  Json json_buffer;
-  bool isnum; // numerical or text data
+// formatter callbacks for json (see gr_env.h)
+void
+out_cb_json_num(const std::string &t, const std::vector<std::string> &d, void * cb_data){
+  auto out = (Json *)cb_data;
+  if (d.size()<1) return;
+  json_int_t ti = 1000*atof(t.c_str()); // integer milliseconds
+  double v = d[0] == "NaN"? 0.0:atof(d[0].c_str());
 
-  DBoutJSON(const bool isnum_):
-    DBout(std::cout), json_buffer(Json::array()), isnum(isnum_){
-    col=0; // default
-  };
+  Json jpt = Json::array();
+  jpt.append(v);
+  jpt.append(ti);
+  out->append(jpt);
+}
 
-  void print_point(const std::string & str) override {
-    if (isnum){ //read timestamp and one value from the line:
-      istringstream istr(str);
-      double t; // we need 1ms accuracy
-      double v;
-      istr >> t >> v;
-      Json jpt = Json::array();
-      jpt.append(v);
-      jpt.append((json_int_t)(1000*t)); // convert to integer milliseconds
-      json_buffer.append(jpt);
-    }
-    else{ // read timestamp, space character and all text from the line:
-      istringstream istr(str);
-      double t; // we need 1ms accuracy
-      string v;
-      istr >> t; istr.get(); getline(istr, v);
-      Json jpt = Json::object();
-      jpt.set("title", v);
-      jpt.set("time",  (json_int_t)(1000*t));
-      json_buffer.append(jpt);
-    }
-  };
-};
+void
+out_cb_json_txt(const std::string &t, const std::vector<std::string> &d, void * cb_data){
+  auto out = (Json *)cb_data;
+  if (d.size()<1) return;
+  json_int_t ti = 1000*atof(t.c_str()); // integer milliseconds
 
+  std::ostringstream ss;
+  for (size_t i = 0; i<d.size(); i++)
+    ss << (i==0? "":" ") << d[i];
+
+  Json jpt = Json::object();
+  jpt.set("title", ss.str());
+  jpt.set("time",  ti);
+  out->append(jpt);
+}
 
 /***************************************************************************/
 // process /query
@@ -170,36 +162,31 @@ Json json_query(GrapheneEnv * env, const Json & ji){
   if (maxpt==0) throw Err() << "Bad maxDataPoints";
 
   /* parse targets and run command */
-  Json out = Json::array();
+  Json ret = Json::array();
+
   for (int i=0; i<ji["targets"].size(); i++){
 
-    // Get a database
+    std::string name = ji["targets"][i]["target"].as_string();
+
+    // Get a database, check format
     int col,flt;
-    std::string name = parse_ext_name(ji["targets"][i]["target"].as_string(), col, flt);
-    GrapheneDB db = env->getdb(name, DB_RDONLY);
-
-    // output formatter
-    DBoutJSON dbo(true);
-    dbo.col = col<0 ? 0:col;
-    dbo.ttype  = db.get_ttype();
-    dbo.dtype  = db.get_dtype();
-    dbo.filter = db.get_filter_obj(flt);
-    dbo.list   = true;
-
-    // check DB format
+    std::string n = parse_ext_name(name, col, flt);
+    auto db = env->getdb(n, DB_RDONLY);
     if (db.get_dtype() == DATA_TEXT)
       throw Err() << "Can not do query from TEXT database. Use annotations";
 
+    Json data = Json::array();
     // Get data from the database
-    db.get_range(t1,t2,dt, proc_point, &dbo);
+    env->set_out_cb(out_cb_json_num, &data);
+    env->get_range(name, t1,t2,dt, TFMT_DEF);
 
     Json jt = Json::object();
     jt.set("target", ji["targets"][i]["target"]);
-    jt.set("datapoints", dbo.json_buffer);
-    out.append(jt);
+    jt.set("datapoints", data);
+    ret.append(jt);
   }
 
-  return out;
+  return ret;
 }
 
 /***************************************************************************/
@@ -227,30 +214,24 @@ Json json_annotations(GrapheneEnv * env, const Json & ji){
   if (t1=="" || t2=="") throw Err() << "Bad range setting";
 
 
-  // Get a database
+  std::string name = ji["annotation"]["name"].as_string();
+
+  // Get a database, check format
   int col,flt;
-  std::string name = parse_ext_name(ji["annotation"]["name"].as_string(), col,flt);
-  GrapheneDB db = env->getdb(name, DB_RDONLY);
-
-  // output formatter
-  DBoutJSON dbo(false);
-  dbo.col = col<0 ? 0:col;
-  dbo.ttype  = db.get_ttype();
-  dbo.dtype  = db.get_dtype();
-  dbo.filter = db.get_filter_obj(flt);
-  dbo.list   = true;
-
-  // check DB format
+  std::string n = parse_ext_name(name, col, flt);
+  auto db = env->getdb(n, DB_RDONLY);
   if (db.get_dtype() != DATA_TEXT)
     throw Err() << "Annotations can be found only in TEXT databases";
 
   ostringstream ss; ss << fixed << (atof(t2.c_str())-atof(t1.c_str()))/MAX_ANNOTATIONS;
 
-  db.get_range(t1,t2, ss.str(), proc_point, &dbo);
-  for (size_t i=0; i<dbo.json_buffer.size(); i++){
-    dbo.json_buffer[i].set("annotation", ji["annotation"]);
+  Json out = Json::array();
+  env->set_out_cb(out_cb_json_txt, &out);
+  env->get_range(name, t1,t2, ss.str(), TFMT_DEF);
+  for (size_t i=0; i<out.size(); i++){
+    out[i].set("annotation", ji["annotation"]);
   }
-  return dbo.json_buffer;
+  return out;
 }
 
 /***************************************************************************/

@@ -15,6 +15,17 @@
 #include "data.h"
 #include "filter.h"
 
+
+// Formatter callback
+typedef void (*GrapheneFmtCB) (const std::string &t,
+     const std::vector<std::string> &d, void * cb_data);
+
+// Simple version of the callback. Get pointer to std::ostream
+// and print data.
+void out_fmt_cb_simple(const std::string &t,
+                       const std::vector<std::string> &d, void * cb_data);
+
+
 /***********************************************************/
 // Class for an extended dataset object.
 //
@@ -26,12 +37,13 @@
 class DBout {
   public:
 
-  bool spp;    // SPP mode (protect # in the beginning of line)
-
   TimeType ttype;
   DataType dtype;
   Filter * filter;
   bool list;
+
+  GrapheneFmtCB fmt_cb;
+  void * fmt_cb_data;
 
   std::ostream & out;  // stream for output
   int col; // column number, for the main database
@@ -41,17 +53,15 @@ class DBout {
 
   // constructor -- parse the dataset string, create iostream
   DBout(std::ostream & out_ = std::cout):
-          col(-1), out(out_), spp(false), timefmt(TFMT_DEF),
-          ttype(TIME_V2), dtype(DATA_DOUBLE), list(false), filter(0) {}
+          col(-1), out(out_), timefmt(TFMT_DEF),
+          ttype(TIME_V2), dtype(DATA_DOUBLE), list(false), filter(0),
+          fmt_cb(NULL), fmt_cb_data(NULL) {}
 
-  // print_point  -- by default it just prints the line to out,
-  // but this function can be overriden.
-  virtual void print_point(const std::string & str){
-    if (spp) out << graphene_spp_text(str);
-    else out << str;
-  }
 };
 
+
+
+// Callback for GrapheneDB get_functions (see gr_db.h).
 void proc_point(const std::string &ks, const std::string &vs, void * cb_data);
 
 /***********************************************************/
@@ -64,12 +74,18 @@ class GrapheneEnv{
   std::shared_ptr<DB_ENV> env; // database environment
   bool readonly;
 
+  GrapheneFmtCB fmt_cb;
+  void * fmt_cb_data;
+
   // Deleter for the environment
   struct D{
     void operator() (DB_ENV* env) {env->close(env, 0);}
   };
 
   public:
+
+  // set formatter callback
+  void set_out_cb(GrapheneFmtCB cb, void * cb_data) {fmt_cb = cb; fmt_cb_data = cb_data;}
 
   // Constructor: open DB environment
   // env_type: "none", "lock", "txn" (default)
@@ -114,63 +130,66 @@ class GrapheneEnv{
 
   // get next point after (or equal) t
   void get_next(const std::string & ext_name, const std::string & t,
-                const bool spp, const TimeFMT timefmt, std::ostream & out) {
+                const TimeFMT timefmt) {
     int col = -1, flt = -1;
     auto name = parse_ext_name(ext_name, col, flt);
     auto & db = getdb(name, DB_RDONLY);
-    DBout dbo(out);
+    DBout dbo;
     dbo.ttype   = db.get_ttype();
     dbo.dtype   = db.get_dtype();
     dbo.filter  = db.get_filter_obj(flt);
     dbo.col     = col;
     dbo.timefmt = timefmt;
     dbo.time0   = t;
-    dbo.spp     = spp;
+    dbo.fmt_cb  = fmt_cb;
+    dbo.fmt_cb_data  = fmt_cb_data;
     db.get_next(t, proc_point, &dbo);
   }
 
   // get previous point before t
   void get_prev(const std::string & ext_name, const std::string & t,
-                const bool spp, const TimeFMT timefmt, std::ostream & out) {
+                const TimeFMT timefmt) {
     int col = -1, flt = -1;
     auto name = parse_ext_name(ext_name, col, flt);
     auto & db = getdb(name, DB_RDONLY);
-    DBout dbo(out);
+    DBout dbo;
     dbo.ttype   = db.get_ttype();
     dbo.dtype   = db.get_dtype();
     dbo.filter  = db.get_filter_obj(flt);
     dbo.col     = col;
     dbo.timefmt = timefmt;
     dbo.time0   = t;
-    dbo.spp     = spp;
+    dbo.fmt_cb  = fmt_cb;
+    dbo.fmt_cb_data  = fmt_cb_data;
     db.get_prev(t, proc_point, &dbo);
   }
 
   // get previous or interpolated point
   void get(const std::string & ext_name, const std::string & t,
-           const bool spp, const TimeFMT timefmt, std::ostream & out) {
+           const TimeFMT timefmt) {
     int col = -1, flt = -1;
     auto name = parse_ext_name(ext_name, col, flt);
     auto & db = getdb(name, DB_RDONLY);
-    DBout dbo(out);
+    DBout dbo;
     dbo.ttype   = db.get_ttype();
     dbo.dtype   = db.get_dtype();
     dbo.filter  = db.get_filter_obj(flt);
     dbo.col     = col;
     dbo.timefmt = timefmt;
     dbo.time0   = t;
-    dbo.spp     = spp;
+    dbo.fmt_cb  = fmt_cb;
+    dbo.fmt_cb_data  = fmt_cb_data;
     db.get(t, proc_point, &dbo);
   }
 
   // get data range
   void get_range(const std::string & ext_name, const std::string & t1,
                  const std::string & t2, const std::string & dt,
-                 const bool spp, const TimeFMT timefmt, std::ostream & out) {
+                 const TimeFMT timefmt) {
     int col = -1, flt = -1;
     auto name = parse_ext_name(ext_name, col, flt);
     auto & db = getdb(name, DB_RDONLY);
-    DBout dbo(out);
+    DBout dbo;
     dbo.ttype   = db.get_ttype();
     dbo.dtype   = db.get_dtype();
     dbo.filter  = db.get_filter_obj(flt);
@@ -178,18 +197,19 @@ class GrapheneEnv{
     dbo.col     = col;
     dbo.timefmt = timefmt;
     dbo.time0   = t1;
-    dbo.spp     = spp;
+    dbo.fmt_cb  = fmt_cb;
+    dbo.fmt_cb_data  = fmt_cb_data;
     db.get_range(t1,t2,dt, proc_point, &dbo);
   }
 
   // get limited number of points starting at t
   void get_count(const std::string & ext_name,
                  const std::string & t, const std::string & cnt,
-                 const bool spp, const TimeFMT timefmt, std::ostream & out) {
+                 const TimeFMT timefmt) {
     int col = -1, flt = -1;
     auto name = parse_ext_name(ext_name, col, flt);
     auto & db = getdb(name, DB_RDONLY);
-    DBout dbo(out);
+    DBout dbo;
     dbo.ttype   = db.get_ttype();
     dbo.dtype   = db.get_dtype();
     dbo.filter  = db.get_filter_obj(flt);
@@ -197,7 +217,8 @@ class GrapheneEnv{
     dbo.col     = col;
     dbo.timefmt = timefmt;
     dbo.time0   = t;
-    dbo.spp     = spp;
+    dbo.fmt_cb  = fmt_cb;
+    dbo.fmt_cb_data  = fmt_cb_data;
     db.get_count(t,cnt, proc_point, &dbo);
   }
 
