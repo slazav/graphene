@@ -1,7 +1,7 @@
-MOD_HEADERS := gr_db.h dbout.h gr_env.h json.h data.h filter.h
+MOD_HEADERS := gr_db.h gr_env.h json.h data.h filter.h
 MOD_SOURCES := gr_db.cpp gr_env.cpp json.cpp data.cpp filter.cpp
 
-SIMPLE_TESTS := dbout gr_env json0 data1 data2 filter
+SIMPLE_TESTS := gr_env json0 data1 data2 filter
 SCRIPT_TESTS := json1
 OTHER_TESTS := test_cli.sh test_v1.sh\
    graphene_http.test1 graphene_http.test2

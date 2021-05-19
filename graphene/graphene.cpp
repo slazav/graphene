@@ -22,7 +22,6 @@
 #include <iostream>
 #include "gr_db.h"
 #include "gr_env.h"
-#include "dbout.h"
 #include "filter.h"
 
 #include "err/err.h"

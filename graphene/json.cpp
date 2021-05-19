@@ -22,7 +22,6 @@
 #include "jsonxx/jsonxx.h"
 #include "gr_env.h"
 #include "gr_db.h"
-#include "dbout.h"
 
 using namespace std;
 
