@@ -42,15 +42,14 @@ class GrapheneEnvFormatter: public GrapheneFormatter {
   GrapheneFmtCB fmt_cb;
   void * fmt_cb_data;
 
-  std::ostream & out;  // stream for output
   int col; // column number, for the main database
 
   TimeFMT timefmt;     // output time format
   std::string time0;   // zero time for relative time output (not parsed)
 
   // constructor -- parse the dataset string, create iostream
-  GrapheneEnvFormatter(std::ostream & out_ = std::cout):
-          col(-1), out(out_), timefmt(TFMT_DEF),
+  GrapheneEnvFormatter():
+          col(-1), timefmt(TFMT_DEF),
           list(false), filter(0),
           fmt_cb(NULL), fmt_cb_data(NULL) {}
 
