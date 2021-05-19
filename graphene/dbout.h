@@ -46,15 +46,5 @@ class DBout {
 
 };
 
-// version with string output (for HTTP get interface)
-class DBoutS: public DBout {
-  std::string mystr;
-  public:
-
-  void print_point(const std::string & str){ mystr += str; }
-  std::string & get_str() {return mystr;}
-
-};
-
 
 #endif

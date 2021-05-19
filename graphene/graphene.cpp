@@ -431,18 +431,7 @@ class Pars{
       if (pars.size()<2) throw Err() << "database name expected";
       if (pars.size()>3) throw Err() << "too many parameters";
       string t1 = pars.size()>2? pars[2]: "0";
-      int col = -1, flt = -1;
-      std::string name = parse_ext_name(pars[1], col, flt);
-      GrapheneDB & db = env->getdb(name, DB_RDONLY);
-      DBout dbo(out);
-      dbo.ttype  = db.get_ttype();
-      dbo.dtype  = db.get_dtype();
-      dbo.filter = db.get_filter_obj(flt);
-      dbo.col    = col;
-      dbo.timefmt = graphene_tfmt_parse(timefmt);
-      dbo.time0   = t1;
-      dbo.spp    = interactive;
-      db.get_next(t1, proc_point, &dbo);
+      env->get_next(pars[1], t1, interactive, graphene_tfmt_parse(timefmt), out);
       return;
     }
 
@@ -452,18 +441,7 @@ class Pars{
       if (pars.size()<2) throw Err() << "database name expected";
       if (pars.size()>3) throw Err() << "too many parameters";
       string t2 = pars.size()>2? pars[2]: "inf";
-      int col = -1, flt = -1;
-      std::string name = parse_ext_name(pars[1], col, flt);
-      GrapheneDB & db = env->getdb(name, DB_RDONLY);
-      DBout dbo(out);
-      dbo.ttype  = db.get_ttype();
-      dbo.dtype  = db.get_dtype();
-      dbo.filter = db.get_filter_obj(flt);
-      dbo.col    = col;
-      dbo.timefmt = graphene_tfmt_parse(timefmt);
-      dbo.time0   = t2;
-      dbo.spp    = interactive;
-      db.get_prev(t2, proc_point, &dbo);
+      env->get_prev(pars[1], t2, interactive, graphene_tfmt_parse(timefmt), out);
       return;
     }
 
@@ -473,18 +451,7 @@ class Pars{
       if (pars.size()<2) throw Err() << "database name expected";
       if (pars.size()>3) throw Err() << "too many parameters";
       string t2 = pars.size()>2? pars[2]: "inf";
-      int col = -1, flt = -1;
-      std::string name = parse_ext_name(pars[1], col,flt);
-      GrapheneDB & db = env->getdb(name, DB_RDONLY);
-      DBout dbo(out);
-      dbo.ttype  = db.get_ttype();
-      dbo.dtype  = db.get_dtype();
-      dbo.filter = db.get_filter_obj(flt);
-      dbo.col    = col;
-      dbo.timefmt = graphene_tfmt_parse(timefmt);
-      dbo.time0   = t2;
-      dbo.spp    = interactive;
-      db.get(t2, proc_point, &dbo);
+      env->get(pars[1], t2, interactive, graphene_tfmt_parse(timefmt), out);
       return;
     }
 
@@ -496,19 +463,8 @@ class Pars{
       string t1 = pars.size()>2? pars[2]: "0";
       string t2 = pars.size()>3? pars[3]: "inf";
       string dt = pars.size()>4? pars[4]: "0";
-      int col = -1, flt = -1;
-      std::string name = parse_ext_name(pars[1], col, flt);
-      GrapheneDB & db = env->getdb(name, DB_RDONLY);
-      DBout dbo(out);
-      dbo.ttype  = db.get_ttype();
-      dbo.dtype  = db.get_dtype();
-      dbo.filter = db.get_filter_obj(flt);
-      dbo.list   = true;
-      dbo.col    = col;
-      dbo.timefmt = graphene_tfmt_parse(timefmt);
-      dbo.time0   = t1;
-      dbo.spp    = interactive;
-      db.get_range(t1,t2,dt, proc_point, &dbo);
+      env->get_range(pars[1], t1,t2,dt,
+        interactive, graphene_tfmt_parse(timefmt), out);
       return;
     }
 
@@ -519,19 +475,8 @@ class Pars{
       if (pars.size()>5) throw Err() << "too many parameters";
       string t1  = pars.size()>2? pars[2]: "0";
       string cnt = pars.size()>3? pars[3]: "1000";
-      int col = -1, flt = -1;
-      std::string name = parse_ext_name(pars[1], col, flt);
-      GrapheneDB & db = env->getdb(name, DB_RDONLY);
-      DBout dbo(out);
-      dbo.ttype  = db.get_ttype();
-      dbo.dtype  = db.get_dtype();
-      dbo.filter = db.get_filter_obj(flt);
-      dbo.list   = true;
-      dbo.col    = col;
-      dbo.timefmt = graphene_tfmt_parse(timefmt);
-      dbo.time0   = t1;
-      dbo.spp    = interactive;
-      db.get_count(t1,cnt, proc_point, &dbo);
+      env->get_count(pars[1], t1,cnt,
+        interactive, graphene_tfmt_parse(timefmt), out);
       return;
     }
 

@@ -12,6 +12,9 @@
 #include <db.h>
 #include "gr_db.h"
 
+// default callback
+void proc_point(const std::string &ks, const std::string &vs, void * cb_data);
+
 /***********************************************************/
 // Class for keeping a database environment and many opened
 // databases.
@@ -40,6 +43,7 @@ class GrapheneEnv{
 
   /****************/
 
+
   // return list of all databases
   std::vector<std::string> dblist();
 
@@ -67,9 +71,100 @@ class GrapheneEnv{
   // print environment log files (same as db_archive -l)
   void list_logs();
 
+  /****************/
+
+  // get next point after (or equal) t
+  void get_next(const std::string & ext_name, const std::string & t,
+                const bool spp, const TimeFMT timefmt, std::ostream & out) {
+    int col = -1, flt = -1;
+    auto name = parse_ext_name(ext_name, col, flt);
+    auto & db = getdb(name, DB_RDONLY);
+    DBout dbo(out);
+    dbo.ttype   = db.get_ttype();
+    dbo.dtype   = db.get_dtype();
+    dbo.filter  = db.get_filter_obj(flt);
+    dbo.col     = col;
+    dbo.timefmt = timefmt;
+    dbo.time0   = t;
+    dbo.spp     = spp;
+    db.get_next(t, proc_point, &dbo);
+  }
+
+  // get previous point before t
+  void get_prev(const std::string & ext_name, const std::string & t,
+                const bool spp, const TimeFMT timefmt, std::ostream & out) {
+    int col = -1, flt = -1;
+    auto name = parse_ext_name(ext_name, col, flt);
+    auto & db = getdb(name, DB_RDONLY);
+    DBout dbo(out);
+    dbo.ttype   = db.get_ttype();
+    dbo.dtype   = db.get_dtype();
+    dbo.filter  = db.get_filter_obj(flt);
+    dbo.col     = col;
+    dbo.timefmt = timefmt;
+    dbo.time0   = t;
+    dbo.spp     = spp;
+    db.get_prev(t, proc_point, &dbo);
+  }
+
+  // get previous or interpolated point
+  void get(const std::string & ext_name, const std::string & t,
+           const bool spp, const TimeFMT timefmt, std::ostream & out) {
+    int col = -1, flt = -1;
+    auto name = parse_ext_name(ext_name, col, flt);
+    auto & db = getdb(name, DB_RDONLY);
+    DBout dbo(out);
+    dbo.ttype   = db.get_ttype();
+    dbo.dtype   = db.get_dtype();
+    dbo.filter  = db.get_filter_obj(flt);
+    dbo.col     = col;
+    dbo.timefmt = timefmt;
+    dbo.time0   = t;
+    dbo.spp     = spp;
+    db.get(t, proc_point, &dbo);
+  }
+
+  // get data range
+  void get_range(const std::string & ext_name, const std::string & t1,
+                 const std::string & t2, const std::string & dt,
+                 const bool spp, const TimeFMT timefmt, std::ostream & out) {
+    int col = -1, flt = -1;
+    auto name = parse_ext_name(ext_name, col, flt);
+    auto & db = getdb(name, DB_RDONLY);
+    DBout dbo(out);
+    dbo.ttype   = db.get_ttype();
+    dbo.dtype   = db.get_dtype();
+    dbo.filter  = db.get_filter_obj(flt);
+    dbo.list   = true;
+    dbo.col     = col;
+    dbo.timefmt = timefmt;
+    dbo.time0   = t1;
+    dbo.spp     = spp;
+    db.get_range(t1,t2,dt, proc_point, &dbo);
+  }
+
+  // get limited number of points starting at t
+  void get_count(const std::string & ext_name,
+                 const std::string & t, const std::string & cnt,
+                 const bool spp, const TimeFMT timefmt, std::ostream & out) {
+    int col = -1, flt = -1;
+    auto name = parse_ext_name(ext_name, col, flt);
+    auto & db = getdb(name, DB_RDONLY);
+    DBout dbo(out);
+    dbo.ttype   = db.get_ttype();
+    dbo.dtype   = db.get_dtype();
+    dbo.filter  = db.get_filter_obj(flt);
+    dbo.list   = true;
+    dbo.col     = col;
+    dbo.timefmt = timefmt;
+    dbo.time0   = t;
+    dbo.spp     = spp;
+    db.get_count(t,cnt, proc_point, &dbo);
+  }
+
+  /****************/
+
 };
 
-// default callback
-void proc_point(const std::string &ks, const std::string &vs, void * cb_data);
 
 #endif

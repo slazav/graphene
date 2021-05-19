@@ -56,6 +56,13 @@ void usage(const GetOptSet & options, bool pod=false){
 static void
 StopFunc(int signum){ throw 0; }
 
+// get parameter
+std::string
+mhs_get_par(struct MHD_Connection * connection, const char * name, const char * def){
+  auto val = MHD_lookup_connection_value(connection, MHD_GET_ARGUMENT_KIND, name);
+  return std::string(val ? val : def);
+}
+
 /**********************************************************/
 /* libmicrohttpd callback for processing a requent. */
 static MHD_Result
@@ -107,68 +114,31 @@ request_answer(void * cls, struct MHD_Connection * connection, const char * url,
     }
     // GET with database name as an URL
     else if (strcmp(method, "GET")==0){
-      int col=-1, flt=-1;
-
-      const char * n   = MHD_lookup_connection_value(connection, MHD_GET_ARGUMENT_KIND, "name");
-      const char * t1  = MHD_lookup_connection_value(connection, MHD_GET_ARGUMENT_KIND, "t1");
-      const char * t2  = MHD_lookup_connection_value(connection, MHD_GET_ARGUMENT_KIND, "t2");
-      const char * dt  = MHD_lookup_connection_value(connection, MHD_GET_ARGUMENT_KIND, "dt");
-      const char *cnt  = MHD_lookup_connection_value(connection, MHD_GET_ARGUMENT_KIND, "cnt");
-      const char *tfmt = MHD_lookup_connection_value(connection, MHD_GET_ARGUMENT_KIND, "tfmt");
 
       std::string cmd  = string(url).substr(1);
-      std::string name = parse_ext_name(n? n:"", col, flt);
+      auto n    = mhs_get_par(connection, "name", "");
+      auto t1   = mhs_get_par(connection, "t1",   "0");
+      auto t2   = mhs_get_par(connection, "t2",   "inf");
+      auto dt   = mhs_get_par(connection, "dt",   "0");
+      auto cnt  = mhs_get_par(connection, "cnt",  "1000");
+      auto tfmt = graphene_tfmt_parse(mhs_get_par(connection, "tfmt", "def"));
+      std::ostringstream out;
 
-      DBoutS dbo;
-      dbo.col    = col;
-
-      if (strcasecmp(cmd.c_str(),"get")==0){
-         GrapheneDB & db = env->getdb(name, DB_RDONLY);
-         dbo.ttype  = db.get_ttype();
-         dbo.dtype  = db.get_dtype();
-         dbo.filter = db.get_filter_obj(flt);
-         dbo.timefmt = graphene_tfmt_parse(tfmt? tfmt : "def");
-         dbo.time0   = t1 ? t1 : "0";
-         db.get(t1? t1:"inf", proc_point, &dbo); }
-      else if (strcasecmp(cmd.c_str(),"get_next")==0) {
-         GrapheneDB & db = env->getdb(name, DB_RDONLY);
-         dbo.ttype  = db.get_ttype();
-         dbo.dtype  = db.get_dtype();
-         dbo.filter = db.get_filter_obj(flt);
-         dbo.timefmt = graphene_tfmt_parse(tfmt? tfmt : "def");
-         dbo.time0   = t1 ? t1 : "0";
-         db.get_next(t1? t1:"0", proc_point, &dbo); }
-      else if (strcasecmp(cmd.c_str(),"get_prev")==0) {
-         GrapheneDB & db = env->getdb(name, DB_RDONLY);
-         dbo.ttype  = db.get_ttype();
-         dbo.dtype  = db.get_dtype();
-         dbo.filter = db.get_filter_obj(flt);
-         dbo.timefmt = graphene_tfmt_parse(tfmt? tfmt : "def");
-         dbo.time0   = t1 ? t1 : "0";
-         db.get_prev(t1? t1:"inf", proc_point, &dbo); }
-      else if (strcasecmp(cmd.c_str(),"get_range")==0){
-         GrapheneDB & db = env->getdb(name, DB_RDONLY);
-         dbo.ttype  = db.get_ttype();
-         dbo.dtype  = db.get_dtype();
-         dbo.filter = db.get_filter_obj(flt);
-         dbo.list   = true;
-         dbo.timefmt = graphene_tfmt_parse(tfmt? tfmt : "def");
-         dbo.time0   = t1 ? t1 : "0";
-         db.get_range(t1? t1:"0", t2? t2:"inf", dt? dt:"0", proc_point, &dbo); }
-      else if (strcasecmp(cmd.c_str(),"get_count")==0){
-         GrapheneDB & db = env->getdb(name, DB_RDONLY);
-         dbo.ttype  = db.get_ttype();
-         dbo.dtype  = db.get_dtype();
-         dbo.filter = db.get_filter_obj(flt);
-         dbo.list   = true;
-         dbo.timefmt = graphene_tfmt_parse(tfmt? tfmt : "def");
-         dbo.time0   = t1 ? t1 : "0";
-         db.get_count(t1? t1:"0", cnt? cnt:"1000", proc_point, &dbo); }
-      else if (strcasecmp(cmd.c_str(), "list")==0){
-         for (auto const & n: env->dblist()) dbo.print_point(n + "\n"); }
+      if (strcasecmp(cmd.c_str(),"get")==0)
+         env->get(n, t2, false, tfmt, out);
+      else if (strcasecmp(cmd.c_str(),"get_next")==0)
+         env->get_next(n, t1, false, tfmt, out);
+      else if (strcasecmp(cmd.c_str(),"get_prev")==0)
+         env->get_prev(n, t2, false, tfmt, out);
+      else if (strcasecmp(cmd.c_str(),"get_range")==0)
+         env->get_range(n, t1,t2,dt, false, tfmt, out);
+      else if (strcasecmp(cmd.c_str(),"get_count")==0)
+         env->get_count(n, t1,cnt, false, tfmt, out);
+      else if (strcasecmp(cmd.c_str(), "list")==0)
+         for (auto const & n: env->dblist()) out << n << "\n";
       else throw Err() << "bad command: " << cmd.c_str();
 
-      string out_data = dbo.get_str();
+      string out_data = out.str();
       response = MHD_create_response_from_buffer(
           out_data.size(), (void *)out_data.data(), MHD_RESPMEM_MUST_COPY);
       MHD_add_response_header (response, "Content-Type", "text/plain");
