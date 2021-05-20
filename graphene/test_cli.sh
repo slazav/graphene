@@ -253,6 +253,31 @@ assert_cmd "./graphene -d . get_range test_2:3" "1000.000000000 NaN
 assert_cmd "./graphene -d . delete test_2" ""
 
 ###########################################################################
+# access to multiple databases (DOUBLE database)
+assert_cmd "./graphene -d . create test_1 DOUBLE" ""
+assert_cmd "./graphene -d . create test_2 DOUBLE" ""
+assert_cmd "./graphene -d . create test_3 TEXT" ""
+assert_cmd "./graphene -d . put test_1 1  1 2 3" ""
+assert_cmd "./graphene -d . put test_1 2  2 3 4" ""
+assert_cmd "./graphene -d . put test_1 3  3 4 5" ""
+
+assert_cmd "./graphene -d . put test_2 1  10 20" ""
+assert_cmd "./graphene -d . put test_2 3  20 30" ""
+
+assert_cmd "./graphene -d . put test_3 0  TEXT 1" ""
+assert_cmd "./graphene -d . put test_3 3  TEXT2" ""
+
+assert_cmd "./graphene -d . get test_1+test_2+test_1:1+test_3"       "3.000000000 3 4 5 20 30 4 TEXT2"
+assert_cmd "./graphene -d . get test_1+test_2+test_1:1+test_3 2"     "2.000000000 2 3 4 15 25 3 TEXT 1"
+assert_cmd "./graphene -d . get_range test_1+test_2+test_1:1+test_3" "1.000000000 1 2 3 10 20 2 TEXT 1
+2.000000000 2 3 4 15 25 3 TEXT 1
+3.000000000 3 4 5 20 30 4 TEXT2"
+
+assert_cmd "./graphene -d . delete test_1" ""
+assert_cmd "./graphene -d . delete test_2" ""
+assert_cmd "./graphene -d . delete test_3" ""
+
+###########################################################################
 # precision (DOUBLE database)
 assert_cmd "./graphene -d . create test_2 DOUBLE \"double database\"" ""
 assert_cmd "./graphene -d . create test_3 FLOAT  \"float database\"" ""

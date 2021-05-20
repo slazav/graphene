@@ -44,6 +44,8 @@ class GrapheneEnvFormatter: public GrapheneFormatter {
   GrapheneFmtCB fmt_cb;
   void * fmt_cb_data;
 
+  std::vector<std::string> secondary;
+
   GrapheneTCL & tcl; // tcl interpreter
   GrapheneEnv & env;
 

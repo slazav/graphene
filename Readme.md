@@ -204,6 +204,12 @@ long enough, a "NaN" value is returned. Columns are ignored for text data.
 `<filter>` is a filter number (1..15), if it exists data will be processed
 by the filter (see below).
 
+It is possible to extract data from a few databases by joining a few
+extended names with `+` sign between them:
+`<name1>[:<column_or_filter>]+<name2>[:<column_or_filter>]...`. In this
+case data from secondary databases will be extracted with `get` command
+and appended to each output line. Different data types can be mixed in this way.
+
 #### Commands for deleting data:
 
 - `del <name> <time>` -- Delete a data point. Returns an error if there is

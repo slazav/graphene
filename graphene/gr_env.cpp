@@ -19,9 +19,28 @@ GrapheneEnvFormatter::GrapheneEnvFormatter(GrapheneTCL & tcl_,
           const std::string & ext_name, GrapheneEnv & env_):
           col(-1), flt_num(-1), timefmt(TFMT_DEF), list(false),
           fmt_cb(NULL), fmt_cb_data(NULL), tcl(tcl_), env(env_) {
-  name = parse_ext_name(ext_name, col, flt_num);
+
+  // split secondary database names using '+' delimiter
+  name = ext_name;
+  size_t pos = 0;
+  while ((pos = name.rfind('+')) != std::string::npos) {
+    secondary.push_back(name.substr(pos+1));
+    name.resize(pos);
+  }
+  std::reverse(secondary.begin(), secondary.end());
+
+  name = parse_ext_name(name, col, flt_num);
   if (flt_num>0) filter = env.getdb(name).get_filter(flt_num);
 }
+
+
+// callback for adding values to a data vector (used for secondary databases)
+void
+out_cb_addval(const std::string &t, const std::vector<std::string> &d, void * cb_data){
+  auto d0 = (std::vector<std::string> *)cb_data;
+  d0->insert(d0->end(), d.begin(), d.end());
+}
+
 
 void
 GrapheneEnvFormatter::proc_point(const std::string &ks, const std::string &vs,
@@ -33,6 +52,12 @@ GrapheneEnvFormatter::proc_point(const std::string &ks, const std::string &vs,
   // run filters
   std::string storage; // output filters do not use storage, but we need to provide the variable
   if (!tcl.run(filter, t,d,storage)) return;
+
+  // add data from secondary databases
+  for (const auto & s:secondary){
+    auto t = graphene_time_print(ks, ttype, TFMT_DEF, "");
+    env.get(s, t, TFMT_DEF, out_cb_addval, &d);
+  }
 
   // in list mode keep only first line
   if (list && dtype==DATA_TEXT){
