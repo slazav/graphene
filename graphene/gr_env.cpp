@@ -15,6 +15,37 @@
 #include "err/err.h"
 
 
+GrapheneEnvFormatter::GrapheneEnvFormatter(GrapheneTCL & tcl_,
+          const std::string & ext_name, GrapheneEnv & env_):
+          col(-1), flt_num(-1), timefmt(TFMT_DEF), list(false),
+          fmt_cb(NULL), fmt_cb_data(NULL), tcl(tcl_), env(env_) {
+  name = parse_ext_name(ext_name, col, flt_num);
+  if (flt_num>0) filter = env.getdb(name).get_filter(flt_num);
+}
+
+void
+GrapheneEnvFormatter::proc_point(const std::string &ks, const std::string &vs,
+    const TimeType ttype, const DataType dtype) {
+
+  auto t = graphene_time_print(ks, ttype, timefmt, time0);
+  auto d = graphene_data_print(vs, (filter == "" ? col:-1), dtype); // use all columns for filters
+
+  // run filters
+  std::string storage; // output filters do not use storage, but we need to provide the variable
+  if (!tcl.run(filter, t,d,storage)) return;
+
+  // in list mode keep only first line
+  if (list && dtype==DATA_TEXT){
+    d.resize(1); // it should be already 1 for TEXT dbs
+    auto n = d[0].find('\n');
+    if (n!=std::string::npos) d[0].resize(n);
+  }
+
+  if (fmt_cb) (fmt_cb)(t, d, fmt_cb_data);
+}
+
+
+
 // process registration:
 // https://docs.oracle.com/cd/E17276_01/html/gsg_xml_txn/cxx/architectrecovery.html#multiprocessrecovery
 // snapshot isolation:
@@ -232,26 +263,6 @@ GrapheneEnv::list_logs(){
 }
 
 
-void
-GrapheneEnvFormatter::proc_point(const std::string &ks, const std::string &vs,
-    const TimeType ttype, const DataType dtype) {
-
-  auto t = graphene_time_print(ks, ttype, timefmt, time0);
-  auto d = graphene_data_print(vs, (filter == "" ? col:-1), dtype); // use all columns for filters
-
-  // run filters
-  std::string storage; // output filters do not use storage, but we need to provide the variable
-  if (!tcl.run(filter, t,d,storage)) return;
-
-  // in list mode keep only first line
-  if (list && dtype==DATA_TEXT){
-    d.resize(1); // it should be already 1 for TEXT dbs
-    auto n = d[0].find('\n');
-    if (n!=std::string::npos) d[0].resize(n);
-  }
-
-  if (fmt_cb) (fmt_cb)(t, d, fmt_cb_data);
-}
 
 
 void

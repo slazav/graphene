@@ -33,6 +33,7 @@ void out_cb_simple(const std::string &t,
 // <name>:<column>
 // <name>:<filter>
 //
+class GrapheneEnv;
 class GrapheneEnvFormatter: public GrapheneFormatter {
   public:
 
@@ -44,16 +45,17 @@ class GrapheneEnvFormatter: public GrapheneFormatter {
   void * fmt_cb_data;
 
   GrapheneTCL & tcl; // tcl interpreter
+  GrapheneEnv & env;
 
   int col; // column number, for the main database
+  int flt_num;
+  std::string name;
 
   TimeFMT timefmt;     // output time format
   std::string time0;   // zero time for relative time output (not parsed)
 
   // constructor -- parse the dataset string, create iostream
-  GrapheneEnvFormatter(GrapheneTCL & tcl_):
-          col(-1), timefmt(TFMT_DEF), list(false),
-          fmt_cb(NULL), fmt_cb_data(NULL), tcl(tcl_) {}
+  GrapheneEnvFormatter(GrapheneTCL & tcl_, const std::string & ext_name, GrapheneEnv & env_);
 
   // This method is called from GrapheneGB::get_* for each data point
   // It gets unpacked values from the database, do formatting,
@@ -150,12 +152,8 @@ class GrapheneEnv{
   // get next point after (or equal) t
   void get_next(const std::string & ext_name, const std::string & t,
                 const TimeFMT timefmt, GrapheneFmtCB fmt_cb, void * fmt_cb_data) {
-    int col = -1, flt = -1;
-    auto name = parse_ext_name(ext_name, col, flt);
-    auto & db = getdb(name, DB_RDONLY);
-    GrapheneEnvFormatter dbo(tcl);
-    dbo.filter  = db.get_filter(flt);
-    dbo.col     = col;
+    GrapheneEnvFormatter dbo(tcl, ext_name, *this);
+    auto & db = getdb(dbo.name, DB_RDONLY);
     dbo.timefmt = timefmt;
     dbo.time0   = t;
     dbo.fmt_cb  = fmt_cb;
@@ -166,12 +164,8 @@ class GrapheneEnv{
   // get previous point before t
   void get_prev(const std::string & ext_name, const std::string & t,
                 const TimeFMT timefmt, GrapheneFmtCB fmt_cb, void * fmt_cb_data) {
-    int col = -1, flt = -1;
-    auto name = parse_ext_name(ext_name, col, flt);
-    auto & db = getdb(name, DB_RDONLY);
-    GrapheneEnvFormatter dbo(tcl);
-    dbo.filter  = db.get_filter(flt);
-    dbo.col     = col;
+    GrapheneEnvFormatter dbo(tcl, ext_name, *this);
+    auto & db = getdb(dbo.name, DB_RDONLY);
     dbo.timefmt = timefmt;
     dbo.time0   = t;
     dbo.fmt_cb  = fmt_cb;
@@ -182,12 +176,8 @@ class GrapheneEnv{
   // get previous or interpolated point
   void get(const std::string & ext_name, const std::string & t,
            const TimeFMT timefmt, GrapheneFmtCB fmt_cb, void * fmt_cb_data) {
-    int col = -1, flt = -1;
-    auto name = parse_ext_name(ext_name, col, flt);
-    auto & db = getdb(name, DB_RDONLY);
-    GrapheneEnvFormatter dbo(tcl);
-    dbo.filter  = db.get_filter(flt);
-    dbo.col     = col;
+    GrapheneEnvFormatter dbo(tcl, ext_name, *this);
+    auto & db = getdb(dbo.name, DB_RDONLY);
     dbo.timefmt = timefmt;
     dbo.time0   = t;
     dbo.fmt_cb  = fmt_cb;
@@ -199,13 +189,9 @@ class GrapheneEnv{
   void get_range(const std::string & ext_name, const std::string & t1,
                  const std::string & t2, const std::string & dt,
                  const TimeFMT timefmt, GrapheneFmtCB fmt_cb, void * fmt_cb_data) {
-    int col = -1, flt = -1;
-    auto name = parse_ext_name(ext_name, col, flt);
-    auto & db = getdb(name, DB_RDONLY);
-    GrapheneEnvFormatter dbo(tcl);
-    dbo.filter  = db.get_filter(flt);
-    dbo.list   = true;
-    dbo.col     = col;
+    GrapheneEnvFormatter dbo(tcl, ext_name, *this);
+    auto & db = getdb(dbo.name, DB_RDONLY);
+    dbo.list = true;
     dbo.timefmt = timefmt;
     dbo.time0   = t1;
     dbo.fmt_cb  = fmt_cb;
@@ -217,13 +203,9 @@ class GrapheneEnv{
   void get_count(const std::string & ext_name,
                  const std::string & t, const std::string & cnt,
                  const TimeFMT timefmt, GrapheneFmtCB fmt_cb, void * fmt_cb_data) {
-    int col = -1, flt = -1;
-    auto name = parse_ext_name(ext_name, col, flt);
-    auto & db = getdb(name, DB_RDONLY);
-    GrapheneEnvFormatter dbo(tcl);
-    dbo.filter  = db.get_filter(flt);
-    dbo.list   = true;
-    dbo.col     = col;
+    GrapheneEnvFormatter dbo(tcl, ext_name, *this);
+    auto & db = getdb(dbo.name, DB_RDONLY);
+    dbo.list = true;
     dbo.timefmt = timefmt;
     dbo.time0   = t;
     dbo.fmt_cb  = fmt_cb;
