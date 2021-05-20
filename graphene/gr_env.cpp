@@ -159,11 +159,10 @@ GrapheneEnv::getdb(const std::string & name, const int fl){
   }
 
   // if database is not opened, open it
-  if (!pool.count(name)) pool.insert(
-    std::pair<std::string, GrapheneDB>(name, GrapheneDB(env.get(), dbpath, name, fl)));
+  if (i == pool.end())
+    i = pool.insert(std::pair<std::string, GrapheneDB>(name, GrapheneDB(env.get(), dbpath, name, fl))).first;
 
-  // return the database
-  return pool.find(name)->second;
+  return i->second;
 }
 
 /****************/
