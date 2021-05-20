@@ -22,7 +22,7 @@
 
 // Constructor: open DB environment
 GrapheneEnv::GrapheneEnv(const std::string & dbpath_, const bool readonly_, const std::string & env_type_):
-    dbpath(dbpath_), env_type(env_type_), readonly(readonly_), fmt_cb(NULL), fmt_cb_data(NULL) {
+    dbpath(dbpath_), env_type(env_type_), readonly(readonly_) {
 
   if (readonly || env_type == "none"){
     // no invironment
@@ -254,7 +254,7 @@ GrapheneEnvFormatter::proc_point(const std::string &ks, const std::string &vs,
 
 
 void
-out_fmt_cb_simple(const std::string &t,  const std::vector<std::string> &d, void * cb_data){
+out_cb_simple(const std::string &t,  const std::vector<std::string> &d, void * cb_data){
   auto out = (std::ostream *)cb_data;
   *out << t;
   for (auto const & v:d) *out << " " << v;

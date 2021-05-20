@@ -177,8 +177,7 @@ Json json_query(GrapheneEnv * env, const Json & ji){
 
     Json data = Json::array();
     // Get data from the database
-    env->set_out_cb(out_cb_json_num, &data);
-    env->get_range(name, t1,t2,dt, TFMT_DEF);
+    env->get_range(name, t1,t2,dt, TFMT_DEF, out_cb_json_num, &data);
 
     Json jt = Json::object();
     jt.set("target", ji["targets"][i]["target"]);
@@ -226,8 +225,7 @@ Json json_annotations(GrapheneEnv * env, const Json & ji){
   ostringstream ss; ss << fixed << (atof(t2.c_str())-atof(t1.c_str()))/MAX_ANNOTATIONS;
 
   Json out = Json::array();
-  env->set_out_cb(out_cb_json_txt, &out);
-  env->get_range(name, t1,t2, ss.str(), TFMT_DEF);
+  env->get_range(name, t1,t2, ss.str(), TFMT_DEF, out_cb_json_txt, &out);
   for (size_t i=0; i<out.size(); i++){
     out[i].set("annotation", ji["annotation"]);
   }

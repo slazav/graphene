@@ -21,8 +21,8 @@ typedef void (*GrapheneFmtCB) (const std::string &t,
 
 // Simple version of the callback. Get pointer to std::ostream
 // and print data.
-void out_fmt_cb_simple(const std::string &t,
-                       const std::vector<std::string> &d, void * cb_data);
+void out_cb_simple(const std::string &t,
+                   const std::vector<std::string> &d, void * cb_data);
 
 
 /***********************************************************/
@@ -72,18 +72,12 @@ class GrapheneEnv{
   std::shared_ptr<DB_ENV> env; // database environment
   bool readonly;
 
-  GrapheneFmtCB fmt_cb;
-  void * fmt_cb_data;
-
   // Deleter for the environment
   struct D{
     void operator() (DB_ENV* env) {env->close(env, 0);}
   };
 
   public:
-
-  // set formatter callback
-  void set_out_cb(GrapheneFmtCB cb, void * cb_data) {fmt_cb = cb; fmt_cb_data = cb_data;}
 
   // Constructor: open DB environment
   // env_type: "none", "lock", "txn" (default)
@@ -128,7 +122,7 @@ class GrapheneEnv{
 
   // get next point after (or equal) t
   void get_next(const std::string & ext_name, const std::string & t,
-                const TimeFMT timefmt) {
+                const TimeFMT timefmt, GrapheneFmtCB fmt_cb, void * fmt_cb_data) {
     int col = -1, flt = -1;
     auto name = parse_ext_name(ext_name, col, flt);
     auto & db = getdb(name, DB_RDONLY);
@@ -144,7 +138,7 @@ class GrapheneEnv{
 
   // get previous point before t
   void get_prev(const std::string & ext_name, const std::string & t,
-                const TimeFMT timefmt) {
+                const TimeFMT timefmt, GrapheneFmtCB fmt_cb, void * fmt_cb_data) {
     int col = -1, flt = -1;
     auto name = parse_ext_name(ext_name, col, flt);
     auto & db = getdb(name, DB_RDONLY);
@@ -160,7 +154,7 @@ class GrapheneEnv{
 
   // get previous or interpolated point
   void get(const std::string & ext_name, const std::string & t,
-           const TimeFMT timefmt) {
+           const TimeFMT timefmt, GrapheneFmtCB fmt_cb, void * fmt_cb_data) {
     int col = -1, flt = -1;
     auto name = parse_ext_name(ext_name, col, flt);
     auto & db = getdb(name, DB_RDONLY);
@@ -177,7 +171,7 @@ class GrapheneEnv{
   // get data range
   void get_range(const std::string & ext_name, const std::string & t1,
                  const std::string & t2, const std::string & dt,
-                 const TimeFMT timefmt) {
+                 const TimeFMT timefmt, GrapheneFmtCB fmt_cb, void * fmt_cb_data) {
     int col = -1, flt = -1;
     auto name = parse_ext_name(ext_name, col, flt);
     auto & db = getdb(name, DB_RDONLY);
@@ -195,7 +189,7 @@ class GrapheneEnv{
   // get limited number of points starting at t
   void get_count(const std::string & ext_name,
                  const std::string & t, const std::string & cnt,
-                 const TimeFMT timefmt) {
+                 const TimeFMT timefmt, GrapheneFmtCB fmt_cb, void * fmt_cb_data) {
     int col = -1, flt = -1;
     auto name = parse_ext_name(ext_name, col, flt);
     auto & db = getdb(name, DB_RDONLY);

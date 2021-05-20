@@ -221,7 +221,6 @@ class Pars{
     // For SPP2 it should be #Fatal
     try {
       GrapheneEnv env(dbpath, readonly, env_type);
-      env.set_out_cb(out_cb_spp, &out);
       if (setjmp(sig_jmp_buf)) throw 0;
       out << "#OK\n";
       out.flush();
@@ -295,7 +294,6 @@ class Pars{
   void run_cmdline(){
     if (pars.size() < 1) throw Err() << "command is expected";
     GrapheneEnv env(dbpath, readonly, env_type);
-    env.set_out_cb(out_fmt_cb_simple, &cout);
     if (setjmp(sig_jmp_buf)) throw 0;
     run_command(&env, cout);
   }
@@ -445,7 +443,8 @@ class Pars{
       if (pars.size()<2) throw Err() << "database name expected";
       if (pars.size()>3) throw Err() << "too many parameters";
       string t1 = pars.size()>2? pars[2]: "0";
-      env->get_next(pars[1], t1, graphene_tfmt_parse(timefmt));
+      env->get_next(pars[1], t1, graphene_tfmt_parse(timefmt),
+                    interactive? out_cb_spp: out_cb_simple, &out);
       return;
     }
 
@@ -455,7 +454,8 @@ class Pars{
       if (pars.size()<2) throw Err() << "database name expected";
       if (pars.size()>3) throw Err() << "too many parameters";
       string t2 = pars.size()>2? pars[2]: "inf";
-      env->get_prev(pars[1], t2, graphene_tfmt_parse(timefmt));
+      env->get_prev(pars[1], t2, graphene_tfmt_parse(timefmt),
+                    interactive? out_cb_spp: out_cb_simple, &out);
       return;
     }
 
@@ -465,7 +465,8 @@ class Pars{
       if (pars.size()<2) throw Err() << "database name expected";
       if (pars.size()>3) throw Err() << "too many parameters";
       string t2 = pars.size()>2? pars[2]: "inf";
-      env->get(pars[1], t2, graphene_tfmt_parse(timefmt));
+      env->get(pars[1], t2, graphene_tfmt_parse(timefmt),
+               interactive? out_cb_spp: out_cb_simple, &out);
       return;
     }
 
@@ -477,7 +478,8 @@ class Pars{
       string t1 = pars.size()>2? pars[2]: "0";
       string t2 = pars.size()>3? pars[3]: "inf";
       string dt = pars.size()>4? pars[4]: "0";
-      env->get_range(pars[1], t1,t2,dt, graphene_tfmt_parse(timefmt));
+      env->get_range(pars[1], t1,t2,dt, graphene_tfmt_parse(timefmt),
+                     interactive? out_cb_spp: out_cb_simple, &out);
       return;
     }
 
@@ -488,7 +490,8 @@ class Pars{
       if (pars.size()>5) throw Err() << "too many parameters";
       string t1  = pars.size()>2? pars[2]: "0";
       string cnt = pars.size()>3? pars[3]: "1000";
-      env->get_count(pars[1], t1,cnt, graphene_tfmt_parse(timefmt));
+      env->get_count(pars[1], t1,cnt, graphene_tfmt_parse(timefmt),
+                     interactive? out_cb_spp: out_cb_simple, &out);
       return;
     }
 
@@ -535,7 +538,6 @@ class Pars{
       if (pars.size()<3) throw Err() << "database name and dump file expected";
       if (pars.size()>3) throw Err() << "too many parameters";
       GrapheneEnv simple_env(dbpath, false, "none");
-      simple_env.set_out_cb(out_fmt_cb_simple, &out);
       if (setjmp(sig_jmp_buf)) throw 0;
       GrapheneDB & db = simple_env.getdb(pars[1], DB_CREATE | DB_EXCL);
       db.load(pars[2]);
@@ -548,7 +550,6 @@ class Pars{
       if (pars.size()<3) throw Err() << "database name and dump file expected";
       if (pars.size()>3) throw Err() << "too many parameters";
       GrapheneEnv simple_env(dbpath, false, "none");
-      simple_env.set_out_cb(out_fmt_cb_simple, &out);
       if (setjmp(sig_jmp_buf)) throw 0;
       GrapheneDB & db = simple_env.getdb(pars[1], DB_RDONLY);
       db.dump(pars[2]);

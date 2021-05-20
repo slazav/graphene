@@ -123,18 +123,17 @@ request_answer(void * cls, struct MHD_Connection * connection, const char * url,
       auto cnt  = mhs_get_par(connection, "cnt",  "1000");
       auto tfmt = graphene_tfmt_parse(mhs_get_par(connection, "tfmt", "def"));
       std::ostringstream out;
-      env->set_out_cb(out_fmt_cb_simple, &out);
 
       if (strcasecmp(cmd.c_str(),"get")==0)
-         env->get(n, t2, tfmt);
+         env->get(n, t2, tfmt, out_cb_simple, &out);
       else if (strcasecmp(cmd.c_str(),"get_next")==0)
-         env->get_next(n, t1, tfmt);
+         env->get_next(n, t1, tfmt, out_cb_simple, &out);
       else if (strcasecmp(cmd.c_str(),"get_prev")==0)
-         env->get_prev(n, t2, tfmt);
+         env->get_prev(n, t2, tfmt, out_cb_simple, &out);
       else if (strcasecmp(cmd.c_str(),"get_range")==0)
-         env->get_range(n, t1,t2,dt, tfmt);
+         env->get_range(n, t1,t2,dt, tfmt, out_cb_simple, &out);
       else if (strcasecmp(cmd.c_str(),"get_count")==0)
-         env->get_count(n, t1,cnt, tfmt);
+         env->get_count(n, t1,cnt, tfmt, out_cb_simple, &out);
       else if (strcasecmp(cmd.c_str(), "list")==0)
          for (auto const & n: env->dblist()) out << n << "\n";
       else throw Err() << "bad command: " << cmd.c_str();
