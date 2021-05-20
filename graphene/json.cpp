@@ -171,7 +171,7 @@ Json json_query(GrapheneEnv * env, const Json & ji){
     // Get a database, check format
     int col,flt;
     std::string n = parse_ext_name(name, col, flt);
-    auto db = env->getdb(n, DB_RDONLY);
+    auto & db = env->getdb(n, DB_RDONLY);
     if (db.get_dtype() == DATA_TEXT)
       throw Err() << "Can not do query from TEXT database. Use annotations";
 
@@ -218,7 +218,7 @@ Json json_annotations(GrapheneEnv * env, const Json & ji){
   // Get a database, check format
   int col,flt;
   std::string n = parse_ext_name(name, col, flt);
-  auto db = env->getdb(n, DB_RDONLY);
+  auto & db = env->getdb(n, DB_RDONLY);
   if (db.get_dtype() != DATA_TEXT)
     throw Err() << "Annotations can be found only in TEXT databases";
 

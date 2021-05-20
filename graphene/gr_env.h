@@ -126,13 +126,13 @@ class GrapheneEnv{
   /****************/
   void put(const std::string & name, const std::string & t,
            const std::vector<std::string> & dat, const std::string &dpolicy){
-    auto db = getdb(name);
+    auto & db = getdb(name);
     db.put(t, dat, dpolicy);
   }
 
   void put_flt(const std::string & name, const std::string &t,
                const std::vector<std::string> & dat, const std::string &dpolicy){
-    auto db = getdb(name);
+    auto & db = getdb(name);
 
     auto ttype = db.get_ttype();
     std::string storage = db.get_f0data();
