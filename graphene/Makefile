@@ -6,7 +6,7 @@ SCRIPT_TESTS := json1
 OTHER_TESTS := test_cli.sh test_v1.sh\
    graphene_http.test1 graphene_http.test2
 
-PROGRAMS := graphene graphene_http
+PROGRAMS := graphene graphene_http graphene_meas
 
 PKG_CONFIG := libmicrohttpd libdb jansson tcl
 LDLIBS=-lm
