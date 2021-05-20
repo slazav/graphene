@@ -135,6 +135,41 @@ class GrapheneEnv{
   void list_logs();
 
   /****************/
+  void set_descr(const std::string & name, const std::string & descr) {
+     getdb(name).set_descr(descr); }
+
+  std::string get_descr(const std::string & name) {
+     return getdb(name, DB_RDONLY).get_descr(); }
+
+  DataType get_dtype(const std::string & name) {
+     return getdb(name, DB_RDONLY).get_dtype(); }
+
+  TimeType get_ttype(const std::string & name) {
+     return getdb(name, DB_RDONLY).get_ttype(); }
+
+  /****************/
+
+  // backup start: notify that we are going to start backup.
+  // - reset temporary backup timer
+  // - return value of the main backup timer
+  std::string backup_start(const std::string & name) {
+    return getdb(name).backup_start(); }
+
+  // backup end: notify that backup is successfully done
+  // - commit temporary backup timer into main one
+  void backup_end(const std::string & name, const std::string & t2 = "inf") {
+    getdb(name).backup_end(t2); }
+
+  // reset backup timer
+  void backup_reset(const std::string & name) {
+     getdb(name).backup_reset(); }
+
+  // get value of the backup timer
+  std::string backup_get(const std::string & name) {
+     return getdb(name, DB_RDONLY).backup_get(); }
+
+  /****************/
+
   void put(const std::string & name, const std::string & t,
            const std::vector<std::string> & dat, const std::string &dpolicy){
     auto & db = getdb(name);
@@ -223,6 +258,38 @@ class GrapheneEnv{
   }
 
   /****************/
+
+  // delete one data point
+  void del(const std::string & name, const std::string & t1){
+    getdb(name).del(t1); }
+
+  // delete all points in the data range
+  void del_range(const std::string & name, const std::string & t1, const std::string & t2){
+    getdb(name).del_range(t1,t2); }
+
+  /****************/
+
+  // create db and load file in db_dump format
+  // (we can not use db_load because of user-defined comparison function)
+  void load(const std::string & name, const std::string & fname){
+    getdb(name, DB_CREATE | DB_EXCL).load(fname); }
+
+  void dump(const std::string & name, const std::string & fname){
+    getdb(name, DB_RDONLY).dump(fname); }
+
+  /****************/
+
+  void set_filter(const std::string & name, const int N, const std::string & code){
+    getdb(name).write_filter(N, code);}
+
+  std::string get_filter(const std::string & name, const int N){
+    return getdb(name, DB_RDONLY).get_filter(N);}
+
+  std::string get_f0data(const std::string & name){
+    return getdb(name, DB_RDONLY).get_f0data();}
+
+  void clear_f0data(const std::string & name){
+    getdb(name).clear_f0data();}
 
 };
 

@@ -21,7 +21,6 @@
 
 #include "jsonxx/jsonxx.h"
 #include "gr_env.h"
-#include "gr_db.h"
 
 using namespace std;
 
@@ -171,8 +170,7 @@ Json json_query(GrapheneEnv * env, const Json & ji){
     // Get a database, check format
     int col,flt;
     std::string n = parse_ext_name(name, col, flt);
-    auto & db = env->getdb(n, DB_RDONLY);
-    if (db.get_dtype() == DATA_TEXT)
+    if (env->get_dtype(n) == DATA_TEXT)
       throw Err() << "Can not do query from TEXT database. Use annotations";
 
     Json data = Json::array();
@@ -218,8 +216,7 @@ Json json_annotations(GrapheneEnv * env, const Json & ji){
   // Get a database, check format
   int col,flt;
   std::string n = parse_ext_name(name, col, flt);
-  auto & db = env->getdb(n, DB_RDONLY);
-  if (db.get_dtype() != DATA_TEXT)
+  if (env->get_dtype(n) != DATA_TEXT)
     throw Err() << "Annotations can be found only in TEXT databases";
 
   ostringstream ss; ss << fixed << (atof(t2.c_str())-atof(t1.c_str()))/MAX_ANNOTATIONS;

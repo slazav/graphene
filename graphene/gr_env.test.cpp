@@ -13,16 +13,13 @@ int main() {
     // creating database, writing/reading data format
     {
       GrapheneEnv env(".", false, "txn", "");
-      GrapheneDB db = env.getdb("test", DB_CREATE);
-      db.set_dtype(DATA_INT16);
-      db.set_descr("AAA");
+      env.dbcreate("test", "AAA", DATA_INT16);
     }
     {
       GrapheneEnv env1(".", true, "txn", "");
-      GrapheneDB db1 = env1.getdb("test", DB_RDONLY);
-      assert_eq(db1.get_ttype(), TIME_V2);
-      assert_eq(db1.get_dtype(), DATA_INT16);
-      assert_eq(db1.get_descr(), "AAA");
+      assert_eq(env1.get_ttype("test"), TIME_V2);
+      assert_eq(env1.get_dtype("test"), DATA_INT16);
+      assert_eq(env1.get_descr("test"), "AAA");
     }
 
 /***************************************************************/

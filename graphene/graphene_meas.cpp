@@ -77,12 +77,10 @@ main(){
     env.get_range(DBNAME, "0", "inf", "0", TFMT, NULL, NULL);
     std::cerr << "Get " << NVAL << " values using get_range(): " << tc.meas() << "\n";
 
-    auto & db = env.getdb(DBNAME);
-    db.del_range("0", "inf");
-
+    env.del_range(DBNAME, "0", "inf");
 
     // input filter
-    db.write_filter(0, "set data [expr $data**2]");
+    env.set_filter(DBNAME, 0, "set data [expr $data**2]");
 
     tc.reset();
     for (int i = 0; i<NVAL_FLT; i++){
@@ -96,7 +94,7 @@ main(){
     std::cerr << "Put " << NVAL_FLT << " values through input filter: " << tc.meas() << "\n";
 
     // output filter
-    db.write_filter(1, "set data [expr $data**2]");
+    env.set_filter(DBNAME, 1, "set data [expr $data**2]");
 
     tc.reset();
     for (int i = 0; i<NVAL; i++){
