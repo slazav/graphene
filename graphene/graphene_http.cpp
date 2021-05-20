@@ -207,7 +207,6 @@ int main(int argc, char ** argv) {
     string dbpath   = opts.get("dbpath",   "/var/lib/graphene/");
     string tcllib   = opts.get("tcllib",   "/usr/share/graphene/tcllib/");
     string env_type = opts.get("env_type", "lock");
-    GrapheneEnv env(dbpath, true, env_type, tcllib);
 
     int port    = opts.get("port",  8081);
     int verb    = opts.get("verbose", 0);
@@ -306,6 +305,7 @@ int main(int argc, char ** argv) {
       mypid = true;
     }
 
+    GrapheneEnv env(dbpath, true, env_type, tcllib);
 
     // start server
     d = MHD_start_daemon(MHD_USE_SELECT_INTERNALLY,
