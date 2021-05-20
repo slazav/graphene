@@ -13,7 +13,6 @@ install: all
 	install graphene/graphene ${bindir}
 	install graphene/graphene_http ${bindir}
 	install graphene_http.init ${initdir}/graphene_http
-	install scripts/graphene_tab ${bindir}
 	install scripts/graphene_int ${bindir}
 	install scripts/graphene_sync ${bindir}
 	install scripts/graphene_sweeps ${bindir}
