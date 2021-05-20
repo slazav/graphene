@@ -101,7 +101,7 @@ out_cb_json_num(const std::string &t, const std::vector<std::string> &d, void * 
   auto out = (Json *)cb_data;
   if (d.size()<1) return;
   json_int_t ti = 1000*atof(t.c_str()); // integer milliseconds
-  double v = d[0] == "NaN"? 0.0:atof(d[0].c_str());
+  double v = atof(d[0].c_str());
 
   Json jpt = Json::array();
   jpt.append(v);
