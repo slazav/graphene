@@ -22,6 +22,41 @@ std::string tcl_error(Tcl_Interp *interp){
   return ret;
 }
 
+int
+tcl_proc(ClientData clientData, Tcl_Interp *interp, int objc, Tcl_Obj *const objv[]){
+
+  // convert arguments into vector<string>
+  std::vector<std::string> args;
+  for (int i=0; i<objc; i++){
+    auto s = Tcl_GetString(objv[i]);
+    if (s) args.emplace_back(s);
+  }
+
+  // run the command
+  try {
+    auto proc = (GrapheneTCLProc *)clientData;
+    if (!proc) throw Err() << "GrapheneTCL::add_cmd with null proc";
+    auto ret = proc->run(args);
+    Tcl_Obj * reto = Tcl_NewStringObj(ret.data(), ret.size());
+    Tcl_SetObjResult(interp, reto);
+    return TCL_OK;
+  }
+  catch (const Err & e){
+    auto s = e.str();
+    Tcl_Obj * reto = Tcl_NewStringObj(s.data(), s.size());
+    Tcl_SetObjResult(interp, reto);
+    return TCL_ERROR;
+  }
+}
+
+
+void
+GrapheneTCL::add_cmd(const char *name, GrapheneTCLProc * proc){
+interp.get();
+  if (!Tcl_CreateObjCommand(interp.get(), name, tcl_proc, proc, NULL))
+    throw Err() << "Tcl_CreateObjCommand failed";
+}
+
 
 void
 GrapheneTCL::restart(const std::string & tcl_libdir) {

@@ -25,6 +25,15 @@ void out_cb_simple(const std::string &t,
                    const std::vector<std::string> &d, void * cb_data);
 
 
+class GrapheneEnv;
+
+class GrapheneTCLGet: public GrapheneTCLProc {
+  GrapheneEnv & env;
+  public:
+  GrapheneTCLGet(GrapheneEnv & env_): env(env_) {}
+  std::string run(const std::vector<std::string> & args) override;
+};
+
 /***********************************************************/
 // Class for an extended dataset object.
 //
@@ -33,7 +42,6 @@ void out_cb_simple(const std::string &t,
 // <name>:<column>
 // <name>:<filter>
 //
-class GrapheneEnv;
 class GrapheneEnvFormatter: public GrapheneFormatter {
   public:
 
@@ -64,7 +72,6 @@ class GrapheneEnvFormatter: public GrapheneFormatter {
   // column selection and filtering and call print_point method.
   void proc_point(const std::string &k, const std::string &v,
      const TimeType ttype, const DataType dtype) override;
-
 };
 
 
@@ -79,6 +86,7 @@ class GrapheneEnv{
   bool readonly;
 
   GrapheneTCL tcl;
+  GrapheneTCLGet tcl_get_cmd;
 
   // Deleter for the environment
   struct D{
@@ -98,7 +106,6 @@ class GrapheneEnv{
   GrapheneDB & getdb(const std::string & name, const int fl = 0);
 
   /****************/
-
 
   // return list of all databases
   std::vector<std::string> dblist();

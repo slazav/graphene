@@ -15,6 +15,12 @@
 
 /***************************************************/
 
+// for adding an external command to tcl interpreter
+class GrapheneTCLProc {
+  public: virtual std::string run(const std::vector<std::string> & args) = 0;
+};
+
+
 // TCL interpreter
 class GrapheneTCL {
 
@@ -27,6 +33,9 @@ class GrapheneTCL {
 
   // Constructor
   GrapheneTCL(const std::string & tcl_libdir) {restart(tcl_libdir);}
+
+  // add a command
+  void add_cmd(const char *name, GrapheneTCLProc * proc);
 
   // Run the code, return true if it should be recorded
   bool run(const std::string & code, std::string & t,

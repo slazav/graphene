@@ -636,6 +636,19 @@ assert_cmd "./graphene -d . get_range test_1:f5" \
 202 4
 204 36"
 
+
+###########################################################################
+## graphene_get command in a filter
+code='set data [graphene_get test_1 $time]; return 1'
+
+./graphene -d . set_filter test_1 1 "$code"
+
+assert_cmd "./graphene -d . get_range test_1:f1" \
+"123.000000000 123.000000000 11 1
+200.000000000 200.000000000 2 1
+202.000000000 202.000000000 18 4
+523.000000000 523.000000000 11 1"
+
 assert_cmd "./graphene -d . delete test_1" ""
 
 ###########################################################################
