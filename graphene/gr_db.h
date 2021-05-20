@@ -1,8 +1,8 @@
 /* GrapheneDB class: wrapper for BerkleyDB, open/put/get/del functions
  */
 
-#ifndef GRAPHENE_DB_H
-#define GRAPHENE_DB_H
+#ifndef GR_DB_H
+#define GR_DB_H
 
 #include <memory>
 #include <cassert>

@@ -1,8 +1,8 @@
 /* DBpool class: class for storing many opened databases
  */
 
-#ifndef GRAPHENE_DBPOOL_H
-#define GRAPHENE_DBPOOL_H
+#ifndef GR_ENV_H
+#define GR_ENV_H
 
 #include <string>
 #include <vector>
