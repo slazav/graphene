@@ -361,8 +361,9 @@ class Pars{
     if (strcasecmp(cmd.c_str(), "info")==0){
       if (pars.size()<2) throw Err() << "database name expected";
       if (pars.size()>2) throw Err() << "too many parameters";
-      auto dtype = env->getdb(pars[1]).get_dtype();
-      auto descr = env->getdb(pars[1]).get_descr();
+      auto & db = env->getdb(pars[1], DB_RDONLY);
+      auto dtype = db.get_dtype();
+      auto descr = db.get_descr();
       cout << graphene_dtype_name(dtype);
       if (descr!="") out << '\t' << descr;
       out << "\n";
@@ -411,7 +412,7 @@ class Pars{
     // args: backup_print <name>
     if (strcasecmp(cmd.c_str(), "backup_print")==0){
       if (pars.size()!=2) throw Err() << "database name expected";
-      out << env->getdb(pars[1]).backup_get() << "\n";
+      out << env->getdb(pars[1], DB_RDONLY).backup_get() << "\n";
       return;
     }
 
@@ -568,7 +569,7 @@ class Pars{
       if (pars.size()!=3) throw Err() << "database name and filter number expected";
       int N = str_to_type<int>(pars[2]);
       if (N<0 || N>=MAX_FILTERS) throw Err() << "filter number out of range: " << N;
-      out << env->getdb(pars[1]).get_filter(N) << "\n";
+      out << env->getdb(pars[1], DB_RDONLY).get_filter(N) << "\n";
       return;
     }
 
@@ -576,7 +577,7 @@ class Pars{
     // args: print_f0data <name>
     if (strcasecmp(cmd.c_str(), "print_f0data")==0){
       if (pars.size()!=2) throw Err() << "database name expected";
-      out << env->getdb(pars[1]).get_f0data() << "\n";
+      out << env->getdb(pars[1], DB_RDONLY).get_f0data() << "\n";
       return;
     }
 

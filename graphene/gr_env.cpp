@@ -30,7 +30,7 @@ GrapheneEnvFormatter::GrapheneEnvFormatter(GrapheneTCL & tcl_,
   std::reverse(secondary.begin(), secondary.end());
 
   name = parse_ext_name(name, col, flt_num);
-  if (flt_num>0) filter = env.getdb(name).get_filter(flt_num);
+  if (flt_num>0) filter = env.getdb(name, DB_RDONLY).get_filter(flt_num);
 }
 
 
