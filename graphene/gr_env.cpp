@@ -90,7 +90,7 @@ GrapheneEnv::GrapheneEnv(const std::string & dbpath_, const bool readonly_,
                          const std::string & env_type_, const std::string & tcl_libdir):
     dbpath(dbpath_), env_type(env_type_), readonly(readonly_), tcl(tcl_libdir), tcl_get_cmd(*this) {
 
-  if (readonly || env_type == "none"){
+  if (env_type == "none"){
     // no invironment
     env=NULL;
     return;
