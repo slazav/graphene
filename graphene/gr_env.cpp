@@ -21,8 +21,9 @@
 // https://docs.oracle.com/cd/E17076_05/html/gsg_txn/C/isolation.html#snapshot_isolation
 
 // Constructor: open DB environment
-GrapheneEnv::GrapheneEnv(const std::string & dbpath_, const bool readonly_, const std::string & env_type_):
-    dbpath(dbpath_), env_type(env_type_), readonly(readonly_) {
+GrapheneEnv::GrapheneEnv(const std::string & dbpath_, const bool readonly_,
+                         const std::string & env_type_, const std::string & tcl_libdir):
+    dbpath(dbpath_), env_type(env_type_), readonly(readonly_), tcl(tcl_libdir) {
 
   if (readonly || env_type == "none"){
     // no invironment
@@ -236,11 +237,11 @@ GrapheneEnvFormatter::proc_point(const std::string &ks, const std::string &vs,
     const TimeType ttype, const DataType dtype) {
 
   auto t = graphene_time_print(ks, ttype, timefmt, time0);
-  auto d = graphene_data_print(vs, (!filter ? col:-1), dtype); // use all columns for filters
+  auto d = graphene_data_print(vs, (filter == "" ? col:-1), dtype); // use all columns for filters
 
   // run filters
   std::string storage; // output filters do not use storage, but we need to provide the variable
-  if (filter && !filter->run(t,d,storage)) return;
+  if (!tcl.run(filter, t,d,storage)) return;
 
   // in list mode keep only first line
   if (list && dtype==DATA_TEXT){

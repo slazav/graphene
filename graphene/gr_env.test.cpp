@@ -11,12 +11,12 @@ using namespace std;
 int main() {
   try{
     // creating database, writing/reading data format
-      GrapheneEnv env(".", false, "txn");
+      GrapheneEnv env(".", false, "txn", "");
       GrapheneDB db = env.getdb("test", DB_CREATE);
       db.set_dtype(DATA_INT16);
       db.set_descr("AAA");
 
-      GrapheneEnv env1(".", true, "txn");
+      GrapheneEnv env1(".", true, "txn", "");
       GrapheneDB db1 = env1.getdb("test", DB_RDONLY);
       assert_eq(db1.get_ttype(), TIME_V2);
       assert_eq(db1.get_dtype(), DATA_INT16);

@@ -2,9 +2,15 @@
 #include <string>
 #include <algorithm>
 
-#include "opt/opt.h"
 #include "err/err.h"
-#include "filter.h"
+#include "gr_tcl.h"
+
+#include <sys/types.h>
+#include <dirent.h>
+#include <errno.h>
+#include <fstream>
+#include <streambuf>
+#include "filename/filename.h"
 
 
 #include <tcl.h>
@@ -16,14 +22,38 @@ std::string tcl_error(Tcl_Interp *interp){
   return ret;
 }
 
-// Constructor
-Filter::Filter(): interp(Tcl_CreateInterp(), Tcl_DeleteInterp){
+
+void
+GrapheneTCL::restart(const std::string & tcl_libdir) {
+
   // create TCL interpreter
+  interp = std::shared_ptr<Tcl_Interp> (Tcl_CreateInterp(), Tcl_DeleteInterp);
   if (!interp) throw Err() << "filter: can't run TCL interpreter\n";
 
   // switch to safe mode
   if (Tcl_MakeSafe(interp.get()) != TCL_OK)
     throw Err() << "filter: Tcl_MakeSafe failed: " << tcl_error(interp.get());
+
+  if (tcl_libdir == "") return;
+
+  // load library
+  struct dirent *ent;
+  std::string library;
+  DIR *dir = opendir(tcl_libdir.c_str());
+//  if (dir==NULL) throw Err() << "can't read TCL libraries in "
+//    << tcl_libdir << ": " << strerror(errno);
+  if (dir==NULL) return;
+
+  library = std::string();
+
+  while ((ent = readdir(dir)) != NULL) {
+    if (!file_ext_check(ent->d_name, ".tcl")) continue;
+    std::ifstream f(tcl_libdir + "/" + ent->d_name);
+    library.append((std::istreambuf_iterator<char>(f)),
+                     (std::istreambuf_iterator<char>()));
+    library+='\n';
+  }
+  closedir (dir);
 
   // use library
   if (library!= "" && Tcl_Eval(interp.get(), library.c_str()) != TCL_OK)
@@ -45,7 +75,7 @@ Filter::Filter(): interp(Tcl_CreateInterp(), Tcl_DeleteInterp){
 // * `storage` - global variable which which will be kept
 //   between filter runs
 bool
-Filter::run(std::string & t, std::vector<std::string> & d, std::string & storage){
+GrapheneTCL::run(const std::string & code, std::string & t, std::vector<std::string> & d, std::string & storage){
 
   if (code=="") return true;
 
@@ -106,31 +136,3 @@ Filter::run(std::string & t, std::vector<std::string> & d, std::string & storage
   return ret;
 }
 
-#include <sys/types.h>
-#include <dirent.h>
-#include <errno.h>
-#include <fstream>
-#include <streambuf>
-#include "filename/filename.h"
-
-std::string Filter::library;
-
-void
-Filter::load_library(const std::string & tcl_libdir){
-  struct dirent *ent;
-  DIR *dir = opendir(tcl_libdir.c_str());
-//  if (dir==NULL) throw Err() << "can't read TCL libraries in "
-//    << tcl_libdir << ": " << strerror(errno);
-  if (dir==NULL) return;
-
-  library = std::string();
-
-  while ((ent = readdir(dir)) != NULL) {
-    if (!file_ext_check(ent->d_name, ".tcl")) continue;
-    std::ifstream f(tcl_libdir + "/" + ent->d_name);
-    library.append((std::istreambuf_iterator<char>(f)),
-                     (std::istreambuf_iterator<char>()));
-    library+='\n';
-  }
-  closedir (dir);
-}

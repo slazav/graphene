@@ -11,9 +11,9 @@
 #include <cstring> /* memset */
 #include <db.h>
 #include "gr_db.h"
+#include "gr_tcl.h"
 
 #include "data.h"
-#include "filter.h"
 
 // Formatter callback
 typedef void (*GrapheneFmtCB) (const std::string &t,
@@ -36,11 +36,14 @@ void out_cb_simple(const std::string &t,
 class GrapheneEnvFormatter: public GrapheneFormatter {
   public:
 
-  Filter * filter;
   bool list;
+
+  std::string filter;
 
   GrapheneFmtCB fmt_cb;
   void * fmt_cb_data;
+
+  GrapheneTCL & tcl; // tcl interpreter
 
   int col; // column number, for the main database
 
@@ -48,10 +51,9 @@ class GrapheneEnvFormatter: public GrapheneFormatter {
   std::string time0;   // zero time for relative time output (not parsed)
 
   // constructor -- parse the dataset string, create iostream
-  GrapheneEnvFormatter():
-          col(-1), timefmt(TFMT_DEF),
-          list(false), filter(0),
-          fmt_cb(NULL), fmt_cb_data(NULL) {}
+  GrapheneEnvFormatter(GrapheneTCL & tcl_):
+          col(-1), timefmt(TFMT_DEF), list(false),
+          fmt_cb(NULL), fmt_cb_data(NULL), tcl(tcl_) {}
 
   // This method is called from GrapheneGB::get_* for each data point
   // It gets unpacked values from the database, do formatting,
@@ -72,6 +74,8 @@ class GrapheneEnv{
   std::shared_ptr<DB_ENV> env; // database environment
   bool readonly;
 
+  GrapheneTCL tcl;
+
   // Deleter for the environment
   struct D{
     void operator() (DB_ENV* env) {env->close(env, 0);}
@@ -81,7 +85,8 @@ class GrapheneEnv{
 
   // Constructor: open DB environment
   // env_type: "none", "lock", "txn" (default)
-  GrapheneEnv(const std::string & dbpath_, const bool readonly, const std::string & env_type);
+  GrapheneEnv(const std::string & dbpath_, const bool readonly,
+              const std::string & env_type, const std::string & tcl_libdir);
 
   ~GrapheneEnv();
 
@@ -119,6 +124,28 @@ class GrapheneEnv{
   void list_logs();
 
   /****************/
+  void put(const std::string & name, const std::string & t,
+           const std::vector<std::string> & dat, const std::string &dpolicy){
+    auto db = getdb(name);
+    db.put(t, dat, dpolicy);
+  }
+
+  void put_flt(const std::string & name, const std::string &t,
+               const std::vector<std::string> & dat, const std::string &dpolicy){
+    auto db = getdb(name);
+
+    auto ttype = db.get_ttype();
+    std::string storage = db.get_f0data();
+    // run input filter
+    auto t1 = graphene_time_print(graphene_time_parse(t, ttype),ttype);
+    auto d1(dat);
+    if (tcl.run(db.get_filter(0), t1, d1, storage)) db.put(t1,d1,dpolicy);
+
+    // write storage
+    db.write_f0data(storage);
+  }
+
+  /****************/
 
   // get next point after (or equal) t
   void get_next(const std::string & ext_name, const std::string & t,
@@ -126,8 +153,8 @@ class GrapheneEnv{
     int col = -1, flt = -1;
     auto name = parse_ext_name(ext_name, col, flt);
     auto & db = getdb(name, DB_RDONLY);
-    GrapheneEnvFormatter dbo;
-    dbo.filter  = db.get_filter_obj(flt);
+    GrapheneEnvFormatter dbo(tcl);
+    dbo.filter  = db.get_filter(flt);
     dbo.col     = col;
     dbo.timefmt = timefmt;
     dbo.time0   = t;
@@ -142,8 +169,8 @@ class GrapheneEnv{
     int col = -1, flt = -1;
     auto name = parse_ext_name(ext_name, col, flt);
     auto & db = getdb(name, DB_RDONLY);
-    GrapheneEnvFormatter dbo;
-    dbo.filter  = db.get_filter_obj(flt);
+    GrapheneEnvFormatter dbo(tcl);
+    dbo.filter  = db.get_filter(flt);
     dbo.col     = col;
     dbo.timefmt = timefmt;
     dbo.time0   = t;
@@ -158,8 +185,8 @@ class GrapheneEnv{
     int col = -1, flt = -1;
     auto name = parse_ext_name(ext_name, col, flt);
     auto & db = getdb(name, DB_RDONLY);
-    GrapheneEnvFormatter dbo;
-    dbo.filter  = db.get_filter_obj(flt);
+    GrapheneEnvFormatter dbo(tcl);
+    dbo.filter  = db.get_filter(flt);
     dbo.col     = col;
     dbo.timefmt = timefmt;
     dbo.time0   = t;
@@ -175,8 +202,8 @@ class GrapheneEnv{
     int col = -1, flt = -1;
     auto name = parse_ext_name(ext_name, col, flt);
     auto & db = getdb(name, DB_RDONLY);
-    GrapheneEnvFormatter dbo;
-    dbo.filter  = db.get_filter_obj(flt);
+    GrapheneEnvFormatter dbo(tcl);
+    dbo.filter  = db.get_filter(flt);
     dbo.list   = true;
     dbo.col     = col;
     dbo.timefmt = timefmt;
@@ -193,8 +220,8 @@ class GrapheneEnv{
     int col = -1, flt = -1;
     auto name = parse_ext_name(ext_name, col, flt);
     auto & db = getdb(name, DB_RDONLY);
-    GrapheneEnvFormatter dbo;
-    dbo.filter  = db.get_filter_obj(flt);
+    GrapheneEnvFormatter dbo(tcl);
+    dbo.filter  = db.get_filter(flt);
     dbo.list   = true;
     dbo.col     = col;
     dbo.timefmt = timefmt;

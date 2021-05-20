@@ -29,9 +29,7 @@
 #include "err/err.h"
 #include "log/log.h"
 #include "getopt/getopt.h"
-
 #include "gr_env.h"
-#include "filter.h"
 
 #if MHD_VERSION < 0x00097002
 #define MHD_Result int
@@ -209,7 +207,7 @@ int main(int argc, char ** argv) {
     string dbpath   = opts.get("dbpath",   "/var/lib/graphene/");
     string tcllib   = opts.get("tcllib",   "/usr/share/graphene/tcllib/");
     string env_type = opts.get("env_type", "lock");
-    GrapheneEnv env(dbpath, true, env_type);
+    GrapheneEnv env(dbpath, true, env_type, tcllib);
 
     int port    = opts.get("port",  8081);
     int verb    = opts.get("verbose", 0);
@@ -217,9 +215,6 @@ int main(int argc, char ** argv) {
     pidfile     = opts.get("pidfile", "/var/run/graphene_http.pid");
     bool stop   = opts.exists("stop");
     bool dofork = opts.exists("dofork");
-
-    // load TCL library
-    Filter::load_library(tcllib);
 
     // default log file
     if (logfile==""){

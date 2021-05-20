@@ -22,7 +22,6 @@
 #include <iostream>
 #include "gr_db.h"
 #include "gr_env.h"
-#include "filter.h"
 
 #include "err/err.h"
 #include "read_words/read_words.h"
@@ -94,9 +93,6 @@ class Pars{
       }
     }
     pars = vector<string>(argv+optind, argv+argc);
-
-    // load TCL library
-    Filter::load_library(tcllib);
 
     // Set signal handler.
     // - It's important to close databases when
@@ -220,7 +216,7 @@ class Pars{
     // Outer try -- exit on errors with #Error message
     // For SPP2 it should be #Fatal
     try {
-      GrapheneEnv env(dbpath, readonly, env_type);
+      GrapheneEnv env(dbpath, readonly, env_type, tcllib);
       if (setjmp(sig_jmp_buf)) throw 0;
       out << "#OK\n";
       out.flush();
@@ -293,7 +289,7 @@ class Pars{
   // Cmdline mode.
   void run_cmdline(){
     if (pars.size() < 1) throw Err() << "command is expected";
-    GrapheneEnv env(dbpath, readonly, env_type);
+    GrapheneEnv env(dbpath, readonly, env_type, tcllib);
     if (setjmp(sig_jmp_buf)) throw 0;
     run_command(&env, cout);
   }
@@ -424,7 +420,7 @@ class Pars{
     if (strcasecmp(cmd.c_str(), "put")==0){
       if (pars.size()<4) throw Err() << "database name, timestamp and some values expected";
       vector<string> dat(pars.begin()+3, pars.end());
-      env->getdb(pars[1]).put(pars[2], dat, dpolicy);
+      env->put(pars[1], pars[2], dat, dpolicy);
       return;
     }
 
@@ -433,7 +429,7 @@ class Pars{
     if (strcasecmp(cmd.c_str(), "put_flt")==0){
       if (pars.size()<4) throw Err() << "database name, timestamp and some values expected";
       vector<string> dat(pars.begin()+3, pars.end());
-      env->getdb(pars[1]).put_flt(pars[2], dat, dpolicy);
+      env->put_flt(pars[1], pars[2], dat, dpolicy);
       return;
     }
 
@@ -537,7 +533,7 @@ class Pars{
     if (strcasecmp(cmd.c_str(), "load")==0){
       if (pars.size()<3) throw Err() << "database name and dump file expected";
       if (pars.size()>3) throw Err() << "too many parameters";
-      GrapheneEnv simple_env(dbpath, false, "none");
+      GrapheneEnv simple_env(dbpath, false, "none", "");
       if (setjmp(sig_jmp_buf)) throw 0;
       GrapheneDB & db = simple_env.getdb(pars[1], DB_CREATE | DB_EXCL);
       db.load(pars[2]);
@@ -549,7 +545,7 @@ class Pars{
     if (strcasecmp(cmd.c_str(), "dump")==0){
       if (pars.size()<3) throw Err() << "database name and dump file expected";
       if (pars.size()>3) throw Err() << "too many parameters";
-      GrapheneEnv simple_env(dbpath, false, "none");
+      GrapheneEnv simple_env(dbpath, false, "none", "");
       if (setjmp(sig_jmp_buf)) throw 0;
       GrapheneDB & db = simple_env.getdb(pars[1], DB_RDONLY);
       db.dump(pars[2]);

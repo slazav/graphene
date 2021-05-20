@@ -68,7 +68,7 @@ GrapheneDB::GrapheneDB(DB_ENV *env_,
      const int flags):
        env(env_), name(name_),
        ttype(DEF_TIMETYPE), dtype(DEF_DATATYPE), version(DEF_DBVERSION),
-       filters(MAX_FILTERS, Filter()) {
+       filters(MAX_FILTERS, "") {
 
   check_name(name); // check the name
 
@@ -251,7 +251,7 @@ GrapheneDB::read_info(){
 
     // Read filters
     for (int n=0; n<MAX_FILTERS; n++)
-      filters[n].set_code( get_key(txn, KEY_FLT+n) );
+      filters[n] = get_key(txn, KEY_FLT+n);
 
   }
   catch (Err e){
@@ -267,13 +267,13 @@ GrapheneDB::write_filter(const int n, const std::string & code){
   if (n<0 || n>filters.size())
     throw Err() << "filter number out of range: " << n;
 
-  filters[n].set_code(code);
+  filters[n] = code;
   int ret;
   DB_TXN *txn = txn_begin();
   try {
     // Remove filter 0 storage if it exists:
     if (n==0) del_key(txn, KEY_FLT0DATA);
-    set_key(txn, KEY_FLT+n, mk_dbt(filters[n].code));
+    set_key(txn, KEY_FLT+n, mk_dbt(code));
   }
   catch (Err e){
     txn_abort(txn);
@@ -458,23 +458,6 @@ GrapheneDB::put(const string &t, const vector<string> & dat, const string &dpoli
     throw e;
   }
   txn_commit(txn);
-}
-
-/************************************/
-// Put data to the database using input filter
-void
-GrapheneDB::put_flt(const string &t, const vector<string> & dat, const string &dpolicy){
-
-  // read filter storage
-  std::string storage = get_f0data();
-
-  // run input filter
-  auto t1 = graphene_time_print(graphene_time_parse(t, ttype),ttype);
-  auto d1(dat);
-  if (filters[0].run(t1, d1, storage)) put(t1,d1,dpolicy);
-
-  // write storage
-  write_f0data(storage);
 }
 
 /************************************/

@@ -33,7 +33,7 @@ main(int argc, char *argv[]){
   while (!cin.eof()){ string s; getline(cin, s); in_data +=s+'\n'; }
 
   try {
-    GrapheneEnv env(dbpath, true, "none");
+    GrapheneEnv env(dbpath, true, "none", "");
     cout << graphene_json(&env, url, in_data);
   }
   catch (Err e){

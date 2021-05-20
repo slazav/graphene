@@ -15,7 +15,6 @@
 #include <db.h>
 
 #include "err/err.h"
-#include "filter.h"
 #include "data.h"
 
 #include <iomanip>
@@ -93,8 +92,7 @@ class GrapheneDB{
     TimeType ttype;    // timestamp type
     std::string descr; // database description
 
-
-    std::vector<Filter> filters; // filters (see filter.h)
+    std::vector<std::string> filters; // filters
 
   // database deleter
   struct D {
@@ -161,13 +159,7 @@ class GrapheneDB{
   // get filter code
   std::string get_filter(const int N) const {
     if (N<0 || N>=MAX_FILTERS) return "";
-    return filters[N].get_code();
-  }
-
-  // get filter object
-  Filter * get_filter_obj(const int N) {
-    if (N<0 || N>=MAX_FILTERS) return 0;
-    return &filters[N];
+    return filters[N];
   }
 
   // clear storage of the input filter
@@ -211,10 +203,6 @@ class GrapheneDB{
   // dpolicy -- what to do with duplicated timestamps:
   //   (replace, skip, error, sshift, nsshift)
   void put(const std::string &t, const std::vector<std::string> & dat,
-           const std::string &dpolicy);
-
-  // put data using input filter
-  void put_flt(const std::string &t, const std::vector<std::string> & dat,
            const std::string &dpolicy);
 
   // All get* functions get some data from the database
