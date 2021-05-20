@@ -92,8 +92,6 @@ class GrapheneDB{
     TimeType ttype;    // timestamp type
     std::string descr; // database description
 
-    std::vector<std::string> filters; // filters
-
   // database deleter
   struct D {
     void operator()(DB* dbp) { dbp->close(dbp, 0); }
@@ -153,14 +151,15 @@ class GrapheneDB{
   // is the database opened readonly?
   bool is_readonly() const {return open_flags & DB_RDONLY;}
 
+  // clear a filter
+  void clear_filter(const int N);
+
+  // read a filter from database
+  std::string get_filter(const int N);
+
   // write filter N. For input filter (N=0) storage is cleared
   void write_filter(const int N, const std::string & code);
 
-  // get filter code
-  std::string get_filter(const int N) const {
-    if (N<0 || N>=MAX_FILTERS) return "";
-    return filters[N];
-  }
 
   // clear storage of the input filter
   void clear_f0data();

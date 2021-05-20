@@ -67,8 +67,7 @@ GrapheneDB::GrapheneDB(DB_ENV *env_,
      const string & name_,
      const int flags):
        env(env_), name(name_),
-       ttype(DEF_TIMETYPE), dtype(DEF_DATATYPE), version(DEF_DBVERSION),
-       filters(MAX_FILTERS, "") {
+       ttype(DEF_TIMETYPE), dtype(DEF_DATATYPE), version(DEF_DBVERSION) {
 
   check_name(name); // check the name
 
@@ -249,10 +248,6 @@ GrapheneDB::read_info(){
       default: throw Err() << "unsupported database version: " << (int)version;
     }
 
-    // Read filters
-    for (int n=0; n<MAX_FILTERS; n++)
-      filters[n] = get_key(txn, KEY_FLT+n);
-
   }
   catch (Err e){
     txn_abort(txn);
@@ -261,20 +256,16 @@ GrapheneDB::read_info(){
   txn_commit(txn);
 }
 
+
 /************************************/
 void
-GrapheneDB::write_filter(const int n, const std::string & code){
-  if (n<0 || n>filters.size())
+GrapheneDB::clear_filter(const int n){
+  if (n<0 || n>MAX_FILTERS)
     throw Err() << "filter number out of range: " << n;
 
-  filters[n] = code;
   int ret;
-  DB_TXN *txn = txn_begin();
-  try {
-    // Remove filter 0 storage if it exists:
-    if (n==0) del_key(txn, KEY_FLT0DATA);
-    set_key(txn, KEY_FLT+n, mk_dbt(code));
-  }
+  DB_TXN *txn = txn_begin(DB_TXN_SNAPSHOT);
+  try { del_key(txn, KEY_FLT+n); }
   catch (Err e){
     txn_abort(txn);
     throw e;
@@ -282,6 +273,41 @@ GrapheneDB::write_filter(const int n, const std::string & code){
   sync();
   txn_commit(txn);
 }
+
+/************************************/
+std::string
+GrapheneDB::get_filter(const int n){
+  if (n<0 || n>MAX_FILTERS) return "";
+
+  DB_TXN *txn = txn_begin(DB_TXN_SNAPSHOT);
+  std::string storage;
+  try { storage = get_key(txn, KEY_FLT+n); }
+  catch (Err e){
+    txn_abort(txn);
+    throw e;
+  }
+  txn_commit(txn);
+  return storage;
+}
+
+/************************************/
+void
+GrapheneDB::write_filter(const int n, const std::string & code){
+  if (n<0 || n>MAX_FILTERS)
+    throw Err() << "filter number out of range: " << n;
+
+  DB_TXN *txn = txn_begin(DB_TXN_SNAPSHOT);
+  try {
+    if (n==0) del_key(txn, KEY_FLT0DATA);
+    set_key(txn, KEY_FLT+n, mk_dbt(code)); }
+  catch (Err e){
+    txn_abort(txn);
+    throw e;
+  }
+  sync(); // a very slow operation
+  txn_commit(txn);
+}
+
 
 /************************************/
 void
@@ -321,9 +347,10 @@ GrapheneDB::write_f0data(const std::string & storage){
     txn_abort(txn);
     throw e;
   }
-  sync();
+  sync(); // a very slow operation
   txn_commit(txn);
 }
+
 
 
 /************************************/
