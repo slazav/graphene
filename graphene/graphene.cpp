@@ -63,7 +63,7 @@ class Pars{
   string sockname;     /* socket name*/
   bool interactive;    /* use interactive mode */
   vector<string> pars; /* non-option parameters */
-  std::string timefmt; /* output time format */
+  TimeFMT timefmt;     /* output time format */
   bool readonly;       /* open databases in read-only mode */
 
   // get options and parameters from argc/argv
@@ -73,7 +73,7 @@ class Pars{
     dpolicy = GRAPHENE_DEF_DPOLICY;
     env_type = GRAPHENE_DEF_ENV;
     interactive = false;
-    timefmt = "def";
+    timefmt = TFMT_DEF;
     readonly  = false;
     if (argc<1) return; // needed for print_help()
     /* parse  options */
@@ -89,7 +89,7 @@ class Pars{
         case 'h': print_help();
         case 'i': interactive = true; break;
         case 's': sockname = optarg; break;
-        case 'r': timefmt  = "rel"; break;
+        case 'r': timefmt  = TFMT_REL; break;
         case 'R': readonly = true; break;
       }
     }
@@ -443,7 +443,7 @@ class Pars{
       if (pars.size()<2) throw Err() << "database name expected";
       if (pars.size()>3) throw Err() << "too many parameters";
       string t1 = pars.size()>2? pars[2]: "0";
-      env->get_next(pars[1], t1, graphene_tfmt_parse(timefmt),
+      env->get_next(pars[1], t1, timefmt,
                     interactive? out_cb_spp: out_cb_simple, &out);
       return;
     }
@@ -454,7 +454,7 @@ class Pars{
       if (pars.size()<2) throw Err() << "database name expected";
       if (pars.size()>3) throw Err() << "too many parameters";
       string t2 = pars.size()>2? pars[2]: "inf";
-      env->get_prev(pars[1], t2, graphene_tfmt_parse(timefmt),
+      env->get_prev(pars[1], t2, timefmt,
                     interactive? out_cb_spp: out_cb_simple, &out);
       return;
     }
@@ -465,7 +465,7 @@ class Pars{
       if (pars.size()<2) throw Err() << "database name expected";
       if (pars.size()>3) throw Err() << "too many parameters";
       string t2 = pars.size()>2? pars[2]: "inf";
-      env->get(pars[1], t2, graphene_tfmt_parse(timefmt),
+      env->get(pars[1], t2, timefmt,
                interactive? out_cb_spp: out_cb_simple, &out);
       return;
     }
@@ -478,7 +478,7 @@ class Pars{
       string t1 = pars.size()>2? pars[2]: "0";
       string t2 = pars.size()>3? pars[3]: "inf";
       string dt = pars.size()>4? pars[4]: "0";
-      env->get_range(pars[1], t1,t2,dt, graphene_tfmt_parse(timefmt),
+      env->get_range(pars[1], t1,t2,dt, timefmt,
                      interactive? out_cb_spp: out_cb_simple, &out);
       return;
     }
@@ -490,7 +490,7 @@ class Pars{
       if (pars.size()>5) throw Err() << "too many parameters";
       string t1  = pars.size()>2? pars[2]: "0";
       string cnt = pars.size()>3? pars[3]: "1000";
-      env->get_count(pars[1], t1,cnt, graphene_tfmt_parse(timefmt),
+      env->get_count(pars[1], t1,cnt, timefmt,
                      interactive? out_cb_spp: out_cb_simple, &out);
       return;
     }
