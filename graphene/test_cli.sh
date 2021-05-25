@@ -18,7 +18,7 @@ assert_cmd "./graphene -X . 2>&1" "./graphene: invalid option -- 'X'" 1
 # unknown command
 assert_cmd "./graphene -d . a" "Error: Unknown command: a" 1
 
-assert_cmd "./graphene -d . *idn?" "Graphene database 2.10" 0
+assert_cmd "./graphene -d . *idn?" "Graphene database 2.11" 0
 
 assert_cmd "./graphene -d . get_time a" "Error: too many parameters" 1
 
@@ -635,6 +635,15 @@ assert_cmd "./graphene -d . get_range test_1:f5" \
 "125 22
 202 4
 204 36"
+
+###
+
+code='unset time; return 1'
+./graphene -d . set_filter test_1 5 "$code"
+assert_cmd "./graphene -d . print_filter test_1 5" "$code"
+
+assert_cmd "./graphene -d . get_range test_1:f5" \
+"Error: filter: can't get time value: can't read \"time\": no such variable" 1
 
 
 ###########################################################################
