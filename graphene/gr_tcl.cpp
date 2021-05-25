@@ -17,7 +17,8 @@
 
 // format TCL error; We do not want multi-line errors in SPP output
 std::string tcl_error(Tcl_Interp *interp){
-  std::string ret = Tcl_GetVar(interp, "errorInfo", TCL_GLOBAL_ONLY);
+  auto s = Tcl_GetVar(interp, "errorInfo", TCL_GLOBAL_ONLY);
+  std::string ret( s? s:"" );
   std::replace( ret.begin(), ret.end(), '\n', ' ');
   return ret;
 }
