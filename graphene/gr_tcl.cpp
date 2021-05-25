@@ -116,21 +116,21 @@ GrapheneTCL::run(const std::string & code, std::string & t, std::vector<std::str
   if (code=="") return true;
 
   // define global variable time
-  if (Tcl_SetVar(interp.get(), "time", t.c_str(), TCL_GLOBAL_ONLY) == NULL)
+  if (Tcl_SetVar(interp.get(), "time", t.c_str(), TCL_GLOBAL_ONLY | TCL_LEAVE_ERR_MSG) == NULL)
     throw Err() << "filter: can't set time variable: " << tcl_error(interp.get());
 
   // define global variable data
-  if (Tcl_SetVar(interp.get(), "data", "", TCL_GLOBAL_ONLY) == NULL)
+  if (Tcl_SetVar(interp.get(), "data", "", TCL_GLOBAL_ONLY | TCL_LEAVE_ERR_MSG) == NULL)
     throw Err() << "filter: can't set data variable: " << tcl_error(interp.get());
 
   // append values to data list
   for (auto const & v:d)
     if (Tcl_SetVar(interp.get(), "data", v.c_str(),
-            TCL_GLOBAL_ONLY | TCL_APPEND_VALUE | TCL_LIST_ELEMENT) == NULL)
+            TCL_GLOBAL_ONLY | TCL_APPEND_VALUE | TCL_LIST_ELEMENT | TCL_LEAVE_ERR_MSG) == NULL)
       throw Err() << "filter: can't set data variable: " << tcl_error(interp.get());
 
   // define global variable storage
-  if (Tcl_SetVar(interp.get(), "storage", storage.c_str(), TCL_GLOBAL_ONLY) == NULL)
+  if (Tcl_SetVar(interp.get(), "storage", storage.c_str(), TCL_GLOBAL_ONLY | TCL_LEAVE_ERR_MSG) == NULL)
     throw Err() << "filter: can't set storage variable: " << tcl_error(interp.get());
 
 
@@ -139,8 +139,8 @@ GrapheneTCL::run(const std::string & code, std::string & t, std::vector<std::str
     throw Err() << "filter: can't run TCL script: " << tcl_error(interp.get());
 
   // get timestamp back
-  auto tc = Tcl_GetVar(interp.get(), "time", TCL_GLOBAL_ONLY);
-  if (tc==NULL) throw Err() << "filter: can't get time value";
+  auto tc = Tcl_GetVar(interp.get(), "time", TCL_GLOBAL_ONLY | TCL_LEAVE_ERR_MSG);
+  if (tc==NULL) throw Err() << "filter: can't get time value: " << tcl_error(interp.get());
   t = tc;
 
   // get data back
@@ -154,10 +154,11 @@ GrapheneTCL::run(const std::string & code, std::string & t, std::vector<std::str
     for (int i = 0; i < n; ++i,++elem){
       int len;
       const char* s = Tcl_GetStringFromObj(*elem, &len);
-      if (!s) throw Err() << "filter: can't get string value from storage";
+      if (!s) throw Err() << "filter: can't get string value from storage: " << tcl_error(interp.get());
       d.push_back(std::string(s, s+len));
     }
   }
+
 
   // get storage back
   auto storagec = Tcl_GetVar(interp.get(), "storage", TCL_GLOBAL_ONLY);
