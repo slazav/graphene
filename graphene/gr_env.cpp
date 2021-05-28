@@ -300,6 +300,101 @@ GrapheneEnv::list_logs(){
 }
 
 
+/****************/
+
+void
+GrapheneEnv::put(const std::string & name, const std::string & t,
+         const std::vector<std::string> & dat, const std::string &dpolicy){
+  auto & db = getdb(name);
+  db.put(t, dat, dpolicy);
+}
+
+void
+GrapheneEnv::put_flt(const std::string & name, const std::string &t,
+             const std::vector<std::string> & dat, const std::string &dpolicy){
+  auto & db = getdb(name);
+
+  auto ttype = db.get_ttype();
+  std::string storage = db.get_f0data();
+  // run input filter
+  auto t1 = graphene_time_print(graphene_time_parse(t, ttype),ttype);
+  auto d1(dat);
+  if (tcl.run(db.get_filter(0), t1, d1, storage)) db.put(t1,d1,dpolicy);
+
+  // write storage
+  db.write_f0data(storage);
+}
+
+/****************/
+
+// get next point after (or equal) t
+void
+GrapheneEnv::get_next(const std::string & ext_name, const std::string & t,
+              const TimeFMT timefmt, GrapheneFmtCB fmt_cb, void * fmt_cb_data) {
+  GrapheneEnvFormatter dbo(tcl, ext_name, *this);
+  auto & db = getdb(dbo.name, DB_RDONLY);
+  dbo.timefmt = timefmt;
+  dbo.time0   = t;
+  dbo.fmt_cb  = fmt_cb;
+  dbo.fmt_cb_data  = fmt_cb_data;
+  db.get_next(t, dbo);
+}
+
+// get previous point before t
+void
+GrapheneEnv::get_prev(const std::string & ext_name, const std::string & t,
+              const TimeFMT timefmt, GrapheneFmtCB fmt_cb, void * fmt_cb_data) {
+  GrapheneEnvFormatter dbo(tcl, ext_name, *this);
+  auto & db = getdb(dbo.name, DB_RDONLY);
+  dbo.timefmt = timefmt;
+  dbo.time0   = t;
+  dbo.fmt_cb  = fmt_cb;
+  dbo.fmt_cb_data  = fmt_cb_data;
+  db.get_prev(t, dbo);
+}
+
+// get previous or interpolated point
+void
+GrapheneEnv::get(const std::string & ext_name, const std::string & t,
+         const TimeFMT timefmt, GrapheneFmtCB fmt_cb, void * fmt_cb_data) {
+  GrapheneEnvFormatter dbo(tcl, ext_name, *this);
+  auto & db = getdb(dbo.name, DB_RDONLY);
+  dbo.timefmt = timefmt;
+  dbo.time0   = t;
+  dbo.fmt_cb  = fmt_cb;
+  dbo.fmt_cb_data  = fmt_cb_data;
+  db.get(t, dbo);
+}
+
+// get data range
+void
+GrapheneEnv::get_range(const std::string & ext_name, const std::string & t1,
+               const std::string & t2, const std::string & dt,
+               const TimeFMT timefmt, GrapheneFmtCB fmt_cb, void * fmt_cb_data) {
+  GrapheneEnvFormatter dbo(tcl, ext_name, *this);
+  auto & db = getdb(dbo.name, DB_RDONLY);
+  dbo.list = true;
+  dbo.timefmt = timefmt;
+  dbo.time0   = t1;
+  dbo.fmt_cb  = fmt_cb;
+  dbo.fmt_cb_data  = fmt_cb_data;
+  db.get_range(t1,t2,dt, dbo);
+}
+
+// get limited number of points starting at t
+void
+GrapheneEnv::get_count(const std::string & ext_name,
+               const std::string & t, const std::string & cnt,
+               const TimeFMT timefmt, GrapheneFmtCB fmt_cb, void * fmt_cb_data) {
+  GrapheneEnvFormatter dbo(tcl, ext_name, *this);
+  auto & db = getdb(dbo.name, DB_RDONLY);
+  dbo.list = true;
+  dbo.timefmt = timefmt;
+  dbo.time0   = t;
+  dbo.fmt_cb  = fmt_cb;
+  dbo.fmt_cb_data  = fmt_cb_data;
+  db.get_count(t,cnt, dbo);
+}
 
 
 void
