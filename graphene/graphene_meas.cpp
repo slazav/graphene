@@ -16,7 +16,7 @@
 #define DBNAME "time_test"
 #define DPOLICY "replace"
 #define NVAL 100000
-#define NVAL_FLT 100
+#define NVAL_FLT 100000
 #define TFMT TFMT_DEF
 
 class TimeCounter{

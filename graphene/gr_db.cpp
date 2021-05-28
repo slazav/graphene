@@ -347,7 +347,6 @@ GrapheneDB::write_f0data(const std::string & storage){
     txn_abort(txn);
     throw e;
   }
-  sync(); // a very slow operation
   txn_commit(txn);
 }
 
