@@ -1,5 +1,5 @@
 Name:         graphene
-Version:      2.10
+Version:      2.11
 Release:      alt1
 
 Summary:      Simple time series database.
@@ -42,6 +42,25 @@ mkdir -p %buildroot%_sharedstatedir/graphene
 %_datadir/graphene/tcllib
 
 %changelog
+* Fri May 28 2021 Vladislav Zavjalov <slazav@altlinux.org> 2.11-alt1
+- v2.11:
+ - GrapheneEnv class implements programming interface for working with databases.
+   Rearrangings and renamings in the code.
+ - Get values from multiple databases by using <name1>+<name2>+... syntax.
+   Remove graphene_tab script.
+ - Add graphene_get function availble from TCL filters: getting values from any database.
+   Use a single TCL interpreter for the whole database environment.
+   No caching of filters.
+ - Simple_json interface: return null for NaN values.
+ - Do not set environment type to none for read-only operations.
+   This fixes PAGE_NOTFOUND errors when using graphene_http.
+ - Add graphene_meas program - tool for measuring time usage
+   and simple example of the programming interface,
+ - Do not do sync after each put_flt command. This makes it about 1000 times
+   faster but can require extra precautions if the input filter uses storage
+   variable. Use one graphene process (or subsequent calls to graphene program)
+   for writing to a database, or use sync command after put_flt.
+
 * Sun Apr 18 2021 Vladislav Zavjalov <slazav@altlinux.org> 2.10-alt1
 - v2.10:
  - safe database closing when catching signals
