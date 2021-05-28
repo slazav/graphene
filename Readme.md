@@ -308,7 +308,7 @@ Filters 1..15 are output filters.
 - `put_flt <name> <timestamp> <data> ...` -- put data to the database through the filter 0
 
 Filter is a piece of TCL code executed in a safe TCL interpreter.
-Three variables are defined:
+Three global variables are defined:
 
 - `time` -- timestamp in `<seconds>.<nanoseconds>` format. Filter
 can modify this variable to change the timestamp. Note that the timestamp
@@ -323,9 +323,6 @@ in the database and can be used to save filter state. It can be TCL
 list, but not an array. For filters 1..15 this data is not stored.
 
 If a filter returns false value (`0`, `off`, `false`) data point will be skipped.
-
-For faster operations all flters share a single TCL interpreter. One
-should be aware of this fact when writing filters.
 
 Simple example:
 ```
@@ -350,6 +347,18 @@ It is possible to get values from any database in a filter. There is
 function `graphene_get <name> [<tstamp>]` defined in the tcl interpreter.
 
 Other useful functions are located in the tcl library (`/usr/share/graphene/tcllib/`)
+
+For faster operations all filters share a single TCL interpreter. One
+should be aware of this fact when writing filters (e.g. when using graphene_get
+function which can call another filter). I plan to separate filters in different
+namespaces in the future.
+
+The input filter can use storage which is recorded in the database. It
+can produce problems if `put_flt` command is used from a few graphene
+processes. I do not use sync after each data modification because this
+increases consumed time greatly. Try to use `put_flt` for one database
+from same `graphene` process, of from subsequent calls to `graphene`
+program, or use `sync` after each call to `put_flt`.
 
 
 ### Examples
