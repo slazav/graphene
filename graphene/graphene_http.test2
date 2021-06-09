@@ -15,6 +15,7 @@ rm -f log.txt
 
 # run the server
 assert_cmd "./graphene_http --port $port --pidfile pid.tmp --dbpath . -v 4 --logfile log.txt --dofork" "" 0
+sleep 1
 
 # remove all test databases
 for i in *.db; do
@@ -28,6 +29,7 @@ rm -f -- __db.* log.*
 ./graphene -d . put tmp_db 10 123
 ./graphene -d . put tmp_db 11 124
 ./graphene -d . put tmp_db 12 125
+
 
 
 # get with empty url -- simple-json

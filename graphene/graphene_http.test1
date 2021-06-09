@@ -45,6 +45,7 @@ fi
 # same in daemon mode
 assert_cmd "./graphene_http -p $port --pidfile pid.tmp --dbpath . --logfile log.txt --dofork"\
     "" 0
+sleep 1
 # pid file should exist when graphene_http exits. No waiting is needed
 assert_cmd "./graphene_http --stop -p $port --pidfile pid.tmp" "" 0
 
