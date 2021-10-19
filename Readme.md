@@ -234,7 +234,7 @@ used if you want to close unused databases and sync data.
 
 #### Information:
 
-- `cmdlist` -- print list of commands.
+- `cmdlist` or `help` -- print list of commands.
 
 - `*idn?`   -- print ID string: `Graphene database <version>`.
 

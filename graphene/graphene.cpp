@@ -149,6 +149,7 @@ class Pars{
             "  list_dbs -- print environment database files for archiving (same as db_archive -s)"
             "  list_logs -- print environment log files (same as db_archive -l)"
             "  cmdlist -- print this list of commands\n"
+            "  help -- same as cmdlist\n"
             "  *idn?   -- print intentifier: Graphene database " << VERSION << "\n"
             "  get_time -- print current time (unix seconds with microsecond precision)\n"
             "  libdb_version -- print libdb version\n"
@@ -586,7 +587,7 @@ class Pars{
 
     // print list of commands
     // args: cmdlist
-    if (strcasecmp(cmd.c_str(), "cmdlist")==0){
+    if (strcasecmp(cmd.c_str(), "cmdlist")==0 || strcasecmp(cmd.c_str(), "help")==0){
       if (pars.size()>1) throw Err() << "too many parameters";
       print_cmdlist(out);
       return;
