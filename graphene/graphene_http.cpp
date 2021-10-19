@@ -110,7 +110,7 @@ request_answer(void * cls, struct MHD_Connection * connection, const char * url,
         if (response==NULL) return MHD_NO;
       }
     }
-    // GET with database name as an URL
+    // GET with command
     else if (strcmp(method, "GET")==0){
 
       std::string cmd  = string(url).substr(1);
