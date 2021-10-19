@@ -134,6 +134,27 @@ request_answer(void * cls, struct MHD_Connection * connection, const char * url,
          env->get_count(n, t1,cnt, tfmt, out_cb_simple, &out);
       else if (strcasecmp(cmd.c_str(), "list")==0)
          for (auto const & n: env->dblist()) out << n << "\n";
+      else if (strcasecmp(cmd.c_str(), "help")==0 ||
+               strcasecmp(cmd.c_str(), "cmdlist")==0)
+        out <<
+          "Read-only HTTP interface to graphene database\n"
+          "Example: /get_prev?name=my_db&t2=1634644600\n"
+          "Commands with supported parameters:\n"
+          " * get(name, t2, tfmt) -- get previous of interpolated value\n"
+          " * get_prev(name, t2, tfmt) -- get previous value\n"
+          " * get_next(name, t1, tfmt) -- get next value\n"
+          " * get_range(name, t1, t2, dt, tfmt) -- get all values in the range t1..t2\n"
+          " * get_count(name, t1, cnt, tfmt) -- get cnt values starting from t1\n"
+          " * list -- list all databases\n"
+          " * help or cmdlist -- print this text\n"
+          "Parameters:\n"
+          " * name -- database name\n"
+          " * t1 -- timestamp in seconds (default 0)\n"
+          " * t2 -- timestamp in seconds (default inf)\n"
+          " * dt -- time step in seconds (default 0)\n"
+          " * count -- number of records (default 1000)\n"
+          " * tfmt -- output time format, 'def' (default) or 'rel'\n"
+        ;
       else throw Err() << "bad command: " << cmd.c_str();
 
       string out_data = out.str();
