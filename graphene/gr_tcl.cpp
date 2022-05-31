@@ -54,7 +54,6 @@ tcl_proc(ClientData clientData, Tcl_Interp *interp, int objc, Tcl_Obj *const obj
 
 void
 GrapheneTCL::add_cmd(const char *name, GrapheneTCLProc * proc){
-interp.get();
   if (!Tcl_CreateObjCommand(interp.get(), name, tcl_proc, proc, NULL))
     throw Err() << "Tcl_CreateObjCommand failed";
 }
