@@ -27,10 +27,25 @@ void out_cb_simple(const std::string &t,
 
 class GrapheneEnv;
 
+// graphene_get, graphene_get_prev, graphene_get_next tcl commands
 class GrapheneTCLGet: public GrapheneTCLProc {
   GrapheneEnv & env;
   public:
   GrapheneTCLGet(GrapheneEnv & env_): env(env_) {}
+  std::string run(const std::vector<std::string> & args) override;
+};
+
+class GrapheneTCLGetP: public GrapheneTCLProc {
+  GrapheneEnv & env;
+  public:
+  GrapheneTCLGetP(GrapheneEnv & env_): env(env_) {}
+  std::string run(const std::vector<std::string> & args) override;
+};
+
+class GrapheneTCLGetN: public GrapheneTCLProc {
+  GrapheneEnv & env;
+  public:
+  GrapheneTCLGetN(GrapheneEnv & env_): env(env_) {}
   std::string run(const std::vector<std::string> & args) override;
 };
 
@@ -86,7 +101,9 @@ class GrapheneEnv{
   bool readonly;
 
   GrapheneTCL tcl;
-  GrapheneTCLGet tcl_get_cmd;
+  GrapheneTCLGet  tcl_get_cmd;
+  GrapheneTCLGetP tcl_getp_cmd;
+  GrapheneTCLGetN tcl_getn_cmd;
 
   // Deleter for the environment
   struct D{

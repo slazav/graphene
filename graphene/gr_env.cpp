@@ -50,6 +50,24 @@ GrapheneTCLGet::run(const std::vector<std::string> & args) {
   return out.str();
 }
 
+std::string
+GrapheneTCLGetP::run(const std::vector<std::string> & args) {
+  if (args.size()<2 || args.size()>3)
+    throw Err() << "graphene_get: wrong number of arguments";
+  std::ostringstream out;
+  env.get_prev(args[1], args.size()>2? args[2]:"inf", TFMT_DEF, out_cb_simple, &out);
+  return out.str();
+}
+
+std::string
+GrapheneTCLGetN::run(const std::vector<std::string> & args) {
+  if (args.size()<2 || args.size()>3)
+    throw Err() << "graphene_get: wrong number of arguments";
+  std::ostringstream out;
+  env.get_next(args[1], args.size()>2? args[2]:"inf", TFMT_DEF, out_cb_simple, &out);
+  return out.str();
+}
+
 
 void
 GrapheneEnvFormatter::proc_point(const std::string &ks, const std::string &vs,
@@ -88,7 +106,8 @@ GrapheneEnvFormatter::proc_point(const std::string &ks, const std::string &vs,
 // Constructor: open DB environment
 GrapheneEnv::GrapheneEnv(const std::string & dbpath_, const bool readonly_,
                          const std::string & env_type_, const std::string & tcl_libdir):
-    dbpath(dbpath_), env_type(env_type_), readonly(readonly_), tcl(tcl_libdir), tcl_get_cmd(*this) {
+    dbpath(dbpath_), env_type(env_type_), readonly(readonly_), tcl(tcl_libdir),
+    tcl_get_cmd(*this), tcl_getp_cmd(*this), tcl_getn_cmd(*this) {
 
   if (env_type == "none"){
     // no invironment
@@ -137,6 +156,8 @@ GrapheneEnv::GrapheneEnv(const std::string & dbpath_, const bool readonly_,
 
   // add commands to TCL interpeter
   tcl.add_cmd("graphene_get", &tcl_get_cmd);
+  tcl.add_cmd("graphene_get_prev", &tcl_getp_cmd);
+  tcl.add_cmd("graphene_get_next", &tcl_getn_cmd);
 
 }
 
