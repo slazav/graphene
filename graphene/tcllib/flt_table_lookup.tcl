@@ -13,9 +13,12 @@ proc table_lookup {tab x {log 0}} {
   }
   set x1 [lindex $tab 0]
   set y1 [lindex $tab 1]
+  if {$x != $x} {return {NaN}}
   if {$x == $x1} { return $y1 }
   foreach {x2 y2} $tab {
     if {($x>$x1 && $x<=$x2) || ($x<$x1 && $x>=$x2) } {
+      if {$x1!=$x1 || $x2!=$x2} {return {NaN}}
+      if {$y1!=$y1 || $y2!=$y2} {return {NaN}}
       return [expr $y1 + {($x-$x1)/($x2-$x1)*($y2-$y1)}]
     }
     set x1 $x2
