@@ -1,3 +1,30 @@
+# Table lookup with linear interpolation.
+# Arguments:
+#   tab -- even-sized array {x1 y1 x2 y3 ...}, monotonic on x
+#   x   -- input value
+#   log -- values in the table are log10(x) instead of x
+# Return:
+#   y   -- output value
+
+proc table_lookup {tab x {log 0}} {
+  if {$log} {
+    if {$x<=0} { return {NaN} }
+    set x [expr log($x)/log(10.0)]
+  }
+  set x1 [lindex $tab 0]
+  set y1 [lindex $tab 1]
+  if {$x == $x1} { return $y1 }
+  foreach {x2 y2} $tab {
+    if {($x>$x1 && $x<=$x2) || ($x<$x1 && $x>=$x2) } {
+      return [expr $y1 + {($x-$x1)/($x2-$x1)*($y2-$y1)}]
+    }
+    set x1 $x2
+    set y1 $y2
+  }
+  return {NaN}
+}
+
+
 # Table lookup output filter. Get a single column from data,
 # apply calibraition according with the table and replace the
 # whole data array with it.
@@ -9,29 +36,6 @@
 #
 proc flt_table_lookup {tab {col 0} {log 0}} {
   global data
-
-  set x [lindex $data $col]
-  if {$log} {
-    if {$x<=0} {
-      set data {NaN}
-      return
-    }
-    set x [expr log($x)/log(10.0)]
-  }
-  set x1 [lindex $tab 0]
-  set y1 [lindex $tab 1]
-  if {$x == $x1} {
-    set data $y1
-    return
-  }
-  foreach {x2 y2} $tab {
-    if {($x>$x1 && $x<=$x2) || ($x<$x1 && $x>=$x2) } {
-      set data [expr $y1 + {($x-$x1)/($x2-$x1)*($y2-$y1)}]
-      return
-    }
-    set x1 $x2
-    set y1 $y2
-  }
-  set data {NaN}
+  set data [table_lookup $tab [lindex $data $col] $log]
   return
 }
