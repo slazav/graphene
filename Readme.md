@@ -343,10 +343,12 @@ graphene put_flt mydb 123.456 10 20 30
 
 Here `11 1` will be written with timestamp `123`.
 
-It is possible to get values from any database in a filter. There is
-function `graphene_get <name> [<tstamp>]` defined in the tcl interpreter.
+It is possible to get values from any database in a filter. There are
+functions `graphene_get <name> [<tstamp>]`, `graphene_get_next <name>
+[<tstamp>]`, and `graphene_get_prev <name> [<tstamp>]` defined in the tcl
+interpreter.
 
-Other useful functions are located in the tcl library (`/usr/share/graphene/tcllib/`)
+Other useful functions are located in the tcl library (`/usr/share/graphene/tcllib/`).
 
 For faster operations all filters share a single TCL interpreter. One
 should be aware of this fact when writing filters (e.g. when using graphene_get
