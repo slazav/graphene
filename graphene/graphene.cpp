@@ -153,7 +153,7 @@ class Pars{
             "  *idn?   -- print intentifier: Graphene database " << VERSION << "\n"
             "  get_time -- print current time (unix seconds with microsecond precision)\n"
             "  libdb_version -- print libdb version\n"
-            "  backup start <name> -- notify that we are going to start backup, return backup timestamp.\n"
+            "  backup_start <name> -- notify that we are going to start backup, return backup timestamp.\n"
             "  backup_end <name> [<timestamp>] -- notify that backup is successfully finished\n"
             "  backup_reset <name> -- reset backup timer\n"
             "  backup_print <name> -- print backup timer\n"
