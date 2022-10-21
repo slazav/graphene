@@ -46,7 +46,7 @@ my $filters = 0;
 my $full = 0;
 my $verb = 1;
 my $help = 0;
-
+my $win = 4096; # copy database in portions
 
 GetOptions(
   "S|src_db_prog=s"  => \$src_db_prog,
@@ -166,7 +166,7 @@ foreach my $src_name (@names) {
     }
 
     my $num=0;
-    spp_write(\*SI, "get_count $src_name $tstamp 4096");
+    spp_write(\*SI, "get_count $src_name $tstamp $win");
     while( my $line = <SO>)  {
       next if $line =~/^\s*$/;
       die $line if $line =~ /^#Error/;
@@ -193,7 +193,7 @@ foreach my $src_name (@names) {
 
     spp_write(\*DI, "sync $src_name");
     spp_read(\*DO, 0);
-
+    last if $num < $win;
   };
 
   print "  Done\n" if $verb;
