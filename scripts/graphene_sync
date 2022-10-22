@@ -98,7 +98,12 @@ spp_read(\*DO, 0);
 # get database list if -n option is not set
 my @names;
 if ($src_names eq '') {
-  spp_write(\*SI, "list");
+  if ($full) {
+    spp_write(\*SI, "list");
+  }
+  else {
+    spp_write(\*SI, "backup_list");
+  }
   my $src_names = spp_read(\*SO, 0);
   @names = sort(split "\n", $src_names);
 }
@@ -158,13 +163,6 @@ foreach my $src_name (@names) {
   # get range from source database, put values into destination one:
   my $num_total=0;
   while (1) {
-
-    if ($num_total>0) {
-      spp_write(\*SI, "backup_start $src_name");
-      my $tstamp = spp_read(\*SO, 0);
-      chomp($tstamp);
-    }
-
     my $num=0;
     spp_write(\*SI, "get_count $src_name $tstamp $win");
     while( my $line = <SO>)  {
@@ -184,17 +182,16 @@ foreach my $src_name (@names) {
       spp_read(\*DO, 0);
       $num--;
     }
-
     print "  $num_total records\n" if $verb;
     flush STDOUT if $verb;
-
-    spp_write(\*SI, "backup_end $src_name $tstamp");
-    spp_read(\*SO, 0);
-
-    spp_write(\*DI, "sync $src_name");
-    spp_read(\*DO, 0);
     last if $num < $win;
   };
+
+  spp_write(\*DI, "sync $src_name");
+  spp_read(\*DO, 0);
+
+  spp_write(\*SI, "backup_end $src_name");
+  spp_read(\*SO, 0);
 
   print "  Done\n" if $verb;
   flush STDOUT if $verb;
