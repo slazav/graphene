@@ -185,6 +185,10 @@ class GrapheneEnv{
   std::string backup_get(const std::string & name) {
      return getdb(name, DB_RDONLY).backup_get(); }
 
+  // is backup needed?
+  bool backup_needed(const std::string & name) {
+     return getdb(name, DB_RDONLY).backup_needed(); }
+
   /****************/
 
   void put(const std::string & name, const std::string & t,

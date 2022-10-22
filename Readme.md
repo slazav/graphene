@@ -262,6 +262,8 @@ up to timestamp `<t>` (`inf` by default).
 
 - `backup_reset <name>` -- Reset backup timer value.
 
+- `backup_list` -- Print all databases with finite backup timer.
+
 Internally there are two timers which contain earliest time of database
 modification: main and temporary one. Each database modification command
 (`put`, `del`, or `del_range`) decreases both timers to the

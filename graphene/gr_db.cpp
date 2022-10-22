@@ -430,6 +430,14 @@ GrapheneDB::backup_get(){
   txn_commit(txn);
 }
 
+// return true if the main backup timer is finite
+bool
+GrapheneDB::backup_needed(){
+  auto t1 = graphene_time_parse(backup_get(), ttype);
+  auto t2 = graphene_time_parse("inf", ttype);
+  return graphene_time_cmp(t1,t2,ttype) < 0;
+}
+
 // function to be called after each database modification
 void
 GrapheneDB::backup_upd(DB_TXN *txn, const std::string &t){

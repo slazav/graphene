@@ -431,6 +431,8 @@ assert_cmd "printf 'get text_3' | ./graphene -i -d ."\
 assert_cmd "cat test_data/commands1 | ./graphene -i -d ."\
   "$(cat test_data/answer1)"
 
+./graphene -d . delete text_3
+
 ###########################################################################
 # duplicated keys (replace by default)
 
@@ -564,6 +566,11 @@ assert_cmd "./graphene -d . backup_start test_1" "1000.000000000"
 assert_cmd "./graphene -d . put test_1 1234 1" ""
 assert_cmd "./graphene -d . backup_end test_1 2000" ""
 assert_cmd "./graphene -d . backup_print test_1" "1234.000000000"
+
+assert_cmd "./graphene -d . backup_list" "test_1"
+assert_cmd "./graphene -d . backup_start test_1" "1234.000000000"
+assert_cmd "./graphene -d . backup_end test_1" ""
+assert_cmd "./graphene -d . backup_list" ""
 
 assert_cmd "./graphene -d . delete test_1" ""
 

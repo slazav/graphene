@@ -190,6 +190,9 @@ class GrapheneDB{
   // get value of the main backup timer
   std::string backup_get();
 
+  // true if main backup timer is finite
+  bool backup_needed();
+
   // Internal function, should be called after each
   // database modification.
   void backup_upd(DB_TXN *txn, const std::string &t);

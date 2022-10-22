@@ -157,6 +157,7 @@ class Pars{
             "  backup_end <name> [<timestamp>] -- notify that backup is successfully finished\n"
             "  backup_reset <name> -- reset backup timer\n"
             "  backup_print <name> -- print backup timer\n"
+            "  backup_list -- print all databases with finite backup timer\n"
             "\n"
             "For more information see https://github.com/slazav/graphene/\n"
     ;
@@ -393,6 +394,16 @@ class Pars{
     if (strcasecmp(cmd.c_str(), "backup_print")==0){
       if (pars.size()!=2) throw Err() << "database name expected";
       out << env->backup_get(pars[1]) << "\n";
+      return;
+    }
+
+    // list all databases with finite backup timer
+    // args: backup_list
+    if (strcasecmp(cmd.c_str(), "backup_list")==0){
+      if (pars.size()>1) throw Err() << "too many parameters";
+      for (auto const &n: env->dblist()){
+        if (env->backup_needed(n)) out << n << "\n";
+      }
       return;
     }
 
