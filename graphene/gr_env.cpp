@@ -402,6 +402,23 @@ GrapheneEnv::get_range(const std::string & ext_name, const std::string & t1,
   db.get_range(t1,t2,dt, dbo);
 }
 
+// get wide range
+void
+GrapheneEnv::get_wrange(const std::string & ext_name, const std::string & t1,
+               const std::string & t2, const std::string & dt,
+               const TimeFMT timefmt, GrapheneFmtCB fmt_cb, void * fmt_cb_data) {
+  GrapheneEnvFormatter dbo(tcl, ext_name, *this);
+  auto & db = getdb(dbo.name, DB_RDONLY);
+  dbo.list = true;
+  dbo.timefmt = timefmt;
+  dbo.time0   = t1;
+  dbo.fmt_cb  = fmt_cb;
+  dbo.fmt_cb_data  = fmt_cb_data;
+  db.get_prev(t1, dbo);
+  db.get_range(t1,t2,dt, dbo);
+  db.get_next(t2, dbo);
+}
+
 // get limited number of points starting at t
 void
 GrapheneEnv::get_count(const std::string & ext_name,

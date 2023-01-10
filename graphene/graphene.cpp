@@ -137,6 +137,7 @@ class Pars{
             "  get_next <name>[:N] [<time1>] -- get next point after time1\n"
             "  get_prev <name>[:N] [<time2>] -- get previous point before time2\n"
             "  get_range <name>[:N] [<time1>] [<time2>] [<dt>] -- get points in the time range\n"
+            "  get_wrange <name>[:N] [<time1>] [<time2>] [<dt>] -- do get_prev, get_range, get_next\n"
             "  get_count <name>[:N] [<time1>] [<cnt>] -- get up to cnt points starting from t1\n"
             "  del <name> <time> -- delete one data point\n"
             "  del_range <name> <time1> <time2> -- delete all points in the time range\n"
@@ -467,6 +468,19 @@ class Pars{
       string t2 = pars.size()>3? pars[3]: "inf";
       string dt = pars.size()>4? pars[4]: "0";
       env->get_range(pars[1], t1,t2,dt, timefmt,
+                     interactive? out_cb_spp: out_cb_simple, &out);
+      return;
+    }
+
+    // get data wide range (get_prev, get_range, get_next)
+    // args: get_wrange <name>[:N] [<time1>] [<time2>] [<dt>]
+    if (strcasecmp(cmd.c_str(), "get_wrange")==0){
+      if (pars.size()<2) throw Err() << "database name expected";
+      if (pars.size()>5) throw Err() << "too many parameters";
+      string t1 = pars.size()>2? pars[2]: "0";
+      string t2 = pars.size()>3? pars[3]: "inf";
+      string dt = pars.size()>4? pars[4]: "0";
+      env->get_wrange(pars[1], t1,t2,dt, timefmt,
                      interactive? out_cb_spp: out_cb_simple, &out);
       return;
     }

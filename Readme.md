@@ -171,6 +171,10 @@ socket.
   for any ratio of dt and interpoint distance. For text data only first
   lines are shown.
 
+- `get_wrange <extended name> [<time1>] [<time2>] [<dt>]` -- Go
+  `get_prev <time1>`, `get_range <time1> <time2> <dt>`, `get_next <time2>`.
+  Useful for interpolating data between points `<time1>` and `<time2>`
+
 - `get_count <extended name> [<time1>] [<cnt>]` -- Get
   up to `cnt` points (default 1000) starting from `time1`.
 

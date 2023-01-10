@@ -216,6 +216,11 @@ class GrapheneEnv{
                  const std::string & t2, const std::string & dt,
                  const TimeFMT timefmt, GrapheneFmtCB fmt_cb, void * fmt_cb_data);
 
+  // get wide range (get_prev, get_range, get_next)
+  void get_wrange(const std::string & ext_name, const std::string & t1,
+                 const std::string & t2, const std::string & dt,
+                 const TimeFMT timefmt, GrapheneFmtCB fmt_cb, void * fmt_cb_data);
+
   // get limited number of points starting at t
   void get_count(const std::string & ext_name,
                  const std::string & t, const std::string & cnt,

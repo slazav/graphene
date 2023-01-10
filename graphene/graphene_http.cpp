@@ -130,6 +130,8 @@ request_answer(void * cls, struct MHD_Connection * connection, const char * url,
          env->get_prev(n, t2, tfmt, out_cb_simple, &out);
       else if (strcasecmp(cmd.c_str(),"get_range")==0)
          env->get_range(n, t1,t2,dt, tfmt, out_cb_simple, &out);
+      else if (strcasecmp(cmd.c_str(),"get_wrange")==0)
+         env->get_wrange(n, t1,t2,dt, tfmt, out_cb_simple, &out);
       else if (strcasecmp(cmd.c_str(),"get_count")==0)
          env->get_count(n, t1,cnt, tfmt, out_cb_simple, &out);
       else if (strcasecmp(cmd.c_str(), "list")==0)
