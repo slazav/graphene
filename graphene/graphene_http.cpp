@@ -27,6 +27,7 @@
 #include <microhttpd.h>
 #include "json.h"
 #include "err/err.h"
+#include "opt/opt.h"
 #include "log/log.h"
 #include "getopt/getopt.h"
 #include "gr_env.h"
@@ -59,6 +60,22 @@ std::string
 mhs_get_par(struct MHD_Connection * connection, const char * name, const char * def){
   auto val = MHD_lookup_connection_value(connection, MHD_GET_ARGUMENT_KIND, name);
   return std::string(val ? val : def);
+}
+
+// MHD_KeyValueIterator function for mhs_get_pars()
+enum MHD_Result
+mhs_iter(void *cls, enum MHD_ValueKind kind, const char *key, const char *value){
+  auto ret = (Opt*)cls;
+  ret->emplace(key, value);
+  return MHD_YES;
+}
+
+// get all GET parameters
+Opt
+mhs_get_pars(struct MHD_Connection * connection){
+  Opt ret;
+  MHD_get_connection_values (connection, MHD_GET_ARGUMENT_KIND, mhs_iter, (void*)&ret);
+  return ret;
 }
 
 /**********************************************************/
@@ -114,28 +131,44 @@ request_answer(void * cls, struct MHD_Connection * connection, const char * url,
     else if (strcmp(method, "GET")==0){
 
       std::string cmd  = string(url).substr(1);
-      auto n    = mhs_get_par(connection, "name", "");
-      auto t1   = mhs_get_par(connection, "t1",   "0");
-      auto t2   = mhs_get_par(connection, "t2",   "inf");
-      auto dt   = mhs_get_par(connection, "dt",   "0");
-      auto cnt  = mhs_get_par(connection, "cnt",  "1000");
-      auto tfmt = graphene_tfmt_parse(mhs_get_par(connection, "tfmt", "def"));
+      auto pars = mhs_get_pars(connection);
+
+      auto n    = pars.get("name", "");
+      auto tfmt = graphene_tfmt_parse(pars.get("tfmt", "def"));
+      auto t1   = pars.get("t1",   "0");
+      auto t2   = pars.get("t2",   "inf");
+      auto dt   = pars.get("dt",   "0");
+      auto cnt  = pars.get("cnt",  "1000");
       std::ostringstream out;
 
-      if (strcasecmp(cmd.c_str(),"get")==0)
-         env->get(n, t2, tfmt, out_cb_simple, &out);
-      else if (strcasecmp(cmd.c_str(),"get_next")==0)
-         env->get_next(n, t1, tfmt, out_cb_simple, &out);
-      else if (strcasecmp(cmd.c_str(),"get_prev")==0)
-         env->get_prev(n, t2, tfmt, out_cb_simple, &out);
-      else if (strcasecmp(cmd.c_str(),"get_range")==0)
-         env->get_range(n, t1,t2,dt, tfmt, out_cb_simple, &out);
-      else if (strcasecmp(cmd.c_str(),"get_wrange")==0)
-         env->get_wrange(n, t1,t2,dt, tfmt, out_cb_simple, &out);
-      else if (strcasecmp(cmd.c_str(),"get_count")==0)
-         env->get_count(n, t1,cnt, tfmt, out_cb_simple, &out);
-      else if (strcasecmp(cmd.c_str(), "list")==0)
-         for (auto const & n: env->dblist()) out << n << "\n";
+      if (strcasecmp(cmd.c_str(),"get")==0){
+        pars.check_unknown({"name","tfmt","t2"});
+        env->get(n, t2, tfmt, out_cb_simple, &out);
+      }
+      else if (strcasecmp(cmd.c_str(),"get_next")==0){
+        pars.check_unknown({"name","tfmt","t1"});
+        env->get_next(n, t1, tfmt, out_cb_simple, &out);
+      }
+      else if (strcasecmp(cmd.c_str(),"get_prev")==0){
+        pars.check_unknown({"name","tfmt","t2"});
+        env->get_prev(n, t2, tfmt, out_cb_simple, &out);
+      }
+      else if (strcasecmp(cmd.c_str(),"get_range")==0){
+        pars.check_unknown({"name","tfmt","t1","t2","dt"});
+        env->get_range(n, t1,t2,dt, tfmt, out_cb_simple, &out);
+      }
+      else if (strcasecmp(cmd.c_str(),"get_wrange")==0){
+        pars.check_unknown({"name","tfmt","t1","t2","dt"});
+        env->get_wrange(n, t1,t2,dt, tfmt, out_cb_simple, &out);
+      }
+      else if (strcasecmp(cmd.c_str(),"get_count")==0){
+        pars.check_unknown({"name","tfmt","t1","cnt"});
+        env->get_count(n, t1,cnt, tfmt, out_cb_simple, &out);
+      }
+      else if (strcasecmp(cmd.c_str(), "list")==0){
+        pars.check_unknown({});
+        for (auto const & n: env->dblist()) out << n << "\n";
+      }
       else if (strcasecmp(cmd.c_str(), "help")==0 ||
                strcasecmp(cmd.c_str(), "cmdlist")==0)
         out <<
@@ -168,7 +201,7 @@ request_answer(void * cls, struct MHD_Connection * connection, const char * url,
       throw Err() << "unknown HTTP request";
     }
   }
-  catch (Err e) {
+  catch (const Err & e) {
     response = MHD_create_response_from_buffer(
         e.str().length(), (void*)e.str().data(), MHD_RESPMEM_MUST_COPY);
     MHD_add_response_header(response, "Error", e.str().c_str());

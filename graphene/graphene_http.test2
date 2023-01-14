@@ -57,13 +57,26 @@ assert_cmd_substr "wget \"localhost:$port/annotations\" --post-data "{}" -O - -n
   "Error: Bad range setting" 8
 
 
-# GET with non-empty url -- access to a database (get by default)
+# simple GET interface
+# get
+assert_cmd_substr "wget \"localhost:$port/unknown\" -O - -nv -S"\
+  "Error: bad command: unknown" 8
+
 assert_cmd_substr "wget \"localhost:$port/get?name=tmp_db\" -O - -o /dev/null"\
   "12.000000000 125" 0
+
+assert_cmd_substr "wget \"localhost:$port/get?name=tmp_db&t2=10\" -O - -o /dev/null"\
+  "10.000000000 123" 0
+
+assert_cmd_substr "wget \"localhost:$port/get?name=tmp_db&t1=10\" -O - -nv -S"\
+  "Error: unknown option: t1" 8
 
 # get_next
 assert_cmd_substr "wget \"localhost:$port/get_next?name=tmp_db\" -O - -o /dev/null"\
   "10.000000000 123" 0
+
+assert_cmd_substr "wget \"localhost:$port/get_next?name=tmp_db&t2=1\" -O - -nv -S"\
+  "Error: unknown option: t2" 8
 
 # get_range
 assert_cmd_substr "wget \"localhost:$port/get_range?name=tmp_db&t1=10&t2=12&tfmt=rel\" -O - -o /dev/null"\
