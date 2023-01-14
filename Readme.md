@@ -171,9 +171,9 @@ socket.
   for any ratio of dt and interpoint distance. For text data only first
   lines are shown.
 
-- `get_wrange <extended name> [<time1>] [<time2>] [<dt>]` -- Go
-  `get_prev <time1>`, `get_range <time1> <time2> <dt>`, `get_next <time2>`.
-  Useful for interpolating data between points `<time1>` and `<time2>`
+- `get_wrange <extended name> [<time1>] [<time2>] [<dt>]` -- Get points covering the
+  requested time range. Equivalent to output of three commands: `get_prev <time1>`,
+  `get_range <time1> <time2> <dt>`, `get_next <time2>`.
 
 - `get_count <extended name> [<time1>] [<cnt>]` -- Get
   up to `cnt` points (default 1000) starting from `time1`.
@@ -361,11 +361,12 @@ should be aware of this fact when writing filters (e.g. when using graphene_get
 function which can call another filter). I plan to separate filters in different
 namespaces in the future.
 
-The input filter can use storage which is recorded in the database. It
+The input filter uses storage which is recorded in the database. It
 can produce problems if `put_flt` command is used from a few graphene
-processes. I do not use sync after each data modification because this
+processes because they can get old value of the storage.
+I do not sync database after each data modification because this
 increases consumed time greatly. Try to use `put_flt` for one database
-from same `graphene` process, of from subsequent calls to `graphene`
+from one `graphene` process, or from subsequent calls to `graphene`
 program, or use `sync` after each call to `put_flt`.
 
 
