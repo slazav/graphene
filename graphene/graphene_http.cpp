@@ -63,7 +63,7 @@ mhs_get_par(struct MHD_Connection * connection, const char * name, const char * 
 }
 
 // MHD_KeyValueIterator function for mhs_get_pars()
-enum MHD_Result
+MHD_Result
 mhs_iter(void *cls, enum MHD_ValueKind kind, const char *key, const char *value){
   auto ret = (Opt*)cls;
   ret->emplace(key, value);
