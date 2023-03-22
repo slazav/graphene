@@ -30,6 +30,7 @@
 #include "opt/opt.h"
 #include "log/log.h"
 #include "getopt/getopt.h"
+#include "getopt/help_printer.h"
 #include "gr_env.h"
 
 #if MHD_VERSION < 0x00097002
