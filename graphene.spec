@@ -1,5 +1,5 @@
 Name:         graphene
-Version:      2.11
+Version:      2.12
 Release:      alt1
 
 Summary:      Simple time series database.
@@ -42,6 +42,25 @@ mkdir -p %buildroot%_sharedstatedir/graphene
 %_datadir/graphene/tcllib
 
 %changelog
+* Wed Mar 22 2023 Vladislav Zavjalov <slazav@altlinux.org> 2.12-alt1
+- v2.12
+ - graphene:
+   - add get_wrange command, equivalent of get_prev + get_range + get_next
+   - add backup_list command
+   - add help command -- same as cmdlist
+ - tcl filters:
+   - graphene_get_prev/graphene_get_next functions in TCL filters
+   - tcllib/table_lookup: allow nan values
+   - add tcllib/table_lookup function to use it separately from flt_table_lookup filter
+   - add help/cmdlist command to HTTP GET interface
+ - graphene_http
+   - fix for old versions of libmicrohttpd (without MHD_Result)
+   - check for invalid parameters in the simple GET interface
+   - fix test: wait for 1s after starting graphene_http daemon to be sure that it is running
+ - graphene_sync script:
+   - use backup_list commands to skip non-modified databases
+   - fix problem with quickly-updated databases
+
 * Fri May 28 2021 Vladislav Zavjalov <slazav@altlinux.org> 2.11-alt1
 - v2.11:
  - GrapheneEnv class implements programming interface for working with databases.
