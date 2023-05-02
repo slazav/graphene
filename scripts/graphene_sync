@@ -184,7 +184,7 @@ foreach my $src_name (@names) {
     }
     print "  $num_total records\n" if $verb;
     flush STDOUT if $verb;
-    last if $num < $win;
+    last if $num_total < $win;
   };
 
   spp_write(\*DI, "sync $src_name");
