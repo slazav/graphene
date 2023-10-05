@@ -2,11 +2,12 @@ all:
 	make -C graphene
 	make -C graphene/tcllib
 
-prefix  ?= /usr
-bindir  ?= $(prefix)/bin
-sysconfdir ?= /etc
+DESTDIR    ?=
+prefix     ?= $(DESTDIR)/usr
+bindir     ?= $(prefix)/bin
+sysconfdir ?= $(DESTDIR)/etc
 initdir    ?= $(sysconfdir)/init.d
-datadir    ?=$(prefix)/share
+datadir    ?= $(prefix)/share
 
 install: all
 	mkdir -p ${bindir} ${initdir} ${datadir}/graphene/tcllib
@@ -19,3 +20,6 @@ install: all
 	install scripts/graphene_filter ${bindir}
 	install scripts/graphene_mkcomm ${bindir}
 	install graphene/tcllib/*.tcl ${datadir}/graphene/tcllib
+
+clean:
+	make -C graphene clean
