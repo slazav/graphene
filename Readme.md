@@ -2,7 +2,7 @@
 
 Source code: https://github.com/slazav/graphene
 
-E-mail: Vladislav Zavjalov <slazav@altlinux.org>
+E-mail: Vladislav Zavjalov <vl.zavjalov at gmail.com>
 
 ### Features
 
@@ -10,9 +10,9 @@ E-mail: Vladislav Zavjalov <slazav@altlinux.org>
 - store integer, floating point or text values with nanosecond-precision timestamps
 - fast access to data, interpolation, downsampling, time ranges
 - multi-column numerical values
-- command line and socket interfaces for reading/writing data
-- http `simple_json` interface for [Grafana viewer](https://grafana.com/)
-- user filters for data processing, calibration tables etc. (to be removed?)
+- command-line and socket interfaces for reading/writing data
+- basic http interface + `simple_json` interface for [Grafana viewer](https://grafana.com/)
+- user filters for data processing, calibration tables etc.
 
 ### Data storage
 
@@ -99,12 +99,12 @@ In interactive mode input lines are splitted to argument lists similarly
 to shell splitting.
  - Comments (everything from # symbol to end of the line) are skipped.
  - Empty lines are skipped.
- - Words are splitted by ' ' or '\t' symbols, or by '\' + '\n' sequence.
+ - Words are splitted by ' ' or '\t' symbols, or by '\\' + '\n' sequence.
  - Words can be quoted by " or '. Quoting can be used to enter multi-line text.
- - Any symbol (including newline) can be escaped by '\'. Protected newline
-   symbol works as word separator, not as literal \n.
+ - Any symbol (including newline) can be escaped by '\\'. Protected newline
+   symbol works as word separator, not as literal '\n'.
 
-The program implements a Simple Pipe Protocol (see somewhere in my
+The program implements SPP, a Simple Pipe Protocol (see somewhere in my
 `tcl_device` package): When it is started successfully  a prompt message is
 printed to stdout started with "#SPP001" and followed by "#OK" line. In
 case of an error `#Error: <...>` line is printed and program exits. Then
@@ -115,20 +115,27 @@ with a second "#".
 
 Socket mode is similar to the interactive mode. Graphene program acts as
 a server which accepts connections (one at a time) through a unix-domain
-socket.
+socket. Now I'm not using the socket mode.
 
+For server operation it is recommended to use a special device server:
+https://github.com/slazav/device2 it can work with multiple SPP
+programs, SCPI and other devices. Such connections can be done remotely
+via ssh.
+
+Sometimes it is useful to make a separate user for a database and set
+graphene program in the interactive mode as a default shell.
 
 #### Commands for manipulating databases:
 
 - `create <name> [<data_fmt>] [<description>]` -- Create a database file.
 
 - `load <name> <file>` -- Create a database and load file in `db_dump`
-  format (note that it is not possible to use `db_load` utility because of
-  non-standard comparison function in graphene databases).
+  format. Note that it is not possible to use standard BerkleyDB `db_load`
+  utility because of non-standard comparison function in graphene databases.
 
 - `dump <name> <file>` -- Dump a database to a file which can be loaded
   by `load` command. Same thing (with various options) can be done by
-  `db_dump` utility and it it is recommended to use it.
+  BerkleyDB `db_dump` utility, it is recommended to use it.
 
 - `delete <name>` -- Delete a database.
 
@@ -141,10 +148,10 @@ socket.
 
 - `list` -- List all databases in the data directory.
 
-- `list_dbs`  -- print environment database files for archiving (same as db_archive -s).
+- `list_dbs`  -- print list of environment database files for archiving (same as db_archive -s).
    Works only for `txn` environment type.
 
-- `list_logs`  -- print environment log files (same as db_archive -l)
+- `list_logs`  -- print list of environment log files (same as db_archive -l)
    Works only for `txn` environment type.
 
 #### Commands for reading and writing data:
@@ -164,6 +171,8 @@ socket.
   get is equivalent to get_prev. For double databases it does linear
   interpolation between points, or return the last point if time is
   larger then that of the latest point.
+  Use this carefully: if you want to get actual recorded
+  point, not interpolation, use `get_prev`.
 
 - `get_range <extended name> [<time1>] [<time2>] [<dt>]` -- Get
   points in the time range. If parameter `dt>0` then data are filtered,
@@ -171,9 +180,10 @@ socket.
   for any ratio of dt and interpoint distance. For text data only first
   lines are shown.
 
-- `get_wrange <extended name> [<time1>] [<time2>] [<dt>]` -- Get points covering the
-  requested time range. Equivalent to output of three commands: `get_prev <time1>`,
-  `get_range <time1> <time2> <dt>`, `get_next <time2>`.
+- `get_wrange <extended name> [<time1>] [<time2>] [<dt>]` --
+   Get points covering the requested time range. Equivalent to
+   output of three commands: `get_prev <time1>`,
+  `get_range <time1> <time2> <dt>`, and `get_next <time2>`.
 
 - `get_count <extended name> [<time1>] [<cnt>]` -- Get
   up to `cnt` points (default 1000) starting from `time1`.
@@ -201,18 +211,20 @@ Default value for `<time1>` is 0, for `<time2>` is "inf".
 The "extended name" used in get_* commands have the following format:
 `<name>[:<column>]` or `<name>[:f<filter>]`
 
-`<column>` is a column number (0,1,..), if it exists, then only this
-column is shown. If a certain column is requested but data array is not
-long enough, a "NaN" value is returned. Columns are ignored for text data.
+If `:<column>` suffix is used with a column number 0,1,2... then only
+the specified column is shown. If a certain column is requested but data
+array is not long enough, a "NaN" value is returned. Columns are ignored
+for text databases.
 
-`<filter>` is a filter number (1..15), if it exists data will be processed
-by the filter (see below).
+If `:f<filter>` suffix is used with a filter number 1..15, data will
+be processed by the filter (see below).
 
 It is possible to extract data from a few databases by joining a few
 extended names with `+` sign between them:
 `<name1>[:<column_or_filter>]+<name2>[:<column_or_filter>]...`. In this
 case data from secondary databases will be extracted with `get` command
-and appended to each output line. Different data types can be mixed in this way.
+and appended to each output line. Different data types can be mixed in
+this way.
 
 #### Commands for deleting data:
 
