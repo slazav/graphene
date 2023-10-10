@@ -8,8 +8,14 @@ OTHER_TESTS := test_cli.sh test_v1.sh\
 
 PROGRAMS := graphene graphene_http graphene_meas
 
-PKG_CONFIG := libmicrohttpd libdb jansson tcl
-LDLIBS=-lm
+ifndef DEBIAN
+  PKG_CONFIG := libmicrohttpd libdb jansson tcl
+  LDLIBS=-lm
+else
+  PKG_CONFIG := libmicrohttpd libdb jansson
+  LDLIBS = -lm -ltcl
+  CXXFLAGS = -I/usr/include/tcl
+endif
 
 MODDIR      := ../modules
 include $(MODDIR)/Makefile.inc
