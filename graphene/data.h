@@ -5,6 +5,7 @@
 #define GRAPHENE_DATA_H
 
 #include <string>
+#include <cstdint>
 
 /********************************************************************/
 // Enum for the data type
