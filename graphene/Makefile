@@ -8,6 +8,8 @@ OTHER_TESTS := test_cli.sh test_v1.sh\
 
 PROGRAMS := graphene graphene_http graphene_meas
 
+# use "DEBIAN=1 make" for building in Debian
+
 ifndef DEBIAN
   PKG_CONFIG := libmicrohttpd libdb jansson tcl
   LDLIBS=-lm
