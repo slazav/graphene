@@ -1,0 +1,28 @@
+#!/bin/sh -efu
+
+# Script for building debian package
+
+name=graphene
+ver=2.13
+
+mkdir $name-$ver
+cd $name-$ver
+
+git clone ../../ .
+git submodule init
+git checkout --detach $ver
+git submodule update
+
+rm -f modules.tar update_modules graphene.spec
+rm -rf .git .gear
+
+mv -f graphene_http.init.ubuntu graphene_http.init
+
+mkdir debian
+for f in changelog control copyright rules; do
+  sed 's/${ver}/'$ver'/g' ../$f > debian/$f
+done
+
+dpkg-buildpackage
+
+#rm -rf $name-$ver

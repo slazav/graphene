@@ -1,0 +1,10 @@
+Source: graphene
+Section: System
+Priority: optional
+Maintainer: Vladislav Zavjalov <vl.zavjalov@gmail.com>
+Build-Depends: libmicrohttpd-dev, libjansson-dev, libdb-dev, db-util, tcl-dev, wget, pkg-config
+Standards-Version: ${ver}
+
+Package: graphene
+Architecture: any
+Description: a simple time series database
