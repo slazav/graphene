@@ -1,5 +1,5 @@
 Name:         graphene
-Version:      2.12
+Version:      2.13
 Release:      alt1
 
 Summary:      Simple time series database.
@@ -42,6 +42,14 @@ mkdir -p %buildroot%_sharedstatedir/graphene
 %_datadir/graphene/tcllib
 
 %changelog
+* Tue Nov 14 2023 Vladislav Zavjalov <slazav@altlinux.org> 2.13-alt1
+- v2.13
+  fix Makefile for Debian builds, add clean rule; use DESTDIR var
+  add script for building deb packages
+  data.h: include missing cstdlib header
+  update Readme.md
+  graphene_sync: fix error introduced in 473386
+
 * Wed Mar 22 2023 Vladislav Zavjalov <slazav@altlinux.org> 2.12-alt1
 - v2.12
  - graphene:
