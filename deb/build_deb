@@ -1,19 +1,21 @@
 #!/bin/sh -efu
 
-# Script for building debian package
-
 name=graphene
 ver=2.13
 
-mkdir $name-$ver
-cd $name-$ver
+tag=
+DIR="$name-$ver"
+
+rm -rf -- "$DIR"
+mkdir "$DIR"
+cd "$DIR"
 
 git clone ../../ .
-git submodule init
-git checkout --detach $ver
-git submodule update
+[ ! -d modules ] || git submodule init
+[ "$tag" = "" ]  || git checkout --detach $tag
+[ ! -d modules ] || git submodule update
 
-rm -f modules.tar update_modules graphene.spec
+[ ! -d modules ] || rm -f modules.tar update_modules
 rm -rf .git .gear
 
 mv -f graphene_http.init.ubuntu graphene_http.init
@@ -23,6 +25,7 @@ for f in changelog control copyright rules; do
   sed 's/${ver}/'$ver'/g' ../$f > debian/$f
 done
 
-dpkg-buildpackage
+dpkg-buildpackage --build=any
 
-#rm -rf $name-$ver
+cd ..
+rm -rf -- "$DIR"
