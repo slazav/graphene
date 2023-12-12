@@ -1,0 +1,19 @@
+#!/usr/bin/make -f
+
+DESTDIR=debian/package
+binary-arch:
+	$(checkdir)
+	$(checkroot)
+
+	$(MAKE)
+	$(MAKE) install DESTDIR=$(DESTDIR)
+
+	# Install Program Resources
+	mkdir $(DESTDIR)/DEBIAN
+	dpkg-gencontrol -P$(DESTDIR)
+	cd $(DESTDIR) && find . -type f ! -regex '.*DEBIAN/.*' -printf '%P\0' | xargs -r0 md5sum > DEBIAN/md5sums
+	dpkg-deb -b $(DESTDIR) ../
+
+# Below here is fairly generic really
+binary: binary-indep binary-arch
+.PHONY: binary binary-arch binary-indep clean build
