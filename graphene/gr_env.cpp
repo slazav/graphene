@@ -109,6 +109,11 @@ GrapheneEnv::GrapheneEnv(const std::string & dbpath_, const bool readonly_,
     dbpath(dbpath_), env_type(env_type_), readonly(readonly_), tcl(tcl_libdir),
     tcl_get_cmd(*this), tcl_getp_cmd(*this), tcl_getn_cmd(*this) {
 
+  // add commands to TCL interpeter
+  tcl.add_cmd("graphene_get", &tcl_get_cmd);
+  tcl.add_cmd("graphene_get_prev", &tcl_getp_cmd);
+  tcl.add_cmd("graphene_get_next", &tcl_getn_cmd);
+
   if (env_type == "none"){
     // no invironment
     env=NULL;
@@ -154,10 +159,6 @@ GrapheneEnv::GrapheneEnv(const std::string & dbpath_, const bool readonly_,
   if (res != 0)
     throw Err() << "opening DB_ENV: " << dbpath << ": " << db_strerror(res);
 
-  // add commands to TCL interpeter
-  tcl.add_cmd("graphene_get", &tcl_get_cmd);
-  tcl.add_cmd("graphene_get_prev", &tcl_getp_cmd);
-  tcl.add_cmd("graphene_get_next", &tcl_getn_cmd);
 
 }
 
