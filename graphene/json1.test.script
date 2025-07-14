@@ -51,7 +51,7 @@ req='
     "format":"json",
     "maxDataPoints":10
 }'
-ans='[{"target": "test_1", "datapoints": [[0.10000000000000001, 10], [0.20000000000000001, 20]]}, {"target": "test_2:2", "datapoints": [[null, 15], [null, 25]]}, {"target": "test_1:2", "datapoints": [[null, 10], [null, 20]]}]'
+ans='[{"target": "test_1", "datapoints": [[0.1, 10], [0.2, 20]]}, {"target": "test_2:2", "datapoints": [[null, 15], [null, 25]]}, {"target": "test_1:2", "datapoints": [[null, 10], [null, 20]]}]'
 assert "$(printf "%s" "$req" | ./json1.test . /query)" "$ans"
 
 # same but with larger interval - only one point returned
@@ -67,7 +67,7 @@ req='
     "format":"json",
     "maxDataPoints":10
 }'
-ans='[{"target": "test_1", "datapoints": [[0.10000000000000001, 10]]}, {"target": "test_2:2", "datapoints": [[null, 15]]}, {"target": "test_1:2", "datapoints": [[null, 10]]}]'
+ans='[{"target": "test_1", "datapoints": [[0.1, 10]]}, {"target": "test_2:2", "datapoints": [[null, 15]]}, {"target": "test_1:2", "datapoints": [[null, 10]]}]'
 assert "$(printf "%s" "$req" | ./json1.test . /query)" "$ans"
 
 # annotations
