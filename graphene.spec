@@ -12,7 +12,7 @@ Packager:     Vladislav Zavjalov <slazav@altlinux.org>
 Source:       %name-%version.tar
 BuildRequires: libmicrohttpd-devel libjansson-devel libdb4.7-devel db4.7-utils tcl-devel
 BuildRequires: wget
-Requires:      libmicrohttpd libjansson libdb4.7
+Requires:      libmicrohttpd libjansson4 libdb4.7
 
 %description
 graphene -- a simple time series database with nanosecond precision for scientific applications
