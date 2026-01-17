@@ -151,6 +151,9 @@ class GrapheneEnv{
   // print environment log files (same as db_archive -l)
   void list_logs();
 
+  // print lock statistics
+  void lock_stat(bool reset);
+
   /****************/
   void set_descr(const std::string & name, const std::string & descr) {
      getdb(name).set_descr(descr); }

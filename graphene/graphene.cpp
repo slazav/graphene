@@ -149,6 +149,7 @@ class Pars{
             "  dump <name> <file> -- dump the database into a file (same as db_dump utility)\n"
             "  list_dbs -- print environment database files for archiving (same as db_archive -s)"
             "  list_logs -- print environment log files (same as db_archive -l)"
+            "  lock_stat -- print environment lock statistics"
             "  cmdlist -- print this list of commands\n"
             "  help -- same as cmdlist\n"
             "  *idn?   -- print intentifier: Graphene database " << VERSION << "\n"
@@ -607,6 +608,14 @@ class Pars{
       if (pars.size()>1) throw Err() << "too many parameters";
       if (env_type != "txn") throw Err() << "list_logs can not by run in this environment type: " << env_type;
       env->list_logs();
+      return;
+    }
+
+    // print environment lock statistics
+    // args: lock_stat
+    if (strcasecmp(cmd.c_str(), "lock_stat")==0){
+      if (pars.size()>1) throw Err() << "too many parameters";
+      env->lock_stat(false);
       return;
     }
 

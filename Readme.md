@@ -154,6 +154,8 @@ graphene program in the interactive mode as a default shell.
 - `list_logs`  -- print list of environment log files (same as db_archive -l)
    Works only for `txn` environment type.
 
+- `lock_stat`  -- print lock statistics of the environment.
+
 #### Commands for reading and writing data:
 
 - `put <name> <time> <value1> ... <valueN>` -- Write a data point.

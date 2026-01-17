@@ -133,8 +133,15 @@ GrapheneEnv::GrapheneEnv(const std::string & dbpath_, const bool readonly_,
 
   // deadlock detection
   res = env->set_lk_detect(env.get(), DB_LOCK_MINWRITE);
-  if (res != 0)
-    throw Err() << "Error setting lock detect: " << db_strerror(res);
+  if (res != 0) throw Err() << "Error setting lock detect: " << db_strerror(res);
+
+  // configure number of locks
+//  res = env->set_lk_max_locks(env.get(), 1000);
+//  if (res != 0) throw Err() << "Error setting lk_max_locks: " << db_strerror(res);
+//  res = env->set_lk_max_lockers(env.get(), 1000);
+//  if (res != 0) throw Err() << "Error setting lk_max_lockers: " << db_strerror(res);
+//  res = env->set_lk_max_objects(env.get(), 1000);
+//  if (res != 0) throw Err() << "Error setting lk_max_objects: " << db_strerror(res);
 
   int flags;
   if (env_type == "txn")
@@ -321,6 +328,40 @@ GrapheneEnv::list_logs(){
   }
 }
 
+void
+GrapheneEnv::lock_stat(bool reset){
+  int ret;
+  DB_LOCK_STAT *st;
+  if (!env) throw Err() << "Command can not be run without DB environment";
+  if ((ret = env->lock_stat(env.get(), &st, reset? DB_STAT_CLEAR:0)) != 0)
+    throw Err() << db_strerror(ret);
+
+  https://web.stanford.edu/class/cs276a/projects/docs/berkeleydb/api_c/lock_stat.html
+  printf("last allocated locker ID: %d\n\n", st->st_id);
+  printf("current maximum unused locker ID: %d\n", st->st_cur_maxid);
+  printf("number of lock modes: %d\n", st->st_nmodes);
+  printf("maximum number of locks possible: %d\n", st->st_maxlocks);
+  printf("maximum number of lockers possible: %d\n", st->st_maxlockers);
+  printf("maximum number of lock objects possible: %d\n", st->st_maxobjects);
+  printf("number of current locks: %d\n", st->st_nlocks);
+  printf("maximum number of locks at any one time: %d\n", st->st_maxnlocks);
+  printf("number of current lockers: %d\n", st->st_nlockers);
+  printf("maximum number of lockers at any one time: %d\n", st->st_maxnlockers);
+  printf("number of current lock objects: %d\n", st->st_nobjects);
+  printf("maximum number of lock objects at any one time: %d\n", st->st_maxnobjects);
+  printf("total number of locks requested: %d\n", st->st_nrequests);
+  printf("total number of locks released: %d\n", st->st_nreleases);
+  //printf("total number of lock requests failing because DB_LOCK_NOWAIT was set: %d\n", st->st_nnowaits);
+  //printf("total number of locks not immediately available due to conflicts: %d\n", st->st_nconflicts);
+  printf("number of deadlocks: %d\n", st->st_ndeadlocks);
+  printf("timeout value: %d\n", st->st_locktimeout);
+  printf("number of locks that have timed out: %d\n", st->st_nlocktimeouts);
+  printf("transaction timeout value: %d\n", st->st_txntimeout);
+  printf("number of transactions that have timed out: %d\n", st->st_ntxntimeouts);
+  printf("size of the lock region: %ld\n", st->st_regsize);
+  printf("number of times that a thread of control was forced to wait before obtaining the region lock: %d\n", st->st_region_wait);
+  printf("number of times that a thread of control was able to obtain the region lock without waiting: %d\n", st->st_region_nowait);
+}
 
 /****************/
 
