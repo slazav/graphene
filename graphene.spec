@@ -1,5 +1,5 @@
 Name:         graphene
-Version:      2.13
+Version:      2.14
 Release:      alt1
 
 Summary:      Simple time series database.
@@ -42,6 +42,15 @@ mkdir -p %buildroot%_sharedstatedir/graphene
 %_datadir/graphene/tcllib
 
 %changelog
+* Sun Jan 18 2026 Vladislav Zavjalov <slazav@altlinux.org> 2.14-alt1
+v2.14
+- lock_stat command -- print environment lock statistics (useful for debugging broken db environments)
+- fix tests: new wget, rounding in json
+- fix graphene tcl functions in env_type=none
+- update deps: libjansson -> libjansson4 for Altlinux build
+- update files for Debian build
+- update modules
+
 * Tue Nov 14 2023 Vladislav Zavjalov <slazav@altlinux.org> 2.13-alt1
 - v2.13
   fix Makefile for Debian builds, add clean rule; use DESTDIR var

@@ -11,8 +11,8 @@ PROGRAMS := graphene graphene_http graphene_meas
 # use "DEBIAN=1 make" for building in Debian
 
 ifndef DEBIAN
-  PKG_CONFIG := libmicrohttpd libdb jansson tcl
-  LDLIBS=-lm
+  PKG_CONFIG := libmicrohttpd jansson tcl
+  LDLIBS=-lm -ldb
 else
   PKG_CONFIG := libmicrohttpd libdb jansson
   LDLIBS = -lm -ltcl
