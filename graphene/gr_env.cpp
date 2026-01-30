@@ -349,18 +349,18 @@ GrapheneEnv::lock_stat(bool reset){
   printf("maximum number of lockers at any one time: %d\n", st->st_maxnlockers);
   printf("number of current lock objects: %d\n", st->st_nobjects);
   printf("maximum number of lock objects at any one time: %d\n", st->st_maxnobjects);
-  printf("total number of locks requested: %d\n", st->st_nrequests);
-  printf("total number of locks released: %d\n", st->st_nreleases);
+  printf("total number of locks requested: %ld\n", st->st_nrequests);
+  printf("total number of locks released: %ld\n", st->st_nreleases);
   //printf("total number of lock requests failing because DB_LOCK_NOWAIT was set: %d\n", st->st_nnowaits);
   //printf("total number of locks not immediately available due to conflicts: %d\n", st->st_nconflicts);
-  printf("number of deadlocks: %d\n", st->st_ndeadlocks);
+  printf("number of deadlocks: %ld\n", st->st_ndeadlocks);
   printf("timeout value: %d\n", st->st_locktimeout);
-  printf("number of locks that have timed out: %d\n", st->st_nlocktimeouts);
+  printf("number of locks that have timed out: %ld\n", st->st_nlocktimeouts);
   printf("transaction timeout value: %d\n", st->st_txntimeout);
-  printf("number of transactions that have timed out: %d\n", st->st_ntxntimeouts);
+  printf("number of transactions that have timed out: %ld\n", st->st_ntxntimeouts);
   printf("size of the lock region: %ld\n", st->st_regsize);
-  printf("number of times that a thread of control was forced to wait before obtaining the region lock: %d\n", st->st_region_wait);
-  printf("number of times that a thread of control was able to obtain the region lock without waiting: %d\n", st->st_region_nowait);
+  printf("number of times that a thread of control was forced to wait before obtaining the region lock: %ld\n", st->st_region_wait);
+  printf("number of times that a thread of control was able to obtain the region lock without waiting: %ld\n", st->st_region_nowait);
 }
 
 /****************/
